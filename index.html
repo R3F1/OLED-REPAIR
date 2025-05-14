@@ -122,13 +122,14 @@
 <script>
   const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXdlq02wklbShCqO4st2FuEURvqcXpMQPmhFx_bB3C4efqANIbPKCYOMA9BNzdn5ceQz3wasIJXw05/pub?gid=661466938&single=true&output=csv";
 
-  function getDateStringsPL() {
+  // Zwraca daty w formacie YYYY-MM-DD (zgodnym z Google Sheet)
+  function getDateStringsISO() {
     const today = new Date();
     const yesterday = new Date();
     yesterday.setDate(today.getDate() - 1);
 
-    const toPLDate = d => d.toLocaleDateString('pl-PL');
-    return [toPLDate(today), toPLDate(yesterday)];
+    const toISO = d => d.toISOString().split('T')[0];
+    return [toISO(today), toISO(yesterday)];
   }
 
   function createTable(data) {
@@ -150,7 +151,7 @@
     });
     thead.appendChild(headRow);
 
-    const [todayStr, yesterdayStr] = getDateStringsPL();
+    const [todayStr, yesterdayStr] = getDateStringsISO();
     let totalQty = 0;
 
     data.slice(1).forEach(row => {
