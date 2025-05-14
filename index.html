@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>OLED Repair - Daily Summary</title>
+  <title>OLED Repair - Daily + Yesterday</title>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; }
@@ -16,7 +16,7 @@
 <body>
 
 <h1>OLED Repair Table</h1>
-<div id="counter">Loading today's total...</div>
+<div id="counter">Loading total for today and yesterday...</div>
 <input type="text" id="search" placeholder="Search...">
 
 <table id="oledTable">
@@ -27,9 +27,13 @@
 <script>
   const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXdlq02wklbShCqO4st2FuEURvqcXpMQPmhFx_bB3C4efqANIbPKCYOMA9BNzdn5ceQz3wasIJXw05/pub?gid=661466938&single=true&output=csv";
 
-  function getTodayDateString() {
+  function getDateStrings() {
     const today = new Date();
-    return today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+
+    const format = d => d.toISOString().split('T')[0];
+    return [format(today), format(yesterday)];
   }
 
   function createTable(data) {
@@ -51,12 +55,13 @@
     });
     thead.appendChild(headRow);
 
-    const today = getTodayDateString();
+    const [todayStr, yesterdayStr] = getDateStrings();
     let totalQty = 0;
 
     data.slice(1).forEach(row => {
-      const rowDate = row[dateIndex]?.split('T')[0]; // Remove time if exists
-      if (rowDate === today) {
+      const rawDate = row[dateIndex] || "";
+      const rowDate = rawDate.split('T')[0];
+      if (rowDate === todayStr || rowDate === yesterdayStr) {
         const tr = document.createElement("tr");
         row.forEach(cell => {
           const td = document.createElement("td");
@@ -70,7 +75,8 @@
       }
     });
 
-    document.getElementById("counter").textContent = `Total pieces today (${today}): ${totalQty}`;
+    document.getElementById("counter").textContent =
+      `Total pieces for ${yesterdayStr} & ${todayStr}: ${totalQty}`;
   }
 
   Papa.parse(CSV_URL, {
