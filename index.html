@@ -36,7 +36,7 @@
     }
     #search {
       display: block;
-      margin: 0 auto 20px auto;
+      margin: 0 auto 10px auto;
       padding: 10px;
       width: 90%;
       max-width: 400px;
@@ -141,9 +141,9 @@
   function downloadCSV(headers, rows) {
     const csvContent = [headers, ...rows]
       .map(row => row.map(cell => `"${(cell ?? "").replace(/"/g, '""')}"`).join(","))
-      .join("\n");
+      .join("\r\n");
 
-    const blob = new Blob([csvContent], {type: "text/csv;charset=utf-8;"});
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = "OLED_Repair.csv";
@@ -271,6 +271,11 @@
       row.style.display = match ? "" : "none";
     });
   });
+
+  // 🔁 Automatyczne odświeżanie strony co 3 minuty (180 000 ms)
+  setTimeout(() => {
+    location.reload();
+  }, 180000);
 </script>
 
 </body>
