@@ -108,7 +108,7 @@
 </header>
 
 <div id="counter">Ładowanie danych...</div>
-<input type="text" id="search" placeholder="🔍 Szukaj...">
+<textarea id="search" placeholder="🔍 Szukaj lub wklej dane z Google Sheet" rows="3"></textarea>
 <button id="exportBtn">⬇️ Eksportuj dane (DATA, STATUS, SERIAL)</button>
 
 <table id="oledTable">
@@ -265,16 +265,20 @@
         },
         plugins: [centerTextPlugin]
       });
-    }
-  });
 
-  document.getElementById("search").addEventListener("input", function () {
-    const searchValue = this.value.toLowerCase();
-    const rows = document.querySelectorAll("#oledTable tbody tr");
-    rows.forEach(row => {
-      const match = [...row.children].some(td => td.textContent.toLowerCase().includes(searchValue));
-      row.style.display = match ? "" : "none";
-    });
+      // 🔍 Multi-szukajka: obsługuje wklejanie wielu wartości
+      document.getElementById("search").addEventListener("input", function () {
+        const input = this.value.toLowerCase().trim();
+        const searchTerms = input.split(/\n|,|;/).map(s => s.trim()).filter(s => s.length > 0);
+        const rows = document.querySelectorAll("#oledTable tbody tr");
+
+        rows.forEach(row => {
+          const rowText = [...row.children].map(td => td.textContent.toLowerCase()).join(" ");
+          const match = searchTerms.some(term => rowText.includes(term));
+          row.style.display = match ? "" : "none";
+        });
+      });
+    }
   });
 
   // 🔁 Automatyczne odświeżanie strony co 3 minuty
