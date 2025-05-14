@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>OLED Repair Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -62,6 +63,18 @@
     tr:nth-child(even) {
       background-color: rgba(255, 255, 255, 0.05);
     }
+    #chart-container {
+      width: 95%;
+      max-width: 900px;
+      margin: 50px auto;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 20px;
+      border-radius: 12px;
+    }
+    canvas {
+      background-color: #fff;
+      border-radius: 8px;
+    }
     footer {
       text-align: center;
       margin: 30px 0;
@@ -80,7 +93,7 @@
   </h1>
 </header>
 
-<div id="counter">Ładowanie danych z dziś i wczoraj...</div>
+<div id="counter">Ładowanie danych...</div>
 <input type="text" id="search" placeholder="🔍 Szukaj...">
 
 <table id="oledTable">
@@ -88,22 +101,29 @@
   <tbody></tbody>
 </table>
 
+<div id="chart-container">
+  <h2 style="text-align:center">Wykres zgłoszeń z ostatnich 7 dni</h2>
+  <canvas id="dailyChart" height="120"></canvas>
+</div>
+
 <footer>
-  &copy; 2025 OLED Repair Viewer — z arkusza Google
+  &copy; 2025 OLED Repair Viewer — powered by Google Sheets & GitHub Pages
 </footer>
 
 <script>
   const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXdlq02wklbShCqO4st2FuEURvqcXpMQPmhFx_bB3C4efqANIbPKCYOMA9BNzdn5ceQz3wasIJXw05/pub?gid=661466938&single=true&output=csv";
 
-  function getDateStringsISO() {
-    const today = new Date();
-    const yesterday = new Date();
-    yesterday.setDate(today.getDate() - 1);
-    const toISO = d => d.toISOString().split('T')[0];
-    return [toISO(today), toISO(yesterday)];
+  function getDateStringsISO(n = 7) {
+    const result = [];
+    for (let i = n - 1; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      result.push(d.toISOString().split('T')[0]);
+    }
+    return result;
   }
 
-  function createTable(data) {
+  function createTableAndChart(data) {
     const table = document.getElementById("oledTable");
     const thead = table.querySelector("thead");
     const tbody = table.querySelector("tbody");
@@ -121,12 +141,14 @@
     });
     thead.appendChild(headRow);
 
-    const [todayStr, yesterdayStr] = getDateStringsISO();
-    let shownRows = 0;
+    const dateCounts = {};
+    const last7Days = getDateStringsISO(7);
+    last7Days.forEach(date => dateCounts[date] = 0);
 
+    let shownRows = 0;
     data.slice(1).forEach(row => {
       const rowDate = row[dateIndex]?.trim();
-      if (rowDate === todayStr || rowDate === yesterdayStr) {
+      if (last7Days.includes(rowDate)) {
         const tr = document.createElement("tr");
         row.forEach(cell => {
           const td = document.createElement("td");
@@ -135,17 +157,50 @@
         });
         tbody.appendChild(tr);
         shownRows++;
+
+        if (dateCounts[rowDate] !== undefined) {
+          dateCounts[rowDate]++;
+        }
       }
     });
 
     document.getElementById("counter").textContent =
-      `Liczba wpisów z ${yesterdayStr} i ${todayStr}: ${shownRows}`;
+      `Liczba wpisów z ostatnich 7 dni: ${shownRows}`;
+
+    // Tworzenie wykresu
+    const ctx = document.getElementById('dailyChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: last7Days,
+        datasets: [{
+          label: 'Liczba wpisów',
+          data: last7Days.map(d => dateCounts[d]),
+          backgroundColor: 'rgba(255, 255, 255, 0.7)',
+          borderColor: '#fff',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          title: {
+            display: false
+          }
+        },
+        scales: {
+          x: { ticks: { color: '#fff' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+          y: { ticks: { color: '#fff' }, grid: { color: 'rgba(255,255,255,0.1)' }, beginAtZero: true }
+        }
+      }
+    });
   }
 
   Papa.parse(CSV_URL, {
     download: true,
     complete: function(results) {
-      createTable(results.data);
+      createTableAndChart(results.data);
     }
   });
 
