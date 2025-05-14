@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pl">
 <head>
   <meta charset="UTF-8">
   <title>OLED Repair Dashboard</title>
@@ -107,8 +107,8 @@
   </h1>
 </header>
 
-<div id="counter">Loading total for today and yesterday...</div>
-<input type="text" id="search" placeholder="🔍 Search...">
+<div id="counter">Ładowanie danych...</div>
+<input type="text" id="search" placeholder="🔍 Szukaj...">
 
 <table id="oledTable">
   <thead></thead>
@@ -122,13 +122,13 @@
 <script>
   const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXdlq02wklbShCqO4st2FuEURvqcXpMQPmhFx_bB3C4efqANIbPKCYOMA9BNzdn5ceQz3wasIJXw05/pub?gid=661466938&single=true&output=csv";
 
-  function getDateStrings() {
+  function getDateStringsPL() {
     const today = new Date();
     const yesterday = new Date();
     yesterday.setDate(today.getDate() - 1);
 
-    const format = d => d.toISOString().split('T')[0];
-    return [format(today), format(yesterday)];
+    const toPLDate = d => d.toLocaleDateString('pl-PL');
+    return [toPLDate(today), toPLDate(yesterday)];
   }
 
   function createTable(data) {
@@ -139,8 +139,8 @@
     tbody.innerHTML = '';
 
     const headers = data[0];
-    const dateIndex = headers.findIndex(h => h.toLowerCase().includes("date") || h.toLowerCase().includes("data"));
-    const qtyIndex = headers.findIndex(h => h.toLowerCase().includes("qty") || h.toLowerCase().includes("ilość") || h.toLowerCase().includes("szt"));
+    const dateIndex = headers.findIndex(h => h.trim().toLowerCase() === "dzień");
+    const qtyIndex = headers.findIndex(h => h.trim().toLowerCase().includes("liczba"));
 
     const headRow = document.createElement("tr");
     headers.forEach(h => {
@@ -150,12 +150,11 @@
     });
     thead.appendChild(headRow);
 
-    const [todayStr, yesterdayStr] = getDateStrings();
+    const [todayStr, yesterdayStr] = getDateStringsPL();
     let totalQty = 0;
 
     data.slice(1).forEach(row => {
-      const rawDate = row[dateIndex] || "";
-      const rowDate = rawDate.split('T')[0];
+      const rowDate = row[dateIndex]?.trim();
       if (rowDate === todayStr || rowDate === yesterdayStr) {
         const tr = document.createElement("tr");
         row.forEach(cell => {
@@ -171,4 +170,25 @@
     });
 
     document.getElementById("counter").textContent =
-      `Total pieces for ${yesterdayStr} & ${today
+      `Suma sztuk z ${yesterdayStr} i ${todayStr}: ${totalQty}`;
+  }
+
+  Papa.parse(CSV_URL, {
+    download: true,
+    complete: function(results) {
+      createTable(results.data);
+    }
+  });
+
+  document.getElementById("search").addEventListener("input", function () {
+    const searchValue = this.value.toLowerCase();
+    const rows = document.querySelectorAll("#oledTable tbody tr");
+    rows.forEach(row => {
+      const match = [...row.children].some(td => td.textContent.toLowerCase().includes(searchValue));
+      row.style.display = match ? "" : "none";
+    });
+  });
+</script>
+
+</body>
+</html>
