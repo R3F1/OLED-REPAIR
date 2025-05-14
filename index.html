@@ -2,27 +2,122 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>OLED Repair - Daily + Yesterday</title>
+  <title>OLED Repair Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background: #f4f4f4; }
-    input { margin-top: 10px; padding: 6px; width: 100%; max-width: 300px; }
-    #counter { font-size: 1.2em; margin-top: 10px; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      background-size: cover;
+      color: #fff;
+    }
+
+    header {
+      background-color: rgba(0,0,0,0.4);
+      padding: 20px;
+      text-align: center;
+      position: relative;
+    }
+
+    header h1 {
+      font-size: 2em;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    header img.icon {
+      width: 40px;
+      height: 40px;
+    }
+
+    #counter {
+      font-size: 1.3em;
+      margin: 20px;
+      text-align: center;
+    }
+
+    #search {
+      display: block;
+      margin: 0 auto 20px auto;
+      padding: 10px;
+      width: 90%;
+      max-width: 400px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    table {
+      width: 95%;
+      margin: auto;
+      border-collapse: collapse;
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,0.2);
+      text-align: left;
+      color: #fff;
+    }
+
+    th {
+      background-color: rgba(0, 0, 0, 0.4);
+    }
+
+    tr:nth-child(even) {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    footer {
+      text-align: center;
+      margin: 30px 0;
+      font-size: 0.9em;
+      color: #aaa;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/LG_Display_OLED_65_inch_4K_TV.jpg/800px-LG_Display_OLED_65_inch_4K_TV.jpg');
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center;
+      opacity: 0.07;
+      z-index: -1;
+    }
   </style>
 </head>
 <body>
 
-<h1>OLED Repair Table</h1>
+<header>
+  <h1>
+    <img src="https://img.icons8.com/fluency/48/monitor.png" alt="TV Icon" class="icon"/>
+    OLED Repair Dashboard
+    <img src="https://img.icons8.com/fluency/48/maintenance.png" alt="Tools Icon" class="icon"/>
+  </h1>
+</header>
+
 <div id="counter">Loading total for today and yesterday...</div>
-<input type="text" id="search" placeholder="Search...">
+<input type="text" id="search" placeholder="🔍 Search...">
 
 <table id="oledTable">
   <thead></thead>
   <tbody></tbody>
 </table>
+
+<footer>
+  &copy; 2025 OLED Repair Tracker. Powered by Google Sheets + GitHub Pages.
+</footer>
 
 <script>
   const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXdlq02wklbShCqO4st2FuEURvqcXpMQPmhFx_bB3C4efqANIbPKCYOMA9BNzdn5ceQz3wasIJXw05/pub?gid=661466938&single=true&output=csv";
@@ -76,25 +171,4 @@
     });
 
     document.getElementById("counter").textContent =
-      `Total pieces for ${yesterdayStr} & ${todayStr}: ${totalQty}`;
-  }
-
-  Papa.parse(CSV_URL, {
-    download: true,
-    complete: function(results) {
-      createTable(results.data);
-    }
-  });
-
-  document.getElementById("search").addEventListener("input", function () {
-    const searchValue = this.value.toLowerCase();
-    const rows = document.querySelectorAll("#oledTable tbody tr");
-    rows.forEach(row => {
-      const match = [...row.children].some(td => td.textContent.toLowerCase().includes(searchValue));
-      row.style.display = match ? "" : "none";
-    });
-  });
-</script>
-
-</body>
-</html>
+      `Total pieces for ${yesterdayStr} & ${today
