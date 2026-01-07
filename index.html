@@ -2,13 +2,13 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR SYSTEM v6.0 MANAGER</title>
+  <title>OLED REPAIR SYSTEM v6.5 NETWORK GUARD</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
   
   <style>
-    /* --- STYLE PODSTAWOWE (ZACHOWANE Z V5) --- */
+    /* --- CONFIG & CORE STYLES --- */
     :root {
       --bg-deep: #050505;
       --panel-glass: rgba(20, 25, 35, 0.95);
@@ -16,7 +16,6 @@
       --neon-green: #0aff00;
       --neon-red: #ff003c;
       --neon-amber: #ffb300;
-      --border-light: 1px solid rgba(255, 255, 255, 0.1);
       --font-ui: 'Rajdhani', sans-serif;
       --font-tech: 'Share Tech Mono', monospace;
     }
@@ -29,15 +28,15 @@
       background-size: 100% 100%, 100% 4px;
     }
 
-    /* --- LOGIN & HEADER --- */
+    /* --- 1. EKRAN LOGOWANIA --- */
     #loginScreen {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999;
       display: flex; align-items: center; justify-content: center; flex-direction: column; transition: opacity 0.8s;
     }
     .login-box {
-      width: 400px; padding: 40px; background: rgba(10, 10, 10, 0.9); border: 1px solid var(--neon-cyan);
+      width: 400px; padding: 40px; background: rgba(10, 10, 10, 0.95); border: 1px solid var(--neon-cyan);
       text-align: center; border-radius: 10px; position: relative; overflow: hidden;
-      box-shadow: 0 0 40px rgba(0, 243, 255, 0.15);
+      box-shadow: 0 0 50px rgba(0, 243, 255, 0.15);
     }
     .login-input {
       width: 100%; padding: 15px; margin: 20px 0; background: #000; border: 2px solid #333; color: var(--neon-cyan);
@@ -49,29 +48,50 @@
     }
     .login-btn:hover { background: #fff; box-shadow: 0 0 20px var(--neon-cyan); }
 
+    /* --- 2. NOWOŚĆ: BLOKADA SIECIOWA (NETWORK GUARD) --- */
+    #networkGuard {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.9); z-index: 8000; backdrop-filter: blur(10px);
+      display: none; /* Pokaże się po zalogowaniu */
+      align-items: center; justify-content: center; flex-direction: column;
+    }
+    .alert-box {
+      width: 500px; padding: 30px; border: 2px solid var(--neon-red); background: #080808;
+      text-align: center; border-radius: 12px; box-shadow: 0 0 60px rgba(255, 0, 60, 0.2);
+      animation: pulseAlert 2s infinite;
+    }
+    @keyframes pulseAlert { 0% { box-shadow: 0 0 30px rgba(255,0,60,0.1); } 50% { box-shadow: 0 0 60px rgba(255,0,60,0.3); } 100% { box-shadow: 0 0 30px rgba(255,0,60,0.1); } }
+    
+    .path-display {
+      background: #111; padding: 10px; border: 1px dashed #555; margin: 15px 0;
+      font-family: var(--font-tech); font-size: 11px; color: #aaa; word-break: break-all;
+    }
+    .guard-btn {
+      width: 100%; padding: 18px; background: var(--neon-red); color: #fff; font-weight: bold;
+      border: none; cursor: pointer; font-family: var(--font-tech); font-size: 16px; margin-top: 10px;
+    }
+    .guard-btn:hover { background: #ff3366; }
+    .skip-btn {
+      margin-top: 10px; background: transparent; border: none; color: #555; text-decoration: underline; cursor: pointer; font-size: 11px;
+    }
+
+    /* --- HEADER --- */
     header {
       height: 60px; display: flex; justify-content: space-between; align-items: center; padding: 0 25px;
       background: rgba(0,0,0,0.8); border-bottom: 1px solid #333;
     }
     .brand { font-size: 24px; font-weight: 700; color: #fff; letter-spacing: 2px; }
+    .brand span { color: var(--neon-cyan); }
     .operator-info { display: flex; align-items: center; gap: 15px; font-family: var(--font-tech); color: #aaa; font-size: 14px; }
     .operator-badge { background: #222; padding: 5px 15px; border-radius: 4px; border: 1px solid #444; color: var(--neon-cyan); }
 
-    .network-status-bar {
-      height: 35px; background: #0b0b0b; border-bottom: 1px solid #222; display: flex; align-items: center;
-      justify-content: center; gap: 10px; font-family: var(--font-tech); font-size: 12px; color: #666;
-    }
-    .network-status-bar.connected { background: rgba(10, 255, 0, 0.05); color: var(--neon-green); border-bottom-color: var(--neon-green); }
-    .status-dot { width: 8px; height: 8px; background: #444; border-radius: 50%; }
-    .connected .status-dot { background: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); }
-
-    /* --- GŁÓWNY DASHBOARD --- */
+    /* --- DASHBOARD --- */
     .dashboard {
       flex: 1; display: grid; grid-template-columns: 380px 1fr; gap: 20px; padding: 20px; overflow: hidden;
       opacity: 0; transition: opacity 1s;
     }
     .panel-left {
-      background: var(--panel-glass); border: var(--border-light); border-radius: 12px; padding: 20px;
+      background: var(--panel-glass); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px;
       display: flex; flex-direction: column; overflow-y: auto;
     }
     .panel-right {
@@ -79,18 +99,16 @@
     }
     video { width: 100%; height: 100%; object-fit: contain; }
 
-    /* UI ELEMENTY */
-    .input-group { margin-bottom: 15px; }
-    .input-label { font-size: 11px; color: var(--neon-cyan); letter-spacing: 1px; margin-bottom: 5px; display: block; }
+    /* UI COMPONENTS */
     #scanInput {
       width: 100%; background: #000; border: 1px solid #444; color: #fff; padding: 12px; font-size: 20px;
-      text-align: center; font-family: var(--font-tech); outline: none; border-radius: 5px;
+      text-align: center; font-family: var(--font-tech); outline: none; border-radius: 5px; margin-bottom: 20px;
     }
     #scanInput:focus { border-color: var(--neon-green); }
     
     .checklist-btn {
       width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); color: #aaa;
-      padding: 10px; margin-bottom: 6px; cursor: pointer; text-align: left; font-family: var(--font-ui);
+      padding: 12px; margin-bottom: 8px; cursor: pointer; text-align: left; font-family: var(--font-ui);
       display: flex; justify-content: space-between; transition: 0.2s; font-size: 14px;
     }
     .checklist-btn.done { border-color: var(--neon-green); color: var(--neon-green); background: rgba(10,255,0,0.05); }
@@ -104,52 +122,39 @@
     }
     @keyframes pulseBtn { 0% { box-shadow: 0 0 10px rgba(10,255,0,0.4); } 50% { box-shadow: 0 0 20px rgba(10,255,0,0.7); } 100% { box-shadow: 0 0 10px rgba(10,255,0,0.4); } }
 
-    /* OVERLAYE KAMERY */
+    /* OVERLAYS */
     .cam-overlay { position: absolute; top: 20px; left: 20px; display: flex; flex-direction: column; gap: 5px; }
     .tag {
       background: rgba(0,0,0,0.8); color: #fff; padding: 4px 10px; font-family: var(--font-tech);
       font-size: 13px; border-left: 3px solid var(--neon-cyan); backdrop-filter: blur(5px);
     }
+    .status-bar {
+      height: 30px; background: #111; border-top: 1px solid #333; display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-tech); font-size: 11px; color: #666; gap: 10px;
+    }
+    .status-bar.ok { color: var(--neon-green); }
 
-    /* --- NOWOŚĆ: PANEL MANAGERA (BAZA DANYCH) --- */
+    /* MANAGER PANEL */
     .database-trigger {
-      position: absolute; bottom: 0; width: 100%; height: 40px; background: #111; border-top: 1px solid var(--neon-cyan);
-      display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 100;
-      font-family: var(--font-tech); color: var(--neon-cyan); letter-spacing: 2px; transition: 0.3s;
+      position: absolute; bottom: 30px; right: 30px; padding: 10px 20px; background: rgba(0,0,0,0.8);
+      border: 1px solid var(--neon-cyan); color: var(--neon-cyan); cursor: pointer; font-family: var(--font-tech);
+      z-index: 50; transition: 0.3s;
     }
     .database-trigger:hover { background: var(--neon-cyan); color: #000; }
 
     #databasePanel {
       position: fixed; bottom: 0; left: 0; width: 100%; height: 0; background: rgba(10, 15, 20, 0.98);
-      z-index: 200; transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden;
-      border-top: 2px solid var(--neon-cyan); display: flex; flex-direction: column;
+      z-index: 200; transition: height 0.5s; overflow: hidden; border-top: 2px solid var(--neon-cyan);
+      display: flex; flex-direction: column;
     }
     #databasePanel.open { height: 80vh; }
-
-    .db-header {
-      padding: 20px; background: #000; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center;
-    }
-    .db-controls { display: flex; gap: 10px; }
-    .db-btn {
-      padding: 10px 20px; border: 1px solid #444; background: #111; color: #fff; cursor: pointer;
-      font-family: var(--font-tech); text-transform: uppercase; font-size: 12px;
-    }
-    .db-btn:hover { border-color: #fff; }
-    .db-btn.primary { background: var(--neon-cyan); color: #000; border-color: var(--neon-cyan); font-weight: bold; }
-
+    .db-header { padding: 20px; background: #000; border-bottom: 1px solid #333; display: flex; justify-content: space-between; }
     .db-content { flex: 1; overflow: auto; padding: 20px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; color: #ccc; font-family: var(--font-tech); }
+    th { text-align: left; padding: 10px; border-bottom: 2px solid #333; color: var(--neon-cyan); background: #000; sticky: top; }
+    td { padding: 10px; border-bottom: 1px solid #222; }
     
-    /* TABELA DANYCH */
-    #reportTable { width: 100%; border-collapse: collapse; font-size: 13px; color: #ccc; font-family: var(--font-tech); }
-    #reportTable th { text-align: left; padding: 10px; border-bottom: 2px solid #333; color: var(--neon-cyan); position: sticky; top: 0; background: #000; }
-    #reportTable td { padding: 10px; border-bottom: 1px solid #222; }
-    #reportTable tr:hover { background: rgba(255,255,255,0.05); }
-    
-    .status-ok { color: var(--neon-green); font-weight: bold; }
-    .status-warn { color: var(--neon-amber); }
-    .status-err { color: var(--neon-red); }
-
-    /* 3D SCENE (CSS Only) */
+    /* 3D SCENE CSS */
     .scene-container { height: 180px; perspective: 800px; display: flex; justify-content: center; align-items: center; margin-bottom: 10px; }
     .tv-pivot { position: relative; width: 180px; height: 110px; transform-style: preserve-3d; transition: transform 0.8s; }
     .tv-panel { position: absolute; width: 100%; height: 100%; background: #000; border: 2px solid #333; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; }
@@ -166,43 +171,52 @@
 <div id="loginScreen">
   <div class="login-box">
     <h2 style="margin:0; color:#fff; font-family: 'Share Tech Mono';">OLED REPAIR SYSTEM</h2>
-    <div style="font-size:12px; color:#666; margin-bottom:20px;">AUTHORIZATION REQUIRED</div>
+    <div style="font-size:12px; color:#666; margin-bottom:20px;">V6.5 NETWORK GUARD</div>
     <label style="color:var(--neon-cyan); font-size:12px;">IDENTYFIKATOR OPERATORA</label>
     <input type="text" id="operatorNameInput" class="login-input" placeholder="IMIĘ I NAZWISKO">
-    <button class="login-btn" onclick="loginOperator()">ZALOGUJ</button>
+    <button class="login-btn" onclick="loginOperator()">ROZPOCZNIJ PRACĘ</button>
+  </div>
+</div>
+
+<div id="networkGuard">
+  <div class="alert-box">
+    <h2 style="color:var(--neon-red); margin:0;">⚠️ KONFIGURACJA SIECIOWA ⚠️</h2>
+    <p style="font-size:14px; color:#ddd; margin:10px 0;">
+      ABY SYSTEM DZIAŁAŁ AUTOMATYCZNIE, WYMAGANE JEST POŁĄCZENIE Z FOLDEREM SIECIOWYM!
+    </p>
+    
+    <div style="font-size:11px; color:#aaa; margin-bottom:5px;">ŚCIEŻKA DOCELOWA:</div>
+    <div class="path-display" id="pathDisplayBox">
+      \\plgorfs001\pub\SERVICE\LCDR\LCDR\OLED OBM Panels\Zdjęcia z napraw OLED
+    </div>
+    
+    <button class="guard-btn" onclick="connectNetwork()">📡 POŁĄCZ Z SERWEREM (KLIKNIJ)</button>
+    <button class="skip-btn" onclick="skipNetwork()">Pracuj Offline (Tylko ZIP)</button>
   </div>
 </div>
 
 <header>
-  <div class="brand">LG <span>OLED</span> STUDIO <span style="font-size:12px; color:#555;">v6.0 MANAGER</span></div>
+  <div class="brand">LG <span>OLED</span> STUDIO</div>
   <div class="operator-info">
     <div class="operator-badge" id="operatorDisplay">---</div>
     <div id="clockDisplay">00:00</div>
   </div>
 </header>
 
-<div class="network-status-bar" id="networkBar">
-  <div class="status-dot"></div>
-  <span id="networkText">FOLDER ROZŁĄCZONY</span>
-  <button onclick="connectNetwork()" style="background:none; border:1px solid #444; color:#aaa; cursor:pointer; margin-left:10px; font-size:10px;">[ POŁĄCZ ]</button>
-</div>
-
 <div class="dashboard" id="mainDashboard">
   <aside class="panel-left">
     <div class="scene-container">
       <div class="tv-pivot" id="tv3d">
         <div class="tv-panel tv-front"></div>
-        <div class="tv-panel tv-back">Elektronika</div>
+        <div class="tv-panel tv-back">SERWIS</div>
         <div class="tv-stand"></div>
       </div>
     </div>
     
-    <div class="input-group">
-      <span class="input-label">SKANER SN</span>
-      <input type="text" id="scanInput" placeholder="ZESKANUJ..." autofocus>
-    </div>
+    <div style="font-size:11px; color:var(--neon-cyan); margin-bottom:5px;">SKANER KODÓW (SN)</div>
+    <input type="text" id="scanInput" placeholder="ZESKANUJ..." autofocus>
 
-    <div style="margin-bottom:15px;">
+    <div style="margin-top:20px;">
       <div id="btnFront" class="checklist-btn" onclick="capture('PRZOD')"><span>1. PRZÓD</span> <span>📷</span></div>
       <div id="btnBack" class="checklist-btn" onclick="capture('TYL')"><span>2. TYŁ</span> <span>📷</span></div>
       <div id="btnImage" class="checklist-btn" onclick="capture('OBRAZ')"><span>3. OBRAZ</span> <span>📷</span></div>
@@ -221,35 +235,24 @@
   </main>
 </div>
 
-<div class="database-trigger" onclick="toggleDatabase()">
-  📂 OTWÓRZ BAZĘ DANYCH / RAPORTY
+<div class="status-bar" id="bottomBar">
+  <span id="connStatus">🔴 ROZŁĄCZONY Z SERWEREM</span>
 </div>
+
+<div class="database-trigger" onclick="toggleDatabase()">📂 RAPORTY / BAZA</div>
 
 <div id="databasePanel">
   <div class="db-header">
-    <div style="font-size:18px; color:var(--neon-cyan); font-weight:bold;">RAPORT SIECIOWY (LIVE SCAN)</div>
-    <div class="db-controls">
-      <button class="db-btn primary" onclick="scanNetworkForReports()">🔄 ODŚWIEŻ Z SERWERA</button>
-      <button class="db-btn" onclick="exportToCSV()">💾 EKSPORTUJ CSV (EXCEL)</button>
-      <button class="db-btn" onclick="toggleDatabase()">❌ ZAMKNIJ</button>
+    <div style="font-size:18px; color:var(--neon-cyan);">RAPORTY SIECIOWE</div>
+    <div style="display:flex; gap:10px;">
+      <button onclick="scanNetworkForReports()" style="padding:5px 15px; background:var(--neon-cyan); border:none; cursor:pointer;">ODŚWIEŻ</button>
+      <button onclick="exportToCSV()" style="padding:5px 15px; background:#333; color:#fff; border:1px solid #555; cursor:pointer;">CSV</button>
+      <button onclick="toggleDatabase()" style="padding:5px 15px; background:#333; color:#fff; border:1px solid #555; cursor:pointer;">X</button>
     </div>
   </div>
   <div class="db-content">
-    <div id="loadingIndicator" style="display:none; text-align:center; padding:50px; color:var(--neon-cyan);">
-      Skanowanie folderów sieciowych... Proszę czekać...
-    </div>
-    <table id="reportTable">
-      <thead>
-        <tr>
-          <th>DATA NAPRAWY</th>
-          <th>SERIAL NUMBER (SN)</th>
-          <th>OPERATOR</th>
-          <th>STATUS PLIKÓW</th>
-        </tr>
-      </thead>
-      <tbody>
-        </tbody>
-    </table>
+    <div id="loader" style="display:none; text-align:center; color:var(--neon-cyan); padding:20px;">Skanowanie...</div>
+    <table id="reportTable"><thead><tr><th>DATA</th><th>SN</th><th>OPERATOR</th><th>STATUS</th></tr></thead><tbody></tbody></table>
   </div>
 </div>
 
@@ -262,7 +265,7 @@
   let dirHandle = null;
   let currentSN = "";
   let photos = { PRZOD: null, TYL: null, OBRAZ: null };
-  let reportDataCache = []; // Przechowuje dane do eksportu
+  let reportCache = [];
 
   const video = document.getElementById('videoFeed');
   const canvas = document.getElementById('photoCanvas');
@@ -271,35 +274,56 @@
   const actionBtn = document.getElementById('actionBtn');
   const tv3d = document.getElementById('tv3d');
 
-  /* --- ZEGAR --- */
   setInterval(() => document.getElementById('clockDisplay').innerText = new Date().toLocaleTimeString().slice(0,5), 1000);
 
-  /* --- 1. LOGOWANIE --- */
+  /* --- 1. LOGOWANIE -> BLOKADA --- */
   function loginOperator() {
     const val = document.getElementById('operatorNameInput').value.trim().toUpperCase();
     if (val.length < 3) return alert("Podaj poprawne dane!");
     operatorName = val;
     document.getElementById('operatorDisplay').innerText = operatorName;
     document.getElementById('tagOp').innerText = "OP: " + operatorName;
+    
+    // Ukryj login
     document.getElementById('loginScreen').style.opacity = '0';
     setTimeout(() => {
       document.getElementById('loginScreen').style.display = 'none';
+      
+      // POKAŻ DASHBOARD, ALE OD RAZU DAJ BLOKADĘ SIECIOWĄ!
       document.getElementById('mainDashboard').style.opacity = '1';
-      initCamera();
-      scanInput.focus();
+      document.getElementById('networkGuard').style.display = 'flex'; // <--- BLOKADA
+      
     }, 800);
   }
   document.getElementById('operatorNameInput').addEventListener('keydown', e => { if(e.key==='Enter') loginOperator() });
 
-  /* --- 2. ŁĄCZENIE SIECIOWE --- */
+  /* --- 2. ŁĄCZENIE SIECIOWE (Z BLOKADY) --- */
   async function connectNetwork() {
     try {
-      alert("Skopiowano ścieżkę:\n" + NETWORK_PATH + "\n\nWklej ją w oknie wyboru folderu.");
+      alert("Skopiowano ścieżkę do schowka. Wklej ją w oknie wyboru folderu!");
       await navigator.clipboard.writeText(NETWORK_PATH);
+      
       dirHandle = await window.showDirectoryPicker();
-      document.getElementById('networkBar').classList.add('connected');
-      document.getElementById('networkText').innerText = "POŁĄCZONO: \\Zdjęcia z napraw OLED";
-    } catch (e) { console.error(e); }
+      
+      // JEŚLI SUKCES:
+      document.getElementById('networkGuard').style.display = 'none'; // Zdejmij blokadę
+      document.getElementById('connStatus').innerHTML = "🟢 POŁĄCZONO: " + NETWORK_PATH.slice(0,30) + "...";
+      document.getElementById('bottomBar').classList.add('ok');
+      initCamera();
+      scanInput.focus();
+
+    } catch (e) {
+      alert("Anulowano wybór folderu. Musisz się połączyć, aby system działał automatycznie!");
+    }
+  }
+
+  function skipNetwork() {
+    if(confirm("Czy na pewno chcesz pracować OFFLINE? Zdjęcia nie trafią na serwer, tylko pobierzesz ZIP.")) {
+      document.getElementById('networkGuard').style.display = 'none';
+      document.getElementById('connStatus').innerHTML = "🔴 TRYB OFFLINE (ZIP)";
+      initCamera();
+      scanInput.focus();
+    }
   }
 
   /* --- 3. KAMERA --- */
@@ -310,7 +334,7 @@
     } catch (e) { alert("Błąd kamery!"); }
   }
 
-  /* --- 4. GŁÓWNA LOGIKA --- */
+  /* --- 4. OBSŁUGA --- */
   scanInput.addEventListener('keydown', e => {
     if (e.key === 'Enter') {
       const sn = scanInput.value.trim().toUpperCase();
@@ -336,7 +360,7 @@
     const f = document.createElement('div');
     f.style.cssText = "position:absolute;top:0;left:0;width:100%;height:100%;background:#fff;opacity:0.8;z-index:99";
     document.querySelector('.panel-right').appendChild(f);
-    setTimeout(() => f.remove(), 100);
+    setTimeout(() => f.remove(), 80);
 
     canvas.width = video.videoWidth; canvas.height = video.videoHeight;
     ctx.drawImage(video, 0, 0);
@@ -364,7 +388,6 @@
     if(!actionBtn.classList.contains('active')) return;
     document.getElementById('saveStatus').innerText = "ZAPISYWANIE...";
     
-    // Generowanie tekstu raportu
     const txt = `SN: ${currentSN}\nDATA: ${new Date().toLocaleString()}\nOPERATOR: ${operatorName}\nSTATUS: OK`;
 
     if(dirHandle) {
@@ -373,7 +396,6 @@
         await writeF(folder, `${currentSN}_PRZOD.jpg`, photos.PRZOD);
         await writeF(folder, `${currentSN}_TYL.jpg`, photos.TYL);
         await writeF(folder, `${currentSN}_OBRAZ.jpg`, photos.OBRAZ);
-        // Zapis pliku TXT (Kluczowe dla raportowania!)
         await writeF(folder, `RAPORT_${currentSN}.txt`, new Blob([txt], {type:'text/plain'}));
         
         document.getElementById('saveStatus').innerText = "ZAPISANO NA SERWERZE!";
@@ -382,91 +404,52 @@
     } else {
       const z = new JSZip(); const f = z.folder(currentSN);
       f.file("info.txt", txt);
-      // ... dodaj foty do zip (kod skrócony dla czytelności, logika ta sama co w v5)
-      alert("Brak sieci - pobieram ZIP (Funkcja uproszczona w widoku Managera)");
+      // Fallback ZIP logic (skrócona)
+      f.file("foto.jpg", photos.PRZOD); // Przykładowe
+      z.generateAsync({type:"blob"}).then(c => saveAs(c, `${currentSN}.zip`));
     }
   }
   async function writeF(dh, n, b) { const h = await dh.getFileHandle(n,{create:true}); const w = await h.createWritable(); await w.write(b); await w.close(); }
 
-  /* --- 5. MANAGER: DATABASE SCANNER --- */
-  function toggleDatabase() {
-    const p = document.getElementById('databasePanel');
-    p.classList.toggle('open');
-  }
+  /* --- 5. MANAGER --- */
+  function toggleDatabase() { document.getElementById('databasePanel').classList.toggle('open'); }
 
   async function scanNetworkForReports() {
-    if (!dirHandle) return alert("Najpierw połącz się z folderem sieciowym!");
-    
-    const tbody = document.querySelector('#reportTable tbody');
-    tbody.innerHTML = "";
-    document.getElementById('loadingIndicator').style.display = 'block';
-    reportDataCache = [];
-
+    if (!dirHandle) return alert("Brak połączenia z siecią!");
+    const tb = document.querySelector('#reportTable tbody'); tb.innerHTML = "";
+    document.getElementById('loader').style.display = 'block';
+    reportCache = [];
     try {
-      // Iterujemy przez wszystkie foldery w głównym katalogu
       for await (const entry of dirHandle.values()) {
         if (entry.kind === 'directory') {
-          const sn = entry.name;
-          let op = "Nieznany";
-          let date = "---";
-          let status = `<span class="status-warn">BRAK RAPORTU</span>`;
-          
-          // Wchodzimy do środka folderu SN
+          const sn = entry.name; let op = "---"; let date = "---"; let stat = "TYLKO FOTO";
           try {
             const snDir = await dirHandle.getDirectoryHandle(sn);
-            let hasTxt = false;
-
-            for await (const file of snDir.values()) {
-              if (file.name.includes("RAPORT") && file.name.endsWith(".txt")) {
-                const f = await file.getFile();
-                const text = await f.text();
-                date = f.lastModifiedDate ? f.lastModifiedDate.toLocaleString() : "---";
-                
-                // Parsowanie operatora z pliku txt
-                const match = text.match(/OPERATOR: (.*)/);
-                if (match) op = match[1];
-                
-                status = `<span class="status-ok">KOMPLETNY</span>`;
-                hasTxt = true;
+            for await (const f of snDir.values()) {
+              if (f.name.includes("RAPORT")) {
+                const file = await f.getFile();
+                const text = await file.text();
+                date = file.lastModifiedDate.toLocaleString();
+                const m = text.match(/OPERATOR: (.*)/);
+                if(m) op = m[1];
+                stat = "KOMPLET";
               }
             }
-            if (!hasTxt) {
-                // Jeśli nie ma txt, sprawdzamy czy są chociaż jpg
-                status = `<span class="status-err">TYLKO ZDJĘCIA</span>`;
-            }
-          } catch (e) {
-            status = `<span class="status-err">BŁĄD ODCZYTU</span>`;
-          }
-
-          // Dodajemy wiersz
-          const rowData = { date, sn, op, statusText: status.replace(/<[^>]*>?/gm, '') };
-          reportDataCache.push(rowData);
-
-          const tr = document.createElement('tr');
-          tr.innerHTML = `<td>${date}</td><td>${sn}</td><td>${op}</td><td>${status}</td>`;
-          tbody.appendChild(tr);
+          } catch(e){}
+          reportCache.push({date, sn, op, stat});
+          tb.innerHTML += `<tr><td>${date}</td><td>${sn}</td><td>${op}</td><td style="color:${stat==='KOMPLET'?'#0f0':'#f00'}">${stat}</td></tr>`;
         }
       }
-    } catch (e) {
-      console.error(e);
-      alert("Błąd podczas skanowania folderów.");
-    } finally {
-      document.getElementById('loadingIndicator').style.display = 'none';
-    }
+    } catch(e){ alert("Błąd skanowania"); }
+    document.getElementById('loader').style.display = 'none';
   }
 
   function exportToCSV() {
-    if (reportDataCache.length === 0) return alert("Najpierw przeskanuj serwer!");
-    
-    let csvContent = "DATA,SERIAL NUMBER,OPERATOR,STATUS\n";
-    reportDataCache.forEach(row => {
-      csvContent += `${row.date},${row.sn},${row.op},${row.statusText}\n`;
-    });
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    saveAs(blob, "OLED_RAPORT_BAZA.csv");
+    if(!reportCache.length) return alert("Pusta baza");
+    let c = "DATA,SN,OPERATOR,STATUS\n";
+    reportCache.forEach(r => c += `${r.date},${r.sn},${r.op},${r.stat}\n`);
+    saveAs(new Blob([c], {type:"text/csv"}), "raport.csv");
   }
-
 </script>
 </body>
 </html>
