@@ -2,217 +2,395 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR - NETWORK AUTO SAVE</title>
+  <title>OLED REPAIR SYSTEM v5.0</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
   
   <style>
     :root {
-      --bg-color: #050505;
-      --panel-bg: rgba(15, 20, 30, 0.9);
-      --neon-blue: #00f3ff;
+      --bg-deep: #050505;
+      --panel-glass: rgba(20, 25, 35, 0.95);
+      --neon-cyan: #00f3ff;
       --neon-green: #0aff00;
       --neon-red: #ff003c;
-      --glass-border: 1px solid rgba(255, 255, 255, 0.15);
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0; background-color: var(--bg-color); color: #fff;
-      font-family: 'Rajdhani', sans-serif; height: 100vh;
-      overflow: hidden; display: flex; flex-direction: column;
-      background-image: linear-gradient(rgba(0, 243, 255, 0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.02) 1px, transparent 1px);
-      background-size: 30px 30px;
+      --border-light: 1px solid rgba(255, 255, 255, 0.1);
+      --font-ui: 'Rajdhani', sans-serif;
+      --font-tech: 'Share Tech Mono', monospace;
     }
 
-    /* HEADER */
+    * { box-sizing: border-box; }
+    
+    body {
+      margin: 0; padding: 0;
+      background-color: var(--bg-deep);
+      color: #fff;
+      font-family: var(--font-ui);
+      height: 100vh;
+      overflow: hidden;
+      display: flex; flex-direction: column;
+      /* Tło techniczne */
+      background-image: 
+        radial-gradient(circle at 50% 50%, rgba(0, 243, 255, 0.05) 0%, transparent 60%),
+        linear-gradient(0deg, rgba(0,0,0,0.8), transparent 2px);
+      background-size: 100% 100%, 100% 4px;
+    }
+
+    /* --- EKRAN LOGOWANIA --- */
+    #loginScreen {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: #000; z-index: 9999;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column;
+      transition: opacity 0.8s ease-in-out;
+    }
+    
+    .login-box {
+      width: 400px; padding: 40px;
+      background: rgba(10, 10, 10, 0.9);
+      border: 1px solid var(--neon-cyan);
+      box-shadow: 0 0 50px rgba(0, 243, 255, 0.1);
+      text-align: center; border-radius: 10px;
+      position: relative; overflow: hidden;
+    }
+    
+    /* Animacja skanera na logowaniu */
+    .login-box::before {
+      content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 2px;
+      background: var(--neon-cyan);
+      box-shadow: 0 0 20px var(--neon-cyan);
+      animation: scanLogin 3s infinite linear;
+    }
+    @keyframes scanLogin { 0% { left: -100%; } 50% { left: 100%; } 100% { left: 100%; } }
+
+    .login-input {
+      width: 100%; padding: 15px; margin: 20px 0;
+      background: #000; border: 2px solid #333; color: var(--neon-cyan);
+      font-family: var(--font-tech); font-size: 18px; text-align: center;
+      outline: none; text-transform: uppercase;
+    }
+    .login-input:focus { border-color: var(--neon-cyan); }
+    
+    .login-btn {
+      width: 100%; padding: 15px;
+      background: var(--neon-cyan); color: #000; font-weight: bold;
+      border: none; cursor: pointer; font-size: 16px;
+      font-family: var(--font-tech); text-transform: uppercase;
+      transition: 0.3s;
+    }
+    .login-btn:hover { background: #fff; box-shadow: 0 0 20px var(--neon-cyan); }
+
+    /* --- GŁÓWNY HEADER --- */
     header {
       height: 60px; display: flex; justify-content: space-between; align-items: center;
-      padding: 0 20px; background: rgba(0,0,0,0.8); border-bottom: 1px solid #333;
+      padding: 0 25px; background: rgba(0,0,0,0.8); border-bottom: 1px solid #333;
     }
-    .brand { font-family: 'Share Tech Mono'; font-size: 22px; color: var(--neon-blue); letter-spacing: 2px; }
+    .brand { font-size: 24px; font-weight: 700; color: #fff; letter-spacing: 2px; }
+    .brand span { color: var(--neon-cyan); }
     
-    /* PRZYCISK POŁĄCZENIA SIECIOWEGO */
-    .network-btn {
-      background: #222; border: 1px solid #555; color: #aaa;
-      padding: 8px 20px; cursor: pointer; font-family: 'Share Tech Mono';
-      border-radius: 4px; transition: 0.3s; display: flex; align-items: center; gap: 10px;
+    .operator-info {
+      display: flex; align-items: center; gap: 15px;
+      font-family: var(--font-tech); color: #aaa; font-size: 14px;
     }
-    .network-btn.connected {
-      background: rgba(10, 255, 0, 0.1); border-color: var(--neon-green); color: var(--neon-green);
-      box-shadow: 0 0 15px rgba(10, 255, 0, 0.2);
+    .operator-badge {
+      background: #222; padding: 5px 15px; border-radius: 4px; border: 1px solid #444;
+      color: var(--neon-cyan);
     }
-    .network-btn:hover { border-color: #fff; color: #fff; }
 
-    /* LAYOUT */
-    .dashboard { flex: 1; display: grid; grid-template-columns: 360px 1fr; gap: 20px; padding: 20px; overflow: hidden; }
+    /* --- STATUS POŁĄCZENIA --- */
+    .network-status-bar {
+      height: 40px; background: #0b0b0b; border-bottom: 1px solid #222;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      font-family: var(--font-tech); font-size: 13px; color: #666; transition: 0.3s;
+    }
+    .network-status-bar.connected {
+      background: rgba(10, 255, 0, 0.05); color: var(--neon-green); border-bottom-color: var(--neon-green);
+    }
+    .status-dot { width: 8px; height: 8px; background: #444; border-radius: 50%; }
+    .connected .status-dot { background: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); }
     
-    .control-panel {
-      background: var(--panel-bg); border: var(--glass-border); border-radius: 12px;
-      padding: 20px; display: flex; flex-direction: column; overflow-y: auto;
+    .connect-trigger {
+      background: transparent; border: 1px solid #444; color: #aaa;
+      padding: 2px 10px; cursor: pointer; font-size: 11px; margin-left: 10px;
     }
-    .camera-panel {
-      position: relative; background: #000; border: 2px solid #333; border-radius: 12px; overflow: hidden;
-    }
-    video { width: 100%; height: 100%; object-fit: contain; }
+    .connect-trigger:hover { color: #fff; border-color: #fff; }
 
-    /* INPUT */
-    .scan-container { margin-bottom: 20px; }
+    /* --- DASHBOARD --- */
+    .dashboard {
+      flex: 1; display: grid; grid-template-columns: 380px 1fr;
+      gap: 20px; padding: 20px; overflow: hidden;
+      opacity: 0; transition: opacity 1s; /* Domyślnie ukryty, pokaże się po logowaniu */
+    }
+
+    /* LEWY PANEL */
+    .panel-left {
+      background: var(--panel-glass); border: var(--border-light);
+      border-radius: 12px; padding: 20px; display: flex; flex-direction: column;
+      box-shadow: 0 0 30px rgba(0,0,0,0.5); overflow-y: auto;
+    }
+
+    /* 3D OLED MODEL (CSS) */
+    .scene-container {
+      height: 220px; perspective: 1000px;
+      display: flex; justify-content: center; align-items: center;
+      margin-bottom: 20px;
+    }
+    .tv-pivot {
+      position: relative; width: 220px; height: 130px;
+      transform-style: preserve-3d; transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    /* Panel TV */
+    .tv-panel {
+      position: absolute; width: 100%; height: 100%;
+      background: #000; border: 2px solid #333; border-radius: 4px;
+      backface-visibility: hidden;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .tv-front {
+      background: linear-gradient(135deg, #050505 0%, #1a1a1a 100%);
+      border: 1px solid #555;
+      box-shadow: 0 0 20px rgba(0,0,0,0.8);
+    }
+    .tv-front::after { content: "OLED"; color: #fff; font-weight: 700; opacity: 0.3; font-family: sans-serif; }
+    
+    .tv-back {
+      transform: rotateY(180deg); background: #151515;
+      background-image: repeating-linear-gradient(45deg, #1a1a1a 0, #1a1a1a 2px, transparent 2px, transparent 6px);
+    }
+    /* "Elektronika" z tyłu */
+    .electronics-box {
+      width: 60%; height: 60%; background: #222; border: 1px solid #444;
+      display: flex; align-items: center; justify-content: center; color: #666; font-size: 10px;
+    }
+    
+    /* Podstawka TV */
+    .tv-stand-neck {
+      position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%);
+      width: 40px; height: 20px; background: #222;
+    }
+    .tv-stand-base {
+      position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%);
+      width: 100px; height: 5px; background: #333; border-radius: 5px;
+      box-shadow: 0 5px 10px rgba(0,0,0,0.8);
+    }
+
+    /* INPUT SKANOWANIA */
+    .input-group { margin-bottom: 20px; position: relative; }
+    .input-label { font-size: 11px; color: var(--neon-cyan); letter-spacing: 1px; margin-bottom: 5px; display: block; }
     #scanInput {
-      width: 100%; padding: 15px; font-size: 24px; text-align: center;
-      background: #000; border: 2px solid #444; color: var(--neon-green);
-      font-family: 'Share Tech Mono'; border-radius: 8px; outline: none;
+      width: 100%; background: #000; border: 1px solid #444;
+      color: #fff; padding: 15px; font-size: 22px; text-align: center;
+      font-family: var(--font-tech); outline: none; border-radius: 5px;
     }
     #scanInput:focus { border-color: var(--neon-green); box-shadow: 0 0 15px rgba(10,255,0,0.2); }
 
-    /* BUTTONS */
-    .btn-step {
-      width: 100%; padding: 15px; margin-bottom: 10px;
-      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-      color: #fff; cursor: pointer; text-align: left; font-weight: bold;
-      display: flex; justify-content: space-between; border-radius: 5px;
+    /* CHECKLISTA */
+    .checklist-btn {
+      width: 100%; background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1); color: #aaa;
+      padding: 12px; margin-bottom: 8px; cursor: pointer; text-align: left;
+      font-family: var(--font-ui); font-weight: 600;
+      display: flex; justify-content: space-between; transition: 0.2s;
     }
-    .btn-step.done { border-color: var(--neon-green); color: var(--neon-green); background: rgba(10,255,0,0.05); }
+    .checklist-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .checklist-btn.done {
+      border-color: var(--neon-green); color: var(--neon-green); background: rgba(10,255,0,0.05);
+    }
 
-    #finalizeBtn {
-      width: 100%; padding: 20px; margin-top: auto;
-      background: #222; color: #555; border: none; font-size: 16px; font-weight: bold;
-      cursor: not-allowed; border-radius: 8px; text-transform: uppercase;
+    /* SAVE BUTTON */
+    #actionBtn {
+      margin-top: auto; padding: 20px; width: 100%;
+      background: #111; color: #444; font-weight: bold; border: none;
+      font-size: 16px; cursor: not-allowed; border-radius: 6px; text-transform: uppercase;
     }
-    #finalizeBtn.ready {
+    #actionBtn.active {
       background: var(--neon-green); color: #000; cursor: pointer;
-      animation: pulse 2s infinite; box-shadow: 0 0 20px rgba(10,255,0,0.4);
+      box-shadow: 0 0 20px rgba(10, 255, 0, 0.4);
+      animation: pulseBtn 2s infinite;
+    }
+    @keyframes pulseBtn { 0% { box-shadow: 0 0 10px rgba(10,255,0,0.4); } 50% { box-shadow: 0 0 30px rgba(10,255,0,0.7); } 100% { box-shadow: 0 0 10px rgba(10,255,0,0.4); } }
+
+    /* PRAWY PANEL (KAMERA) */
+    .panel-right {
+      position: relative; background: #000; border: 2px solid #333;
+      border-radius: 12px; overflow: hidden;
+    }
+    video { width: 100%; height: 100%; object-fit: contain; }
+    
+    .cam-overlay {
+      position: absolute; top: 20px; left: 20px; z-index: 10;
+      display: flex; flex-direction: column; gap: 5px;
+    }
+    .tag {
+      background: rgba(0,0,0,0.8); color: #fff; padding: 5px 12px;
+      font-family: var(--font-tech); font-size: 14px;
+      border-left: 3px solid var(--neon-cyan); backdrop-filter: blur(5px);
     }
     
-    @keyframes pulse { 0% { box-shadow: 0 0 15px rgba(10,255,0,0.4); } 50% { box-shadow: 0 0 30px rgba(10,255,0,0.7); } 100% { box-shadow: 0 0 15px rgba(10,255,0,0.4); } }
-
-    /* OVERLAYS */
-    .overlay-info {
-      position: absolute; top: 20px; left: 20px;
-      background: rgba(0,0,0,0.7); padding: 5px 15px;
-      border-left: 3px solid var(--neon-blue); font-family: 'Share Tech Mono';
-    }
-    .path-copy-box {
-      font-size: 10px; color: #666; margin-top: 5px; cursor: pointer;
-      border: 1px dashed #444; padding: 5px; text-align: center;
-    }
-    .path-copy-box:hover { color: var(--neon-blue); border-color: var(--neon-blue); }
-
+    /* Ukryty Canvas */
     canvas { display: none; }
+
   </style>
 </head>
 <body>
 
+<div id="loginScreen">
+  <div class="login-box">
+    <h2 style="margin:0; color:#fff; font-family: 'Share Tech Mono';">OLED REPAIR SYSTEM</h2>
+    <div style="font-size:12px; color:#666; margin-bottom:20px;">AUTHORIZATION REQUIRED</div>
+    
+    <label style="color:var(--neon-cyan); font-size:12px;">IDENTYFIKATOR OPERATORA</label>
+    <input type="text" id="operatorNameInput" class="login-input" placeholder="IMIĘ I NAZWISKO" autocomplete="off">
+    
+    <button class="login-btn" onclick="loginOperator()">ROZPOCZNIJ ZMIANĘ</button>
+  </div>
+</div>
+
 <header>
-  <div class="brand">OLED REPAIR <span style="font-size:12px; opacity:0.6">NETWORK AUTO-SAVE</span></div>
-  
-  <button class="network-btn" id="connectBtn" onclick="connectToNetworkFolder()">
-    <span id="connIcon">📂</span>
-    <span id="connText">POŁĄCZ Z FOLDEREM SIECIOWYM</span>
-  </button>
+  <div class="brand">LG <span>OLED</span> STUDIO</div>
+  <div class="operator-info">
+    <span>OPERATOR:</span>
+    <div class="operator-badge" id="operatorDisplay">---</div>
+    <div style="font-size:12px; color:#555;" id="clockDisplay">00:00:00</div>
+  </div>
 </header>
 
-<div class="dashboard">
-  <aside class="control-panel">
-    <div class="scan-container">
-      <div style="font-size:12px; color:#888; margin-bottom:5px;">SKANER KODÓW (SN)</div>
-      <input type="text" id="scanInput" placeholder="ZESKANUJ TUTAJ" autocomplete="off" autofocus>
-    </div>
+<div class="network-status-bar" id="networkBar">
+  <div class="status-dot"></div>
+  <span id="networkText">FOLDER ROZŁĄCZONY - DANE BĘDĄ POBIERANE LOKALNIE</span>
+  <button class="connect-trigger" onclick="connectNetwork()">[ POŁĄCZ Z SERWEREM ]</button>
+</div>
 
-    <div class="path-copy-box" onclick="copyNetworkPath()" title="Kliknij, aby skopiować ścieżkę do schowka">
-      Domyślna ścieżka:<br>
-      \\plgorfs001\pub\SERVICE\LCDR\LCDR\OLED OBM Panels\Zdjęcia z napraw OLED
-    </div>
-
-    <h3 style="border-bottom:1px solid #333; padding-bottom:10px; color:var(--neon-blue)">STATUS ZDJĘĆ: <span id="photoCounter">0/3</span></h3>
-
-    <button class="btn-step" id="btnFront" onclick="capture('PRZOD')">
-      <span>1. PRZÓD TV</span> <span>[ ]</span>
-    </button>
-    <button class="btn-step" id="btnBack" onclick="capture('TYL')">
-      <span>2. TYŁ TV (Tabliczka)</span> <span>[ ]</span>
-    </button>
-    <button class="btn-step" id="btnImage" onclick="capture('OBRAZ')">
-      <span>3. OBRAZ (Test)</span> <span>[ ]</span>
-    </button>
-
-    <button id="finalizeBtn" onclick="saveFiles()">
-      OCZEKIWANIE NA ZDJĘCIA
-    </button>
+<div class="dashboard" id="mainDashboard">
+  
+  <aside class="panel-left">
     
-    <div id="statusMsg" style="margin-top:15px; text-align:center; color:#888; font-size:12px;"></div>
+    <div class="scene-container">
+      <div class="tv-pivot" id="tv3d">
+        <div class="tv-panel tv-front"></div>
+        <div class="tv-panel tv-back">
+          <div class="electronics-box">SERWIS</div>
+        </div>
+        <div class="tv-stand-neck"></div>
+        <div class="tv-stand-base"></div>
+      </div>
+    </div>
+
+    <div class="input-group">
+      <span class="input-label">SKANER SERIAL NUMBER (SN)</span>
+      <input type="text" id="scanInput" placeholder="ZESKANUJ..." autofocus>
+    </div>
+
+    <div style="margin-bottom:20px;">
+      <span class="input-label" style="color:#aaa;">ETAPY DOKUMENTACJI (0/3)</span>
+      <div id="btnFront" class="checklist-btn" onclick="capture('PRZOD')">
+        <span>1. PRZÓD (Ekran)</span> <span>📷</span>
+      </div>
+      <div id="btnBack" class="checklist-btn" onclick="capture('TYL')">
+        <span>2. TYŁ (Tabliczka)</span> <span>📷</span>
+      </div>
+      <div id="btnImage" class="checklist-btn" onclick="capture('OBRAZ')">
+        <span>3. OBRAZ (Test)</span> <span>📷</span>
+      </div>
+    </div>
+
+    <button id="actionBtn" onclick="saveData()">OCZEKIWANIE NA DANE</button>
+    <div id="saveStatus" style="text-align:center; color:#666; margin-top:10px; font-size:11px;"></div>
   </aside>
 
-  <main class="camera-panel">
-    <div class="overlay-info">
-      <div id="dispSN" style="font-size:18px; color:#fff;">SN: BRAK</div>
-      <div id="dispMode" style="font-size:12px; color:#aaa;">OCZEKIWANIE</div>
+  <main class="panel-right">
+    <div class="cam-overlay">
+      <div class="tag" id="tagSN">SN: BRAK</div>
+      <div class="tag" id="tagOp">OP: ---</div>
+      <div class="tag" style="color:var(--neon-green)">REC: LIVE</div>
     </div>
     <video id="videoFeed" autoplay playsinline></video>
   </main>
+
 </div>
 
 <canvas id="photoCanvas"></canvas>
 
 <script>
-  // ŚCIEŻKA DO SKOPIOWANIA (Dla wygody użytkownika)
+  /* --- KONFIGURACJA SIECIOWA --- */
   const NETWORK_PATH = String.raw`\\plgorfs001\pub\SERVICE\LCDR\LCDR\OLED OBM Panels\Zdjęcia z napraw OLED`;
-
-  // ZMIENNE
+  
+  /* --- ZMIENNE STANU --- */
+  let operatorName = "";
   let dirHandle = null; // Uchwyt do folderu sieciowego
   let currentSN = "";
   let photos = { PRZOD: null, TYL: null, OBRAZ: null };
-  
+
   const video = document.getElementById('videoFeed');
   const canvas = document.getElementById('photoCanvas');
   const ctx = canvas.getContext('2d');
   const scanInput = document.getElementById('scanInput');
-  const finalizeBtn = document.getElementById('finalizeBtn');
+  const actionBtn = document.getElementById('actionBtn');
+  const tv3d = document.getElementById('tv3d');
 
-  // START
-  initCamera();
+  /* --- ZEGAR --- */
+  setInterval(() => {
+    document.getElementById('clockDisplay').innerText = new Date().toLocaleTimeString();
+  }, 1000);
 
-  /* --- 1. ŁĄCZENIE Z FOLDEREM SIECIOWYM (FILE SYSTEM API) --- */
-  async function connectToNetworkFolder() {
+  /* --- 1. LOGOWANIE --- */
+  function loginOperator() {
+    const input = document.getElementById('operatorNameInput');
+    const name = input.value.trim().toUpperCase();
+    
+    if (name.length < 3) {
+      alert("Proszę wpisać poprawne Imię i Nazwisko.");
+      return;
+    }
+    
+    operatorName = name;
+    
+    // UI Updates
+    document.getElementById('operatorDisplay').innerText = operatorName;
+    document.getElementById('tagOp').innerText = "OP: " + operatorName;
+    
+    // Animacja znikania logowania
+    const loginScreen = document.getElementById('loginScreen');
+    loginScreen.style.opacity = '0';
+    setTimeout(() => {
+      loginScreen.style.display = 'none';
+      document.getElementById('mainDashboard').style.opacity = '1';
+      initCamera();
+      scanInput.focus();
+    }, 800);
+  }
+
+  // Obsługa Entera na logowaniu
+  document.getElementById('operatorNameInput').addEventListener('keydown', (e) => {
+    if(e.key === 'Enter') loginOperator();
+  });
+
+  /* --- 2. ŁĄCZENIE Z SIECIĄ (File System API) --- */
+  async function connectNetwork() {
     try {
-      // Wywołanie okna wyboru folderu
-      alert("W następnym oknie wybierz folder sieciowy:\n\n" + NETWORK_PATH + "\n\n(Skopiowałem Ci już ścieżkę do schowka - wklej ją w pasek adresu!)");
+      alert("Skopiowałem ścieżkę do schowka: \n" + NETWORK_PATH + "\n\nWklej ją w oknie wyboru folderu!");
       await navigator.clipboard.writeText(NETWORK_PATH);
       
       dirHandle = await window.showDirectoryPicker();
       
-      // Zmiana wyglądu przycisku na połączony
-      document.getElementById('connectBtn').classList.add('connected');
-      document.getElementById('connText').innerText = "POŁĄCZONO Z SIECIĄ";
-      document.getElementById('connIcon').innerText = "📡";
-      document.getElementById('statusMsg').innerText = "Gotowy do zapisu bezpośredniego na serwerze.";
-      document.getElementById('statusMsg').style.color = "#0aff00";
+      // Sukces
+      const bar = document.getElementById('networkBar');
+      bar.classList.add('connected');
+      document.getElementById('networkText').innerText = "POŁĄCZONO Z: \\Zdjęcia z napraw OLED";
+      document.querySelector('.connect-trigger').style.display = 'none';
 
     } catch (err) {
       console.error(err);
-      alert("Nie wybrano folderu lub przeglądarka nie obsługuje tej funkcji. System przełączy się w tryb pobierania ZIP.");
+      alert("Nie udało się połączyć z folderem. Zdjęcia będą pobierane jako ZIP.");
     }
   }
 
-  function copyNetworkPath() {
-    navigator.clipboard.writeText(NETWORK_PATH);
-    const box = document.querySelector('.path-copy-box');
-    const oldText = box.innerHTML;
-    box.innerText = "SKOPIOWANO DO SCHOWKA!";
-    box.style.borderColor = "#0aff00";
-    box.style.color = "#0aff00";
-    setTimeout(() => {
-      box.innerHTML = oldText;
-      box.style.borderColor = "#444";
-      box.style.color = "#666";
-    }, 1500);
-  }
-
-  /* --- 2. KAMERA 4K --- */
+  /* --- 3. KAMERA --- */
   async function initCamera() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { width: { ideal: 4096 }, height: { ideal: 2160 } } 
+        video: { width: { ideal: 3840 }, height: { ideal: 2160 } } 
       });
       video.srcObject = stream;
     } catch (e) {
@@ -220,156 +398,182 @@
     }
   }
 
-  /* --- 3. SKANER --- */
+  /* --- 4. LOGIKA SYSTEMU --- */
   scanInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       const val = scanInput.value.trim().toUpperCase();
       if (val.length > 3) {
-        newSession(val);
+        startRepair(val);
         scanInput.value = "";
         scanInput.blur();
       } else {
-        alert("Za krótki SN");
+        alert("Błędny SN");
       }
     }
   });
 
-  function newSession(sn) {
+  function startRepair(sn) {
     currentSN = sn;
     photos = { PRZOD: null, TYL: null, OBRAZ: null };
     
-    // UI Reset
-    document.getElementById('dispSN').innerText = "SN: " + sn;
-    document.getElementById('photoCounter').innerText = "0/3";
-    finalizeBtn.className = "";
-    finalizeBtn.innerText = "OCZEKIWANIE NA ZDJĘCIA";
+    // Reset UI
+    document.getElementById('tagSN').innerText = "SN: " + sn;
+    document.querySelectorAll('.checklist-btn').forEach(b => b.classList.remove('done'));
+    actionBtn.className = "";
+    actionBtn.innerText = "BRAK ZDJĘĆ (0/3)";
+    document.getElementById('saveStatus').innerText = "";
     
-    ['btnFront', 'btnBack', 'btnImage'].forEach(id => {
-      const btn = document.getElementById(id);
-      btn.classList.remove('done');
-      btn.children[1].innerText = "[ ]";
-    });
+    rotateTV('front');
   }
 
-  /* --- 4. ZDJĘCIA --- */
+  /* --- 5. ROBIENIE ZDJĘĆ --- */
+  function rotateTV(side) {
+    if(side === 'back') tv3d.style.transform = "rotateY(180deg)";
+    else tv3d.style.transform = "rotateY(0deg)";
+  }
+
   function capture(type) {
-    if (!currentSN) {
-      alert("Najpierw zeskanuj SN!");
-      scanInput.focus();
-      return;
+    if(!currentSN) {
+      scanInput.focus(); return alert("ZESKANUJ SN!");
     }
 
-    // Flash
-    const flash = document.createElement('div');
-    flash.style.cssText = "position:absolute;top:0;left:0;width:100%;height:100%;background:white;opacity:0.8;z-index:999";
-    document.querySelector('.camera-panel').appendChild(flash);
-    setTimeout(() => flash.remove(), 100);
+    // Obrót TV dla efektu
+    rotateTV(type === 'TYL' ? 'back' : 'front');
 
-    // Capture
+    // Mignięcie
+    const flash = document.createElement('div');
+    flash.style.cssText = "position:absolute;top:0;left:0;width:100%;height:100%;background:#fff;opacity:0.8;z-index:99";
+    document.querySelector('.panel-right').appendChild(flash);
+    setTimeout(() => flash.remove(), 80);
+
+    // Rysowanie na canvasie
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     ctx.drawImage(video, 0, 0);
-    
-    // Watermark
-    const fs = Math.floor(video.videoHeight / 30);
+
+    // --- WATERMARK (Z NAZWISKIEM OPERATORA) ---
+    const fs = Math.floor(video.videoHeight / 25);
     ctx.font = `bold ${fs}px Consolas`;
-    ctx.fillStyle = "#0aff00"; ctx.strokeStyle = "black"; ctx.lineWidth = 3;
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = "black";
+    ctx.fillStyle = "#0aff00"; // Zielony SN
+    
+    // Linia 1: SN
     ctx.strokeText(`SN: ${currentSN}`, 50, fs+20);
     ctx.fillText(`SN: ${currentSN}`, 50, fs+20);
-    ctx.fillStyle = "#00f3ff";
-    ctx.strokeText(type, 50, (fs*2)+30);
-    ctx.fillText(type, 50, (fs*2)+30);
+    
+    // Linia 2: Typ + Data
+    ctx.fillStyle = "#00f3ff"; // Niebieski Typ
+    ctx.strokeText(`${type} | ${new Date().toLocaleString()}`, 50, (fs*2)+40);
+    ctx.fillText(`${type} | ${new Date().toLocaleString()}`, 50, (fs*2)+40);
+    
+    // Linia 3: OPERATOR (Ważne!)
+    ctx.fillStyle = "white";
+    ctx.font = `bold ${Math.floor(fs*0.8)}px Consolas`;
+    ctx.strokeText(`OP: ${operatorName}`, 50, (fs*3)+60);
+    ctx.fillText(`OP: ${operatorName}`, 50, (fs*3)+60);
 
     canvas.toBlob(blob => {
       photos[type] = blob;
-      updateUI();
+      updateChecklist(type);
     }, 'image/jpeg', 0.95);
   }
 
-  function updateUI() {
-    const done = Object.values(photos).filter(p => p).length;
-    document.getElementById('photoCounter').innerText = `${done}/3`;
+  function updateChecklist(type) {
+    const btnMap = { 'PRZOD': 'btnFront', 'TYL': 'btnBack', 'OBRAZ': 'btnImage' };
+    document.getElementById(btnMap[type]).classList.add('done');
     
-    // Checkmarks
-    if(photos.PRZOD) { document.getElementById('btnFront').classList.add('done'); document.getElementById('btnFront').children[1].innerText = "[✔]"; }
-    if(photos.TYL) { document.getElementById('btnBack').classList.add('done'); document.getElementById('btnBack').children[1].innerText = "[✔]"; }
-    if(photos.OBRAZ) { document.getElementById('btnImage').classList.add('done'); document.getElementById('btnImage').children[1].innerText = "[✔]"; }
-
-    if (done === 3) {
-      finalizeBtn.classList.add('ready');
-      if (dirHandle) {
-        finalizeBtn.innerText = "💾 ZAPISZ AUTOMATYCZNIE NA SERWERZE";
-      } else {
-        finalizeBtn.innerText = "💾 POBIERZ ZIP (BRAK POŁĄCZENIA)";
-      }
+    const count = Object.values(photos).filter(p => p).length;
+    actionBtn.innerText = `BRAK ZDJĘĆ (${count}/3)`;
+    
+    if(count === 3) {
+      actionBtn.classList.add('active');
+      actionBtn.innerText = dirHandle ? "💾 ZAPISZ NA SERWERZE" : "💾 POBIERZ PACZKĘ";
     }
   }
 
-  /* --- 5. ZAPIS PLIKÓW (KLUCZOWA FUNKCJA) --- */
-  async function saveFiles() {
-    if (!finalizeBtn.classList.contains('ready')) return;
+  /* --- 6. ZAPIS DANYCH (Z Raportem) --- */
+  async function saveData() {
+    if(!actionBtn.classList.contains('active')) return;
 
-    // TRYB AUTOMATYCZNY (Gdy wybrano folder)
-    if (dirHandle) {
+    const statusDiv = document.getElementById('saveStatus');
+    statusDiv.innerText = "PRZETWARZANIE...";
+
+    // Generowanie treści raportu tekstowego
+    const reportContent = 
+`RAPORT NAPRAWY OLED
+--------------------------------
+SN: ${currentSN}
+DATA: ${new Date().toLocaleString()}
+OPERATOR: ${operatorName}
+--------------------------------
+STATUS: ZDJĘCIA KOMPLETNE (3/3)
+1. PRZOD - OK
+2. TYL - OK
+3. OBRAZ - OK
+--------------------------------
+SYSTEM VER: 5.0`;
+
+    // 1. ZAPIS SIECIOWY
+    if(dirHandle) {
       try {
-        finalizeBtn.innerText = "⏳ ZAPISYWANIE NA SERWERZE...";
+        const folder = await dirHandle.getDirectoryHandle(currentSN, { create: true });
         
-        // 1. Tworzymy podfolder dla danego SN
-        // getDirectoryHandle(name, {create: true}) tworzy folder jeśli nie istnieje
-        const snFolderHandle = await dirHandle.getDirectoryHandle(currentSN, { create: true });
+        // Zapisz zdjęcia
+        await writeFiles(folder, `${currentSN}_PRZOD.jpg`, photos.PRZOD);
+        await writeFiles(folder, `${currentSN}_TYL.jpg`, photos.TYL);
+        await writeFiles(folder, `${currentSN}_OBRAZ.jpg`, photos.OBRAZ);
+        
+        // Zapisz RAPORT TXT (Nowość)
+        const txtBlob = new Blob([reportContent], {type: 'text/plain'});
+        await writeFiles(folder, `RAPORT_${currentSN}.txt`, txtBlob);
 
-        // 2. Zapisujemy 3 zdjęcia
-        await writeToFile(snFolderHandle, `${currentSN}_PRZOD.jpg`, photos.PRZOD);
-        await writeToFile(snFolderHandle, `${currentSN}_TYL.jpg`, photos.TYL);
-        await writeToFile(snFolderHandle, `${currentSN}_OBRAZ.jpg`, photos.OBRAZ);
-
-        // Sukces
-        alert(`SUKCES!\nZdjęcia zapisane w folderze:\n...\\${currentSN}\\`);
-        resetSession();
+        statusDiv.innerText = "ZAPISANO POPRAWNIE NA SERWERZE!";
+        statusDiv.style.color = "#0aff00";
+        setTimeout(resetAll, 2000);
 
       } catch (err) {
         console.error(err);
-        alert("Błąd zapisu! Sprawdź uprawnienia do folderu sieciowego.\nSpróbuję pobrać ZIP jako awarię.");
-        downloadZipFallback();
+        statusDiv.innerText = "BŁĄD ZAPISU SIECIOWEGO! POBIERAM ZIP.";
+        statusDiv.style.color = "red";
+        downloadZIP(reportContent);
       }
     } 
-    // TRYB FALLBACK (ZIP)
+    // 2. ZAPIS LOKALNY (ZIP)
     else {
-      alert("Nie połączono z folderem sieciowym. Pobieram ZIP na dysk lokalny.");
-      downloadZipFallback();
+      downloadZIP(reportContent);
     }
   }
 
-  // Pomocnicza funkcja zapisu pliku
-  async function writeToFile(folderHandle, filename, blob) {
-    const fileHandle = await folderHandle.getFileHandle(filename, { create: true });
-    const writable = await fileHandle.createWritable();
+  async function writeFiles(folder, name, blob) {
+    const file = await folder.getFileHandle(name, { create: true });
+    const writable = await file.createWritable();
     await writable.write(blob);
     await writable.close();
   }
 
-  function downloadZipFallback() {
+  function downloadZIP(txtContent) {
     const zip = new JSZip();
-    const folder = zip.folder(currentSN);
-    folder.file(`${currentSN}_PRZOD.jpg`, photos.PRZOD);
-    folder.file(`${currentSN}_TYL.jpg`, photos.TYL);
-    folder.file(`${currentSN}_OBRAZ.jpg`, photos.OBRAZ);
+    const f = zip.folder(currentSN);
+    f.file(`${currentSN}_PRZOD.jpg`, photos.PRZOD);
+    f.file(`${currentSN}_TYL.jpg`, photos.TYL);
+    f.file(`${currentSN}_OBRAZ.jpg`, photos.OBRAZ);
+    f.file(`RAPORT.txt`, txtContent); // Dodajemy raport do ZIP
+
     zip.generateAsync({type:"blob"}).then(c => {
       saveAs(c, `${currentSN}.zip`);
-      resetSession();
+      document.getElementById('saveStatus').innerText = "POBRANO ZIP LOKALNIE";
+      setTimeout(resetAll, 2000);
     });
   }
 
-  function resetSession() {
+  function resetAll() {
     currentSN = "";
-    document.getElementById('dispSN').innerText = "GOTOWY";
-    document.getElementById('photoCounter').innerText = "0/3";
-    finalizeBtn.classList.remove('ready');
-    finalizeBtn.innerText = "OCZEKIWANIE NA ZDJĘCIA";
-    ['btnFront', 'btnBack', 'btnImage'].forEach(id => {
-      document.getElementById(id).classList.remove('done');
-      document.getElementById(id).children[1].innerText = "[ ]";
-    });
+    document.getElementById('tagSN').innerText = "SN: OCZEKIWANIE";
+    document.querySelectorAll('.checklist-btn').forEach(b => b.classList.remove('done'));
+    actionBtn.className = "";
+    actionBtn.innerText = "OCZEKIWANIE";
+    document.getElementById('saveStatus').innerText = "";
     scanInput.focus();
   }
 </script>
