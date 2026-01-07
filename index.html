@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR SYSTEM v6.5 NETWORK GUARD</title>
+  <title>OLED REPAIR SYSTEM v7.0 SECURE</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
@@ -15,7 +15,7 @@
       --neon-cyan: #00f3ff;
       --neon-green: #0aff00;
       --neon-red: #ff003c;
-      --neon-amber: #ffb300;
+      --neon-gold: #ffd700; /* Kolor dla Właściciela */
       --font-ui: 'Rajdhani', sans-serif;
       --font-tech: 'Share Tech Mono', monospace;
     }
@@ -34,26 +34,33 @@
       display: flex; align-items: center; justify-content: center; flex-direction: column; transition: opacity 0.8s;
     }
     .login-box {
-      width: 400px; padding: 40px; background: rgba(10, 10, 10, 0.95); border: 1px solid var(--neon-cyan);
+      width: 420px; padding: 40px; background: rgba(10, 10, 10, 0.95); border: 1px solid var(--neon-cyan);
       text-align: center; border-radius: 10px; position: relative; overflow: hidden;
       box-shadow: 0 0 50px rgba(0, 243, 255, 0.15);
     }
     .login-input {
-      width: 100%; padding: 15px; margin: 20px 0; background: #000; border: 2px solid #333; color: var(--neon-cyan);
-      font-family: var(--font-tech); font-size: 18px; text-align: center; outline: none; text-transform: uppercase;
+      width: 100%; padding: 15px; margin: 10px 0; background: #000; border: 2px solid #333; color: var(--neon-cyan);
+      font-family: var(--font-tech); font-size: 18px; text-align: center; outline: none;
     }
+    .login-input:focus { border-color: var(--neon-cyan); }
+    /* Styl dla pola hasła */
+    input[type="password"] { letter-spacing: 5px; color: var(--neon-red); }
+
     .login-btn {
-      width: 100%; padding: 15px; background: var(--neon-cyan); color: #000; font-weight: bold; border: none;
-      cursor: pointer; font-family: var(--font-tech); transition: 0.3s;
+      width: 100%; padding: 15px; margin-top: 20px; background: var(--neon-cyan); color: #000; font-weight: bold; border: none;
+      cursor: pointer; font-family: var(--font-tech); transition: 0.3s; font-size: 16px;
     }
     .login-btn:hover { background: #fff; box-shadow: 0 0 20px var(--neon-cyan); }
+    
+    .login-error {
+      color: var(--neon-red); font-size: 12px; height: 15px; margin-top: 10px; font-weight: bold;
+    }
 
-    /* --- 2. NOWOŚĆ: BLOKADA SIECIOWA (NETWORK GUARD) --- */
+    /* --- 2. NETWORK GUARD --- */
     #networkGuard {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.9); z-index: 8000; backdrop-filter: blur(10px);
-      display: none; /* Pokaże się po zalogowaniu */
-      align-items: center; justify-content: center; flex-direction: column;
+      display: none; align-items: center; justify-content: center; flex-direction: column;
     }
     .alert-box {
       width: 500px; padding: 30px; border: 2px solid var(--neon-red); background: #080808;
@@ -61,19 +68,11 @@
       animation: pulseAlert 2s infinite;
     }
     @keyframes pulseAlert { 0% { box-shadow: 0 0 30px rgba(255,0,60,0.1); } 50% { box-shadow: 0 0 60px rgba(255,0,60,0.3); } 100% { box-shadow: 0 0 30px rgba(255,0,60,0.1); } }
-    
-    .path-display {
-      background: #111; padding: 10px; border: 1px dashed #555; margin: 15px 0;
-      font-family: var(--font-tech); font-size: 11px; color: #aaa; word-break: break-all;
-    }
     .guard-btn {
       width: 100%; padding: 18px; background: var(--neon-red); color: #fff; font-weight: bold;
       border: none; cursor: pointer; font-family: var(--font-tech); font-size: 16px; margin-top: 10px;
     }
-    .guard-btn:hover { background: #ff3366; }
-    .skip-btn {
-      margin-top: 10px; background: transparent; border: none; color: #555; text-decoration: underline; cursor: pointer; font-size: 11px;
-    }
+    .skip-btn { margin-top: 10px; background: transparent; border: none; color: #555; text-decoration: underline; cursor: pointer; font-size: 11px; }
 
     /* --- HEADER --- */
     header {
@@ -83,7 +82,13 @@
     .brand { font-size: 24px; font-weight: 700; color: #fff; letter-spacing: 2px; }
     .brand span { color: var(--neon-cyan); }
     .operator-info { display: flex; align-items: center; gap: 15px; font-family: var(--font-tech); color: #aaa; font-size: 14px; }
-    .operator-badge { background: #222; padding: 5px 15px; border-radius: 4px; border: 1px solid #444; color: var(--neon-cyan); }
+    .operator-badge { background: #222; padding: 5px 15px; border-radius: 4px; border: 1px solid #444; color: var(--neon-cyan); transition: 0.3s; }
+    
+    /* Specjalny styl dla ADMINA */
+    .operator-badge.admin {
+      border-color: var(--neon-gold); color: var(--neon-gold);
+      box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+    }
 
     /* --- DASHBOARD --- */
     .dashboard {
@@ -151,10 +156,10 @@
     .db-header { padding: 20px; background: #000; border-bottom: 1px solid #333; display: flex; justify-content: space-between; }
     .db-content { flex: 1; overflow: auto; padding: 20px; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; color: #ccc; font-family: var(--font-tech); }
-    th { text-align: left; padding: 10px; border-bottom: 2px solid #333; color: var(--neon-cyan); background: #000; sticky: top; }
+    th { text-align: left; padding: 10px; border-bottom: 2px solid #333; color: var(--neon-cyan); background: #000; position: sticky; top: 0; }
     td { padding: 10px; border-bottom: 1px solid #222; }
     
-    /* 3D SCENE CSS */
+    /* 3D SCENE */
     .scene-container { height: 180px; perspective: 800px; display: flex; justify-content: center; align-items: center; margin-bottom: 10px; }
     .tv-pivot { position: relative; width: 180px; height: 110px; transform-style: preserve-3d; transition: transform 0.8s; }
     .tv-panel { position: absolute; width: 100%; height: 100%; background: #000; border: 2px solid #333; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; }
@@ -171,27 +176,28 @@
 <div id="loginScreen">
   <div class="login-box">
     <h2 style="margin:0; color:#fff; font-family: 'Share Tech Mono';">OLED REPAIR SYSTEM</h2>
-    <div style="font-size:12px; color:#666; margin-bottom:20px;">V6.5 NETWORK GUARD</div>
-    <label style="color:var(--neon-cyan); font-size:12px;">IDENTYFIKATOR OPERATORA</label>
-    <input type="text" id="operatorNameInput" class="login-input" placeholder="IMIĘ I NAZWISKO">
-    <button class="login-btn" onclick="loginOperator()">ROZPOCZNIJ PRACĘ</button>
+    <div style="font-size:12px; color:#666; margin-bottom:20px;">V7.0 SECURE ACCESS</div>
+    
+    <label style="color:var(--neon-cyan); font-size:10px; display:block; text-align:left; margin-left:10px;">UŻYTKOWNIK</label>
+    <input type="text" id="userInput" class="login-input" placeholder="IMIĘ">
+    
+    <label style="color:var(--neon-red); font-size:10px; display:block; text-align:left; margin-left:10px;">HASŁO</label>
+    <input type="password" id="passInput" class="login-input" placeholder="••••••••">
+
+    <div id="loginError" class="login-error"></div>
+
+    <button class="login-btn" onclick="checkLogin()">ZALOGUJ</button>
   </div>
 </div>
 
 <div id="networkGuard">
   <div class="alert-box">
     <h2 style="color:var(--neon-red); margin:0;">⚠️ KONFIGURACJA SIECIOWA ⚠️</h2>
-    <p style="font-size:14px; color:#ddd; margin:10px 0;">
-      ABY SYSTEM DZIAŁAŁ AUTOMATYCZNIE, WYMAGANE JEST POŁĄCZENIE Z FOLDEREM SIECIOWYM!
-    </p>
-    
+    <p style="font-size:14px; color:#ddd; margin:10px 0;">WYMAGANE POŁĄCZENIE Z FOLDEREM SIECIOWYM</p>
     <div style="font-size:11px; color:#aaa; margin-bottom:5px;">ŚCIEŻKA DOCELOWA:</div>
-    <div class="path-display" id="pathDisplayBox">
-      \\plgorfs001\pub\SERVICE\LCDR\LCDR\OLED OBM Panels\Zdjęcia z napraw OLED
-    </div>
-    
-    <button class="guard-btn" onclick="connectNetwork()">📡 POŁĄCZ Z SERWEREM (KLIKNIJ)</button>
-    <button class="skip-btn" onclick="skipNetwork()">Pracuj Offline (Tylko ZIP)</button>
+    <div style="background:#111; padding:10px; border:1px dashed #555; font-size:10px; color:#aaa;">\\plgorfs001\pub\SERVICE\LCDR\LCDR\OLED OBM Panels\Zdjęcia z napraw OLED</div>
+    <button class="guard-btn" onclick="connectNetwork()">📡 POŁĄCZ Z SERWEREM</button>
+    <button class="skip-btn" onclick="skipNetwork()">Pracuj Offline (ZIP)</button>
   </div>
 </div>
 
@@ -213,7 +219,7 @@
       </div>
     </div>
     
-    <div style="font-size:11px; color:var(--neon-cyan); margin-bottom:5px;">SKANER KODÓW (SN)</div>
+    <div style="font-size:11px; color:var(--neon-cyan); margin-bottom:5px;">SKANER SN</div>
     <input type="text" id="scanInput" placeholder="ZESKANUJ..." autofocus>
 
     <div style="margin-top:20px;">
@@ -235,23 +241,21 @@
   </main>
 </div>
 
-<div class="status-bar" id="bottomBar">
-  <span id="connStatus">🔴 ROZŁĄCZONY Z SERWEREM</span>
-</div>
+<div class="status-bar" id="bottomBar"><span id="connStatus">🔴 ROZŁĄCZONY</span></div>
 
-<div class="database-trigger" onclick="toggleDatabase()">📂 RAPORTY / BAZA</div>
+<div class="database-trigger" onclick="toggleDatabase()">📂 BAZA DANYCH</div>
 
 <div id="databasePanel">
   <div class="db-header">
-    <div style="font-size:18px; color:var(--neon-cyan);">RAPORTY SIECIOWE</div>
+    <div style="font-size:18px; color:var(--neon-cyan);">RAPORTY</div>
     <div style="display:flex; gap:10px;">
-      <button onclick="scanNetworkForReports()" style="padding:5px 15px; background:var(--neon-cyan); border:none; cursor:pointer;">ODŚWIEŻ</button>
-      <button onclick="exportToCSV()" style="padding:5px 15px; background:#333; color:#fff; border:1px solid #555; cursor:pointer;">CSV</button>
-      <button onclick="toggleDatabase()" style="padding:5px 15px; background:#333; color:#fff; border:1px solid #555; cursor:pointer;">X</button>
+      <button onclick="scanNetworkForReports()" style="padding:5px; background:var(--neon-cyan); border:none; cursor:pointer;">ODŚWIEŻ</button>
+      <button onclick="exportToCSV()" style="padding:5px; background:#333; color:#fff; border:1px solid #555; cursor:pointer;">CSV</button>
+      <button onclick="toggleDatabase()" style="padding:5px; background:#333; color:#fff; border:1px solid #555; cursor:pointer;">X</button>
     </div>
   </div>
   <div class="db-content">
-    <div id="loader" style="display:none; text-align:center; color:var(--neon-cyan); padding:20px;">Skanowanie...</div>
+    <div id="loader" style="display:none; text-align:center; color:var(--neon-cyan);">Skanowanie...</div>
     <table id="reportTable"><thead><tr><th>DATA</th><th>SN</th><th>OPERATOR</th><th>STATUS</th></tr></thead><tbody></tbody></table>
   </div>
 </div>
@@ -259,9 +263,15 @@
 <canvas id="photoCanvas"></canvas>
 
 <script>
+  /* --- BAZA UŻYTKOWNIKÓW --- */
+  const USERS = {
+    "DAWID": { pass: "OLED12345!", role: "OPERATOR", label: "DAWID" },
+    "LUKASZ": { pass: "050699", role: "ADMIN", label: "WŁAŚCICIEL" }
+  };
+
   /* --- KONFIGURACJA --- */
   const NETWORK_PATH = String.raw`\\plgorfs001\pub\SERVICE\LCDR\LCDR\OLED OBM Panels\Zdjęcia z napraw OLED`;
-  let operatorName = "";
+  let currentUser = null;
   let dirHandle = null;
   let currentSN = "";
   let photos = { PRZOD: null, TYL: null, OBRAZ: null };
@@ -276,51 +286,80 @@
 
   setInterval(() => document.getElementById('clockDisplay').innerText = new Date().toLocaleTimeString().slice(0,5), 1000);
 
-  /* --- 1. LOGOWANIE -> BLOKADA --- */
-  function loginOperator() {
-    const val = document.getElementById('operatorNameInput').value.trim().toUpperCase();
-    if (val.length < 3) return alert("Podaj poprawne dane!");
-    operatorName = val;
-    document.getElementById('operatorDisplay').innerText = operatorName;
-    document.getElementById('tagOp').innerText = "OP: " + operatorName;
-    
-    // Ukryj login
+  /* --- 1. SYSTEM LOGOWANIA (NOWY) --- */
+  function checkLogin() {
+    const user = document.getElementById('userInput').value.trim().toUpperCase();
+    const pass = document.getElementById('passInput').value.trim();
+    const err = document.getElementById('loginError');
+
+    if (USERS[user]) {
+      if (USERS[user].pass === pass) {
+        // Zalogowano pomyślnie
+        currentUser = USERS[user];
+        proceedToSystem();
+      } else {
+        err.innerText = "BŁĘDNE HASŁO!";
+        animateShake();
+      }
+    } else {
+      err.innerText = "UŻYTKOWNIK NIE ISTNIEJE!";
+      animateShake();
+    }
+  }
+
+  function proceedToSystem() {
+    // Ustawienie interfejsu
+    const badge = document.getElementById('operatorDisplay');
+    badge.innerText = currentUser.label;
+    document.getElementById('tagOp').innerText = "OP: " + currentUser.label;
+
+    if (currentUser.role === "ADMIN") {
+      badge.classList.add('admin');
+      badge.style.borderColor = "#ffd700";
+      badge.style.color = "#ffd700";
+    }
+
+    // Ukrywanie loginu
     document.getElementById('loginScreen').style.opacity = '0';
     setTimeout(() => {
       document.getElementById('loginScreen').style.display = 'none';
-      
-      // POKAŻ DASHBOARD, ALE OD RAZU DAJ BLOKADĘ SIECIOWĄ!
       document.getElementById('mainDashboard').style.opacity = '1';
-      document.getElementById('networkGuard').style.display = 'flex'; // <--- BLOKADA
-      
+      document.getElementById('networkGuard').style.display = 'flex'; // Blokada sieciowa
     }, 800);
   }
-  document.getElementById('operatorNameInput').addEventListener('keydown', e => { if(e.key==='Enter') loginOperator() });
 
-  /* --- 2. ŁĄCZENIE SIECIOWE (Z BLOKADY) --- */
+  function animateShake() {
+    const box = document.querySelector('.login-box');
+    box.style.transform = "translateX(10px)";
+    setTimeout(() => box.style.transform = "translateX(-10px)", 50);
+    setTimeout(() => box.style.transform = "translateX(5px)", 100);
+    setTimeout(() => box.style.transform = "translateX(0)", 150);
+  }
+
+  // Obsługa Entera w polach logowania
+  document.getElementById('passInput').addEventListener('keydown', e => { if(e.key==='Enter') checkLogin() });
+  document.getElementById('userInput').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('passInput').focus() });
+
+  /* --- 2. NETWORK --- */
   async function connectNetwork() {
     try {
-      alert("Skopiowano ścieżkę do schowka. Wklej ją w oknie wyboru folderu!");
+      alert("Skopiowano ścieżkę do schowka.");
       await navigator.clipboard.writeText(NETWORK_PATH);
-      
       dirHandle = await window.showDirectoryPicker();
-      
-      // JEŚLI SUKCES:
-      document.getElementById('networkGuard').style.display = 'none'; // Zdejmij blokadę
-      document.getElementById('connStatus').innerHTML = "🟢 POŁĄCZONO: " + NETWORK_PATH.slice(0,30) + "...";
+      document.getElementById('networkGuard').style.display = 'none';
+      document.getElementById('connStatus').innerHTML = "🟢 POŁĄCZONO Z SIECIĄ";
       document.getElementById('bottomBar').classList.add('ok');
       initCamera();
       scanInput.focus();
-
     } catch (e) {
-      alert("Anulowano wybór folderu. Musisz się połączyć, aby system działał automatycznie!");
+      alert("Wymagane jest wybranie folderu!");
     }
   }
 
   function skipNetwork() {
-    if(confirm("Czy na pewno chcesz pracować OFFLINE? Zdjęcia nie trafią na serwer, tylko pobierzesz ZIP.")) {
+    if(confirm("Praca OFFLINE?")) {
       document.getElementById('networkGuard').style.display = 'none';
-      document.getElementById('connStatus').innerHTML = "🔴 TRYB OFFLINE (ZIP)";
+      document.getElementById('connStatus').innerHTML = "🔴 OFFLINE";
       initCamera();
       scanInput.focus();
     }
@@ -334,7 +373,7 @@
     } catch (e) { alert("Błąd kamery!"); }
   }
 
-  /* --- 4. OBSŁUGA --- */
+  /* --- 4. GŁÓWNA LOGIKA --- */
   scanInput.addEventListener('keydown', e => {
     if (e.key === 'Enter') {
       const sn = scanInput.value.trim().toUpperCase();
@@ -371,8 +410,11 @@
     ctx.strokeText(`SN: ${currentSN}`, 50, fs+20); ctx.fillText(`SN: ${currentSN}`, 50, fs+20);
     ctx.fillStyle = "#00f3ff";
     ctx.strokeText(`TYP: ${type}`, 50, (fs*2)+40); ctx.fillText(`TYP: ${type}`, 50, (fs*2)+40);
+    
+    // Używamy currentUser.label zamiast starej zmiennej globalnej
+    const operatorLabel = currentUser ? currentUser.label : "UNKNOWN";
     ctx.fillStyle = "white"; ctx.font = `bold ${Math.floor(fs*0.8)}px Consolas`;
-    ctx.strokeText(`OP: ${operatorName}`, 50, (fs*3)+60); ctx.fillText(`OP: ${operatorName}`, 50, (fs*3)+60);
+    ctx.strokeText(`OP: ${operatorLabel}`, 50, (fs*3)+60); ctx.fillText(`OP: ${operatorLabel}`, 50, (fs*3)+60);
 
     canvas.toBlob(blob => {
       photos[type] = blob;
@@ -388,7 +430,8 @@
     if(!actionBtn.classList.contains('active')) return;
     document.getElementById('saveStatus').innerText = "ZAPISYWANIE...";
     
-    const txt = `SN: ${currentSN}\nDATA: ${new Date().toLocaleString()}\nOPERATOR: ${operatorName}\nSTATUS: OK`;
+    const operatorLabel = currentUser ? currentUser.label : "UNKNOWN";
+    const txt = `SN: ${currentSN}\nDATA: ${new Date().toLocaleString()}\nOPERATOR: ${operatorLabel}\nSTATUS: OK`;
 
     if(dirHandle) {
       try {
@@ -404,8 +447,7 @@
     } else {
       const z = new JSZip(); const f = z.folder(currentSN);
       f.file("info.txt", txt);
-      // Fallback ZIP logic (skrócona)
-      f.file("foto.jpg", photos.PRZOD); // Przykładowe
+      f.file("foto.jpg", photos.PRZOD); // Fallback example
       z.generateAsync({type:"blob"}).then(c => saveAs(c, `${currentSN}.zip`));
     }
   }
@@ -415,7 +457,7 @@
   function toggleDatabase() { document.getElementById('databasePanel').classList.toggle('open'); }
 
   async function scanNetworkForReports() {
-    if (!dirHandle) return alert("Brak połączenia z siecią!");
+    if (!dirHandle) return alert("Brak sieci!");
     const tb = document.querySelector('#reportTable tbody'); tb.innerHTML = "";
     document.getElementById('loader').style.display = 'block';
     reportCache = [];
@@ -428,7 +470,7 @@
             for await (const f of snDir.values()) {
               if (f.name.includes("RAPORT")) {
                 const file = await f.getFile();
-                const text = await file.text();
+                const text = await f.text(); // Pobieranie treści raportu
                 date = file.lastModifiedDate.toLocaleString();
                 const m = text.match(/OPERATOR: (.*)/);
                 if(m) op = m[1];
