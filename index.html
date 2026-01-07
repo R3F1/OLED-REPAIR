@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR v11.0 ONYX + DIAGNOSTICS</title>
+  <title>OLED REPAIR v11.5 ONYX (SMART FLOW)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -247,7 +247,7 @@
 <div id="loginScreen">
   <div class="login-box">
     <h2 style="color:#fff;">OLED REPAIR SYSTEM</h2>
-    <div style="font-size:12px; color:#666; margin-bottom:30px; font-family: var(--font-tech);">V11.0 ONYX + DIAGNOSTICS</div>
+    <div style="font-size:12px; color:#666; margin-bottom:30px; font-family: var(--font-tech);">V11.5 ONYX (SMART FLOW)</div>
     
     <label class="input-label" style="text-align:left; margin-left:5px;">UŻYTKOWNIK</label>
     <input type="text" id="userInput" class="login-input" placeholder="LOGIN" autocomplete="off">
@@ -423,7 +423,7 @@
     ]
   };
 
-  /* --- AUDIO SYSTEM (FEATURE 3) --- */
+  /* --- AUDIO SYSTEM --- */
   const SoundFX = {
     ctx: null,
     init: function() { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
@@ -443,7 +443,6 @@
         gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0.01, now+0.3);
         osc.start(now); osc.stop(now+0.3);
       } else if(type === 'shutter') { // Photo
-        // White noise workaround for simple osc
         osc.type = 'square'; osc.frequency.setValueAtTime(800, now);
         gain.gain.setValueAtTime(0.05, now); gain.gain.exponentialRampToValueAtTime(0.001, now+0.05);
         osc.start(now); osc.stop(now+0.05);
@@ -482,7 +481,6 @@
     c.addEventListener('mousedown', startDraw);
     c.addEventListener('mouseup', endDraw);
     c.addEventListener('mousemove', draw);
-    // Touch support
     c.addEventListener('touchstart', (e)=>{e.preventDefault(); startDraw(e.touches[0])});
     c.addEventListener('touchend', (e)=>{e.preventDefault(); endDraw()});
     c.addEventListener('touchmove', (e)=>{e.preventDefault(); draw(e.touches[0])});
@@ -551,7 +549,7 @@
     } catch(e) { alert("Wybierz folder!"); }
   }
 
-  /* --- CAMERA & DRAWING (FEATURE 1) --- */
+  /* --- CAMERA & DRAWING --- */
   async function initCamera() {
     try {
       const s = await navigator.mediaDevices.getUserMedia({video:{width:{ideal:3840}, height:{ideal:2160}}});
@@ -618,29 +616,47 @@
     document.getElementById('commentInput').value = "";
   }
 
-  // Capture - Modified for Drawing
+  // --- SMART CAPTURE LOGIC (NEW: CONDITIONAL NG/OK) ---
   function capture(type) {
     if(!currentSN) return document.getElementById('scanInput').focus();
     tempPhotoType = type;
     
-    // Animacja 3D
+    // Animacja
     document.getElementById('tv3d').style.transform = type === 'TYL' ? "rotateY(180deg)" : "rotateY(0deg)";
 
-    // Freeze video
-    const v = document.getElementById('videoFeed');
-    v.pause();
-    SoundFX.play('shutter');
+    // Sprawdzenie decyzji
+    const decision = document.getElementById('statusSelect').value;
+    const requiresAnnotation = ['NG', 'SCRAP', 'RMA'].includes(decision);
 
-    // Show drawing UI
-    document.getElementById('drawToolbar').style.display = 'block';
-    const c = document.getElementById('drawCanvas');
-    c.style.display = 'block';
-    c.width = v.offsetWidth;
-    c.height = v.offsetHeight;
-    clearDraw();
+    if (requiresAnnotation) {
+        // --- TRYB EDYCJI (ANNOTATION MODE) ---
+        const v = document.getElementById('videoFeed');
+        v.pause();
+        SoundFX.play('shutter');
+        document.getElementById('drawToolbar').style.display = 'block';
+        const c = document.getElementById('drawCanvas');
+        c.style.display = 'block';
+        c.width = v.offsetWidth;
+        c.height = v.offsetHeight;
+        clearDraw();
+    } else {
+        // --- TRYB SZYBKI (INSTANT SNAP) ---
+        SoundFX.play('shutter');
+        takeInstantPhoto();
+    }
   }
 
+  // Zapis w trybie edycji (z rysunkiem)
   function confirmPhoto() {
+    processPhoto(true);
+  }
+
+  // Zapis w trybie szybkim (bez rysunku)
+  function takeInstantPhoto() {
+    processPhoto(false);
+  }
+
+  function processPhoto(hasDrawing) {
     const v = document.getElementById('videoFeed');
     const drawC = document.getElementById('drawCanvas');
     const finalC = document.getElementById('photoCanvas');
@@ -655,24 +671,30 @@
     ctx.drawImage(v, 0, 0);
     ctx.restore();
 
-    // 2. Overlay Drawing (Scaled)
-    ctx.drawImage(drawC, 0, 0, finalC.width, finalC.height);
+    // 2. Overlay Drawing (Scaled) - only if triggered from annotation mode
+    if(hasDrawing) {
+        ctx.drawImage(drawC, 0, 0, finalC.width, finalC.height);
+    }
 
     // 3. Watermark
-    const fs = Math.floor(finalC.height/25);
+    addWatermark(ctx, finalC.width, finalC.height);
+
+    // Save Blob
+    finalC.toBlob(b => {
+      photos[tempPhotoType] = b;
+      updateUIafterPhoto();
+      if(hasDrawing) cancelPhoto(); // Hide UI if it was visible
+    }, 'image/jpeg', 0.95);
+  }
+
+  function addWatermark(ctx, w, h) {
+    const fs = Math.floor(h/25);
     ctx.font = `bold ${fs}px Roboto`; ctx.lineWidth=4; ctx.strokeStyle="black"; ctx.fillStyle="#0aff00";
     ctx.strokeText(`SN: ${currentSN}`, 50, fs+20); ctx.fillText(`SN: ${currentSN}`, 50, fs+20);
     ctx.fillStyle = "#00f3ff";
     ctx.strokeText(`TYP: ${tempPhotoType}`, 50, (fs*2)+40); ctx.fillText(`TYP: ${tempPhotoType}`, 50, (fs*2)+40);
     ctx.fillStyle = "white"; ctx.font = `bold ${Math.floor(fs*0.8)}px Roboto`;
     ctx.strokeText(`OP: ${currentUser.login}`, 50, (fs*3)+60); ctx.fillText(`OP: ${currentUser.login}`, 50, (fs*3)+60);
-
-    // Save Blob
-    finalC.toBlob(b => {
-      photos[tempPhotoType] = b;
-      updateUIafterPhoto();
-      cancelPhoto(); // Clean up UI
-    }, 'image/jpeg', 0.95);
   }
 
   function cancelPhoto() {
@@ -737,7 +759,7 @@ ZDJĘCIA: 3/3 OK
   }
   async function write(dh, n, b) { const h = await dh.getFileHandle(n,{create:true}); const w = await h.createWritable(); await w.write(b); await w.close(); }
 
-  /* --- PATTERN GENERATOR (FEATURE 2) --- */
+  /* --- PATTERN GENERATOR --- */
   const patterns = ['#fff', '#f00', '#0f0', '#00f', '#000', 'linear-gradient(90deg, white, black)'];
   let currentPatternIdx = -1;
 
@@ -761,7 +783,6 @@ ZDJĘCIA: 3/3 OK
     }
     ov.style.background = patterns[currentPatternIdx];
   }
-  // Obsługa ESC do wyjścia z patterns
   document.addEventListener('keydown', (e) => {
       if(e.key === "Escape") {
           document.getElementById('patternOverlay').style.display = 'none';
