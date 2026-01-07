@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR v8.0 ENTERPRISE</title>
+  <title>OLED REPAIR v9.0 testowy</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
@@ -32,10 +32,6 @@
       background-size: 50px 50px;
     }
 
-    /* --- SOUND FX (Visual Only) --- */
-    .audio-visualizer { position: absolute; top:0; left:0; width:100%; height:2px; background:linear-gradient(90deg, transparent, var(--neon-cyan), transparent); opacity:0; transition:0.2s; }
-    .audio-visualizer.active { opacity:1; box-shadow: 0 0 20px var(--neon-cyan); }
-
     /* --- LOGIN SCREEN --- */
     #loginScreen {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999;
@@ -47,17 +43,12 @@
       box-shadow: 0 0 60px rgba(0, 243, 255, 0.1);
       backdrop-filter: blur(10px);
     }
-    .login-box::before {
-      content:''; position: absolute; top:0; left:0; width:100%; height:5px; background:var(--neon-cyan);
-      box-shadow: 0 0 15px var(--neon-cyan);
-    }
     .login-input {
       width: 100%; padding: 15px; margin: 10px 0; background: #080808; border: 1px solid #333; color: var(--neon-cyan);
       font-family: var(--font-tech); font-size: 18px; text-align: center; outline: none; transition: 0.3s;
     }
     .login-input:focus { border-color: var(--neon-cyan); background: #111; }
     input[type="password"] { letter-spacing: 5px; color: var(--neon-red); }
-
     .login-btn {
       width: 100%; padding: 15px; margin-top: 20px; background: var(--neon-cyan); color: #000; font-weight: bold; border: none;
       cursor: pointer; font-family: var(--font-tech); transition: 0.3s; font-size: 16px; letter-spacing: 2px;
@@ -94,11 +85,11 @@
 
     /* --- DASHBOARD --- */
     .dashboard {
-      flex: 1; display: grid; grid-template-columns: 400px 1fr; gap: 20px; padding: 20px; overflow: hidden;
+      flex: 1; display: grid; grid-template-columns: 420px 1fr; gap: 20px; padding: 20px; overflow: hidden;
       opacity: 0; transition: opacity 1s;
     }
     .panel-left {
-      background: var(--panel-glass); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 25px;
+      background: var(--panel-glass); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px;
       display: flex; flex-direction: column; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
     }
     .panel-right {
@@ -106,9 +97,8 @@
       box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
     }
     
-    /* KAMERA & FLIP */
     video { width: 100%; height: 100%; object-fit: contain; transform: scaleX(1); transition: transform 0.3s; }
-    video.mirrored { transform: scaleX(-1); } /* Kluczowe dla lustrzanego odbicia */
+    video.mirrored { transform: scaleX(-1); }
 
     .cam-controls {
       position: absolute; bottom: 20px; right: 20px; z-index: 50; display: flex; gap: 10px;
@@ -123,21 +113,43 @@
     /* UI ELEMENTS */
     .input-label { font-size: 11px; color: var(--neon-cyan); letter-spacing: 1px; margin-bottom: 5px; display: block; font-weight: bold; }
     #scanInput {
-      width: 100%; background: #000; border: 1px solid #444; color: #fff; padding: 15px; font-size: 24px;
-      text-align: center; font-family: var(--font-tech); outline: none; border-radius: 6px; margin-bottom: 25px;
+      width: 100%; background: #000; border: 1px solid #444; color: #fff; padding: 12px; font-size: 22px;
+      text-align: center; font-family: var(--font-tech); outline: none; border-radius: 6px; margin-bottom: 15px;
     }
     #scanInput:focus { border-color: var(--neon-green); box-shadow: 0 0 20px rgba(10,255,0,0.2); }
     
     .checklist-btn {
       width: 100%; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); color: #888;
-      padding: 15px; margin-bottom: 10px; cursor: pointer; text-align: left; font-family: var(--font-ui);
-      display: flex; justify-content: space-between; transition: 0.2s; font-size: 15px; border-radius: 6px;
+      padding: 12px; margin-bottom: 8px; cursor: pointer; text-align: left; font-family: var(--font-ui);
+      display: flex; justify-content: space-between; transition: 0.2s; font-size: 14px; border-radius: 6px;
     }
     .checklist-btn:hover { background: rgba(255,255,255,0.05); color: #fff; border-color: #fff; }
     .checklist-btn.done { border-color: var(--neon-green); color: var(--neon-green); background: rgba(10,255,0,0.1); }
 
+    /* --- NOWE POLE DECYZJI I KOMENTARZA --- */
+    .decision-panel {
+      border-top: 1px solid #333; margin-top: 10px; padding-top: 15px;
+    }
+    
+    .custom-select {
+      width: 100%; background: #080808; color: #fff; border: 1px solid var(--neon-purple); padding: 10px;
+      font-family: var(--font-tech); font-size: 14px; border-radius: 5px; outline: none; cursor: pointer;
+      appearance: none; /* remove default arrow */
+      background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2300f3ff%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E');
+      background-repeat: no-repeat; background-position: right 10px top 50%; background-size: 12px auto;
+      margin-bottom: 10px; transition: 0.3s;
+    }
+    .custom-select:hover { box-shadow: 0 0 10px var(--neon-purple); }
+
+    .custom-textarea {
+      width: 100%; background: #080808; color: #aaa; border: 1px solid #444; padding: 10px;
+      font-family: var(--font-ui); font-size: 14px; border-radius: 5px; outline: none; resize: vertical;
+      margin-bottom: 10px; transition: 0.3s;
+    }
+    .custom-textarea:focus { border-color: var(--neon-cyan); color: #fff; }
+
     #actionBtn {
-      margin-top: auto; padding: 18px; width: 100%; background: #111; color: #444; font-weight: bold; border: none;
+      margin-top: auto; padding: 15px; width: 100%; background: #111; color: #444; font-weight: bold; border: none;
       font-size: 16px; cursor: not-allowed; border-radius: 6px; text-transform: uppercase; letter-spacing: 1px;
     }
     #actionBtn.active {
@@ -146,14 +158,7 @@
     }
     @keyframes pulseBtn { 0% { box-shadow: 0 0 10px var(--neon-green); } 50% { box-shadow: 0 0 30px var(--neon-green); } 100% { box-shadow: 0 0 10px var(--neon-green); } }
 
-    /* OVERLAYS */
-    .cam-overlay { position: absolute; top: 20px; left: 20px; display: flex; flex-direction: column; gap: 8px; }
-    .tag {
-      background: rgba(0,0,0,0.7); color: #fff; padding: 6px 12px; font-family: var(--font-tech);
-      font-size: 14px; border-left: 3px solid var(--neon-cyan); backdrop-filter: blur(5px);
-    }
-
-    /* ADMIN & MANAGER PANELS */
+    /* ADMIN & SLIDING PANELS (ZACHOWANE) */
     .bar-bottom {
       position: fixed; bottom: 0; left: 0; width: 100%; height: 40px; background: #080808; border-top: 1px solid #333;
       display: flex; justify-content: flex-end; align-items: center; padding: 0 20px; gap: 10px; z-index: 100;
@@ -163,52 +168,46 @@
       font-size: 11px; cursor: pointer; transition: 0.2s;
     }
     .bar-btn:hover { border-color: var(--neon-cyan); color: var(--neon-cyan); }
-    .bar-btn.admin-only { border-color: var(--neon-gold); color: var(--neon-gold); display: none; } /* Domyślnie ukryty */
+    .bar-btn.admin-only { border-color: var(--neon-gold); color: var(--neon-gold); display: none; }
 
-    /* SLIDING PANELS */
     .slide-panel {
       position: fixed; bottom: 0; left: 0; width: 100%; height: 0; background: rgba(10, 12, 16, 0.98);
       z-index: 200; transition: height 0.5s cubic-bezier(0.25, 1, 0.5, 1); overflow: hidden;
       border-top: 2px solid var(--neon-cyan); display: flex; flex-direction: column;
     }
     .slide-panel.open { height: 85vh; }
-    
     .panel-header { padding: 20px; background: #000; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
     .panel-content { flex: 1; overflow: auto; padding: 30px; }
 
-    /* TABELE */
     table { width: 100%; border-collapse: collapse; font-size: 13px; color: #ccc; font-family: var(--font-tech); }
     th { text-align: left; padding: 12px; border-bottom: 2px solid #333; color: var(--neon-cyan); background: #000; position: sticky; top: 0; }
     td { padding: 12px; border-bottom: 1px solid #222; }
     tr:hover { background: rgba(255,255,255,0.05); }
 
-    /* 3D SCENE */
-    .scene-container { height: 180px; perspective: 1000px; display: flex; justify-content: center; align-items: center; margin-bottom: 20px; }
-    .tv-pivot { position: relative; width: 200px; height: 120px; transform-style: preserve-3d; transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    /* OVERLAYS & 3D */
+    .cam-overlay { position: absolute; top: 20px; left: 20px; display: flex; flex-direction: column; gap: 8px; }
+    .tag { background: rgba(0,0,0,0.7); color: #fff; padding: 6px 12px; font-family: var(--font-tech); font-size: 14px; border-left: 3px solid var(--neon-cyan); backdrop-filter: blur(5px); }
+    
+    .scene-container { height: 140px; perspective: 1000px; display: flex; justify-content: center; align-items: center; margin-bottom: 10px; }
+    .tv-pivot { position: relative; width: 160px; height: 90px; transform-style: preserve-3d; transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); }
     .tv-panel { position: absolute; width: 100%; height: 100%; background: #000; border: 2px solid #333; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; }
-    .tv-front { background: linear-gradient(135deg, #050505, #1a1a1a); border: 1px solid #555; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+    .tv-front { background: linear-gradient(135deg, #050505, #1a1a1a); border: 1px solid #555; }
     .tv-front::after { content: "OLED"; opacity: 0.3; font-weight: bold; }
     .tv-back { transform: rotateY(180deg); background: #151515; border: 1px solid #444; }
-    .tv-stand { position: absolute; bottom: -15px; left: 50%; transform: translateX(-50%); width: 80px; height: 6px; background: #333; border-radius: 4px; }
-
+    
     canvas { display: none; }
   </style>
 </head>
 <body>
 
-<div class="audio-visualizer" id="visualizer"></div>
-
 <div id="loginScreen">
   <div class="login-box">
     <h2 style="margin:0; color:#fff; font-family: 'Share Tech Mono'; letter-spacing: 2px;">OLED REPAIR SYSTEM</h2>
-    <div style="font-size:12px; color:#666; margin-bottom:30px;">V8.0 ENTERPRISE</div>
-    
+    <div style="font-size:12px; color:#666; margin-bottom:30px;">V9.0 testowy</div>
     <label style="color:var(--neon-cyan); font-size:10px; display:block; text-align:left; margin-left:5px;">UŻYTKOWNIK</label>
     <input type="text" id="userInput" class="login-input" placeholder="LOGIN" autocomplete="off">
-    
     <label style="color:var(--neon-red); font-size:10px; display:block; text-align:left; margin-left:5px;">HASŁO</label>
     <input type="password" id="passInput" class="login-input" placeholder="••••••••">
-
     <div id="loginError" class="login-error"></div>
     <button class="login-btn" onclick="attemptLogin()">ROZPOCZNIJ ZMIANĘ</button>
   </div>
@@ -238,7 +237,6 @@
       <div class="tv-pivot" id="tv3d">
         <div class="tv-panel tv-front"></div>
         <div class="tv-panel tv-back">SERWIS</div>
-        <div class="tv-stand"></div>
       </div>
     </div>
     
@@ -249,6 +247,21 @@
       <div id="btnFront" class="checklist-btn" onclick="capture('PRZOD')"><span>1. PRZÓD EKRANU</span> <span>📷</span></div>
       <div id="btnBack" class="checklist-btn" onclick="capture('TYL')"><span>2. TYŁ (TABLICZKA)</span> <span>📷</span></div>
       <div id="btnImage" class="checklist-btn" onclick="capture('OBRAZ')"><span>3. TEST OBRAZU</span> <span>📷</span></div>
+    </div>
+
+    <div class="decision-panel">
+      <span class="input-label" style="color:var(--neon-purple)">DECYZJA SERWISOWA (WYMAGANA)</span>
+      <select id="statusSelect" class="custom-select">
+        <option value="OK">🟢 OK (SPRAWNY)</option>
+        <option value="NG">🔴 NG (USZKODZONY)</option>
+        <option value="NDF">🔵 NDF (BRAK WAD)</option>
+        <option value="RMA">🟠 RMA (ZWROT)</option>
+        <option value="SCRAP">⚫ SCRAP (ZŁOM)</option>
+        <option value="OFFRS_OK">🟣 OFFRS OK</option>
+      </select>
+      
+      <span class="input-label">KOMENTARZ / OPIS USTERKI</span>
+      <textarea id="commentInput" class="custom-textarea" rows="2" placeholder="Wpisz uwagi (np. martwy piksel, rysa)..."></textarea>
     </div>
 
     <button id="actionBtn" onclick="saveData()">OCZEKIWANIE</button>
@@ -302,14 +315,14 @@
     </div>
   </div>
   <div class="panel-content">
-    <table id="reportTable"><thead><tr><th>DATA</th><th>SN</th><th>OPERATOR</th><th>STATUS</th></tr></thead><tbody></tbody></table>
+    <table id="reportTable"><thead><tr><th>DATA</th><th>SN</th><th>OPERATOR</th><th>DECYZJA</th><th>UWAGI</th></tr></thead><tbody></tbody></table>
   </div>
 </div>
 
 <canvas id="photoCanvas"></canvas>
 
 <script>
-  /* --- SYSTEM CORE --- */
+  /* --- CONFIG --- */
   const CONFIG = {
     networkPath: String.raw`\\plgorfs001\pub\SERVICE\LCDR\LCDR\OLED OBM Panels\Zdjęcia z napraw OLED`,
     defaultUsers: [
@@ -327,53 +340,32 @@
   let isMirrored = false;
   let reportsCache = [];
 
-  /* --- SOUND ENGINE (SYNTH) --- */
+  /* --- SOUND --- */
   const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  
   function playSound(type) {
     if(audioCtx.state === 'suspended') audioCtx.resume();
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-
+    osc.connect(gain); gain.connect(audioCtx.destination);
     const now = audioCtx.currentTime;
-    
-    // Wizualizacja
-    const vis = document.getElementById('visualizer');
-    vis.classList.add('active'); setTimeout(()=>vis.classList.remove('active'), 100);
 
-    if (type === 'scan') { // Hi-Tech Beep
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(800, now);
-      osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
-      gain.gain.setValueAtTime(0.1, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+    if (type === 'scan') {
+      osc.type = 'sine'; osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+      gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
       osc.start(now); osc.stop(now + 0.1);
     } 
-    else if (type === 'cam') { // Shutter
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(200, now);
-      osc.frequency.exponentialRampToValueAtTime(50, now + 0.1);
-      gain.gain.setValueAtTime(0.2, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+    else if (type === 'cam') {
+      osc.type = 'triangle'; osc.frequency.setValueAtTime(200, now); osc.frequency.exponentialRampToValueAtTime(50, now + 0.1);
+      gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
       osc.start(now); osc.stop(now + 0.15);
     }
-    else if (type === 'success') { // Success Fanfare
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(440, now);
-      osc.frequency.setValueAtTime(554, now + 0.1);
-      osc.frequency.setValueAtTime(659, now + 0.2);
-      gain.gain.setValueAtTime(0.1, now);
-      gain.gain.linearRampToValueAtTime(0, now + 0.6);
+    else if (type === 'success') {
+      osc.type = 'sine'; osc.frequency.setValueAtTime(440, now); osc.frequency.setValueAtTime(554, now + 0.1);
+      gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.6);
       osc.start(now); osc.stop(now + 0.6);
     }
-    else if (type === 'error') { // Buzzer
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(100, now);
-      osc.frequency.linearRampToValueAtTime(50, now + 0.2);
-      gain.gain.setValueAtTime(0.2, now);
-      gain.gain.linearRampToValueAtTime(0, now + 0.2);
+    else if (type === 'error') {
+      osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, now); gain.gain.setValueAtTime(0.2, now);
       osc.start(now); osc.stop(now + 0.2);
     }
   }
@@ -384,27 +376,19 @@
     setInterval(() => document.getElementById('clockDisplay').innerText = new Date().toLocaleTimeString().slice(0,5), 1000);
   };
 
-  /* --- USER MANAGEMENT (LOCAL STORAGE) --- */
+  /* --- USERS --- */
   function loadUsers() {
     const stored = localStorage.getItem('oled_users');
-    if (stored) {
-      users = JSON.parse(stored);
-    } else {
-      users = CONFIG.defaultUsers;
-      localStorage.setItem('oled_users', JSON.stringify(users));
-    }
+    users = stored ? JSON.parse(stored) : CONFIG.defaultUsers;
   }
-
   function saveUsers() {
     localStorage.setItem('oled_users', JSON.stringify(users));
     renderUserTable();
   }
-
   function attemptLogin() {
     const l = document.getElementById('userInput').value.trim().toUpperCase();
     const p = document.getElementById('passInput').value.trim();
     const u = users.find(user => user.login === l && user.pass === p);
-
     if (u) {
       currentUser = u;
       document.getElementById('loginScreen').style.opacity = '0';
@@ -420,7 +404,6 @@
       playSound('error');
     }
   }
-
   function setupInterface() {
     document.getElementById('operatorBadge').innerText = currentUser.login;
     document.getElementById('tagOp').innerText = "OP: " + currentUser.login;
@@ -430,26 +413,17 @@
       renderUserTable();
     }
   }
-
   function addUser() {
     const l = document.getElementById('newLogin').value.trim().toUpperCase();
     const p = document.getElementById('newPass').value.trim();
     const r = document.getElementById('newRole').value;
-    if(l && p) {
-      users.push({login:l, pass:p, role:r});
-      saveUsers();
-      document.getElementById('newLogin').value=""; document.getElementById('newPass').value="";
-    }
+    if(l && p) { users.push({login:l, pass:p, role:r}); saveUsers(); }
   }
-
-  function removeUser(idx) {
-    if(confirm("Usunąć użytkownika?")) { users.splice(idx, 1); saveUsers(); }
-  }
-
+  function removeUser(idx) { if(confirm("Usunąć?")) { users.splice(idx, 1); saveUsers(); } }
   function renderUserTable() {
     const tb = document.querySelector('#userTable tbody'); tb.innerHTML = "";
     users.forEach((u, i) => {
-      tb.innerHTML += `<tr><td>${u.login}</td><td>${u.role === 'ADMIN' ? '***' : u.pass}</td><td style="color:${u.role==='ADMIN'?'var(--neon-gold)':'#fff'}">${u.role}</td><td><button onclick="removeUser(${i})" style="color:red; background:none; border:none; cursor:pointer;">USUŃ</button></td></tr>`;
+      tb.innerHTML += `<tr><td>${u.login}</td><td>***</td><td style="color:${u.role==='ADMIN'?'var(--neon-gold)':'#fff'}">${u.role}</td><td><button onclick="removeUser(${i})" style="color:red;background:none;border:none;cursor:pointer;">USUŃ</button></td></tr>`;
     });
   }
 
@@ -457,34 +431,32 @@
   async function connectNetwork() {
     try {
       await navigator.clipboard.writeText(CONFIG.networkPath);
-      alert("Ścieżka skopiowana. Wklej w oknie.");
+      alert("Ścieżka skopiowana!");
       dirHandle = await window.showDirectoryPicker();
       document.getElementById('networkGuard').style.display = 'none';
-      document.getElementById('connStatus').innerHTML = "🟢 ONLINE: ...Obm Panels\\Zdjęcia";
+      document.getElementById('connStatus').innerHTML = "🟢 ONLINE";
       document.getElementById('connStatus').style.color = "var(--neon-green)";
       initCamera();
       document.getElementById('scanInput').focus();
       playSound('success');
-    } catch(e) { alert("Błąd połączenia"); }
+    } catch(e) { alert("Wybierz folder!"); }
   }
 
   /* --- CAMERA --- */
   async function initCamera() {
-    const v = document.getElementById('videoFeed');
     try {
       const s = await navigator.mediaDevices.getUserMedia({video:{width:{ideal:3840}, height:{ideal:2160}}});
-      v.srcObject = s;
+      document.getElementById('videoFeed').srcObject = s;
     } catch(e) { alert("Brak kamery"); }
   }
-
   function toggleMirror() {
     isMirrored = !isMirrored;
     const v = document.getElementById('videoFeed');
-    if(isMirrored) { v.classList.add('mirrored'); } else { v.classList.remove('mirrored'); }
-    playSound('click');
+    isMirrored ? v.classList.add('mirrored') : v.classList.remove('mirrored');
+    playSound('cam');
   }
 
-  /* --- WORKFLOW --- */
+  /* --- MAIN LOGIC --- */
   document.getElementById('scanInput').addEventListener('keydown', e => {
     if(e.key==='Enter') {
       const v = e.target.value.trim().toUpperCase();
@@ -500,17 +472,15 @@
     document.getElementById('actionBtn').innerText = "OCZEKIWANIE (0/3)";
     document.getElementById('actionBtn').classList.remove('active');
     document.getElementById('tv3d').style.transform = "rotateY(0deg)";
-    document.getElementById('saveStatus').innerText = "";
+    document.getElementById('commentInput').value = ""; // Reset komentarza
   }
 
   function capture(type) {
     if(!currentSN) return document.getElementById('scanInput').focus();
-    
-    // Rotate 3D Model
     document.getElementById('tv3d').style.transform = type === 'TYL' ? "rotateY(180deg)" : "rotateY(0deg)";
-    
-    // SFX & Flash
     playSound('cam');
+    
+    // Flash
     const f = document.createElement('div');
     f.style.cssText = "position:absolute;top:0;left:0;width:100%;height:100%;background:#fff;opacity:0.6;z-index:99";
     document.querySelector('.panel-right').appendChild(f);
@@ -520,13 +490,8 @@
     const c = document.getElementById('photoCanvas');
     const x = c.getContext('2d');
     c.width = v.videoWidth; c.height = v.videoHeight;
-    
-    // Handle Mirroring in Canvas
     x.save();
-    if(isMirrored) {
-      x.translate(c.width, 0);
-      x.scale(-1, 1);
-    }
+    if(isMirrored) { x.translate(c.width, 0); x.scale(-1, 1); }
     x.drawImage(v, 0, 0);
     x.restore();
 
@@ -557,7 +522,21 @@
     if(!document.getElementById('actionBtn').classList.contains('active')) return;
     document.getElementById('saveStatus').innerText = "ZAPISYWANIE...";
     
-    const txt = `SN: ${currentSN}\nDATA: ${new Date().toLocaleString()}\nOPERATOR: ${currentUser.login}\nSTATUS: OK`;
+    const decision = document.getElementById('statusSelect').value;
+    const comment = document.getElementById('commentInput').value.replace(/\n/g, " ");
+
+    const txt = `
+RAPORT SERWISOWY OLED
+---------------------
+SN: ${currentSN}
+DATA: ${new Date().toLocaleString()}
+OPERATOR: ${currentUser.login}
+---------------------
+DECYZJA: ${decision}
+UWAGI: ${comment}
+---------------------
+ZDJĘCIA: 3/3 OK
+`.trim();
 
     if(dirHandle) {
       try {
@@ -566,20 +545,20 @@
         await write(d, `${currentSN}_TYL.jpg`, photos.TYL);
         await write(d, `${currentSN}_OBRAZ.jpg`, photos.OBRAZ);
         await write(d, `RAPORT_${currentSN}.txt`, new Blob([txt],{type:'text/plain'}));
-        document.getElementById('saveStatus').innerText = "ZAPISANO POPRAWNIE";
+        document.getElementById('saveStatus').innerText = "ZAPISANO!";
         document.getElementById('saveStatus').style.color = "#0aff00";
         playSound('success');
         setTimeout(()=>{ currentSN=""; startSession(""); document.getElementById('scanInput').focus(); }, 1500);
       } catch(e) { document.getElementById('saveStatus').innerText = "BŁĄD ZAPISU"; playSound('error'); }
     } else {
       const z = new JSZip(); const f = z.folder(currentSN);
-      f.file("info.txt", txt); f.file("1.jpg", photos.PRZOD);
+      f.file("raport.txt", txt); f.file("1.jpg", photos.PRZOD);
       z.generateAsync({type:"blob"}).then(c=>saveAs(c, `${currentSN}.zip`));
     }
   }
   async function write(dh, n, b) { const h = await dh.getFileHandle(n,{create:true}); const w = await h.createWritable(); await w.write(b); await w.close(); }
 
-  /* --- PANELS --- */
+  /* --- MANAGER --- */
   function toggleUserPanel() { 
     document.getElementById('userPanel').classList.toggle('open'); 
     document.getElementById('reportPanel').classList.remove('open');
@@ -591,12 +570,12 @@
 
   async function scanNetwork() {
     if(!dirHandle) return alert("Brak sieci");
-    const tb = document.querySelector('#reportTable tbody'); tb.innerHTML = "<tr><td colspan='4'>SKANOWANIE...</td></tr>";
+    const tb = document.querySelector('#reportTable tbody'); tb.innerHTML = "<tr><td colspan='5'>SKANOWANIE...</td></tr>";
     reportsCache = [];
     try {
       for await (const e of dirHandle.values()) {
         if(e.kind === 'directory') {
-          const sn = e.name; let op="---", date="---", st="FOTO";
+          const sn = e.name; let op="---", date="---", dec="---", com="---";
           try {
             const sub = await dirHandle.getDirectoryHandle(sn);
             for await (const f of sub.values()) {
@@ -604,27 +583,32 @@
                 const fl = await f.getFile();
                 const tx = await fl.text();
                 date = fl.lastModifiedDate.toLocaleString();
-                const m = tx.match(/OPERATOR: (.*)/);
-                if(m) op=m[1];
-                st="KOMPLET";
+                const mOp = tx.match(/OPERATOR: (.*)/); if(mOp) op=mOp[1];
+                const mDec = tx.match(/DECYZJA: (.*)/); if(mDec) dec=mDec[1];
+                const mCom = tx.match(/UWAGI: (.*)/); if(mCom) com=mCom[1];
               }
             }
           } catch(err){}
-          reportsCache.push({date, sn, op, st});
+          reportsCache.push({date, sn, op, dec, com});
         }
       }
       tb.innerHTML = "";
       reportsCache.forEach(r => {
-        tb.innerHTML += `<tr><td>${r.date}</td><td>${r.sn}</td><td>${r.op}</td><td style="color:${r.st==='KOMPLET'?'#0f0':'#f00'}">${r.st}</td></tr>`;
+        let color = "#fff";
+        if(r.dec === 'NG' || r.dec === 'SCRAP') color = "var(--neon-red)";
+        if(r.dec === 'OK' || r.dec === 'OFFRS_OK') color = "var(--neon-green)";
+        if(r.dec === 'RMA') color = "orange";
+        
+        tb.innerHTML += `<tr><td>${r.date}</td><td>${r.sn}</td><td>${r.op}</td><td style="color:${color};font-weight:bold;">${r.dec}</td><td>${r.com}</td></tr>`;
       });
     } catch(e) { alert("Błąd skanowania"); }
   }
 
   function exportCSV() {
     if(!reportsCache.length) return alert("Pusto");
-    let c = "DATA,SN,OPERATOR,STATUS\n";
-    reportsCache.forEach(r => c+=`${r.date},${r.sn},${r.op},${r.st}\n`);
-    saveAs(new Blob([c],{type:'text/csv'}), "raport.csv");
+    let c = "DATA,SN,OPERATOR,DECYZJA,UWAGI\n";
+    reportsCache.forEach(r => c+=`${r.date},${r.sn},${r.op},${r.dec},${r.com}\n`);
+    saveAs(new Blob([c],{type:'text/csv'}), "raport_serwisowy.csv");
   }
 </script>
 </body>
