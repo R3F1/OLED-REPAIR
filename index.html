@@ -2,209 +2,232 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR SYSTEM v7.0 SECURE</title>
+  <title>OLED REPAIR v8.0 ENTERPRISE</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
   
   <style>
-    /* --- CONFIG & CORE STYLES --- */
+    /* --- CORE VARIABLES --- */
     :root {
       --bg-deep: #050505;
       --panel-glass: rgba(20, 25, 35, 0.95);
       --neon-cyan: #00f3ff;
       --neon-green: #0aff00;
       --neon-red: #ff003c;
-      --neon-gold: #ffd700; /* Kolor dla Właściciela */
+      --neon-gold: #ffd700;
+      --neon-purple: #bc13fe;
       --font-ui: 'Rajdhani', sans-serif;
       --font-tech: 'Share Tech Mono', monospace;
     }
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; user-select: none; }
+    
     body {
       margin: 0; background-color: var(--bg-deep); color: #fff;
       font-family: var(--font-ui); height: 100vh; overflow: hidden;
       display: flex; flex-direction: column;
-      background-image: radial-gradient(circle at 50% 50%, rgba(0, 243, 255, 0.05) 0%, transparent 60%), linear-gradient(0deg, rgba(0,0,0,0.8), transparent 2px);
-      background-size: 100% 100%, 100% 4px;
+      background-image: 
+        linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+      background-size: 50px 50px;
     }
 
-    /* --- 1. EKRAN LOGOWANIA --- */
+    /* --- SOUND FX (Visual Only) --- */
+    .audio-visualizer { position: absolute; top:0; left:0; width:100%; height:2px; background:linear-gradient(90deg, transparent, var(--neon-cyan), transparent); opacity:0; transition:0.2s; }
+    .audio-visualizer.active { opacity:1; box-shadow: 0 0 20px var(--neon-cyan); }
+
+    /* --- LOGIN SCREEN --- */
     #loginScreen {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999;
       display: flex; align-items: center; justify-content: center; flex-direction: column; transition: opacity 0.8s;
     }
     .login-box {
-      width: 420px; padding: 40px; background: rgba(10, 10, 10, 0.95); border: 1px solid var(--neon-cyan);
-      text-align: center; border-radius: 10px; position: relative; overflow: hidden;
-      box-shadow: 0 0 50px rgba(0, 243, 255, 0.15);
+      width: 450px; padding: 40px; background: rgba(10, 10, 10, 0.95); border: 1px solid var(--neon-cyan);
+      text-align: center; border-radius: 12px; position: relative; overflow: hidden;
+      box-shadow: 0 0 60px rgba(0, 243, 255, 0.1);
+      backdrop-filter: blur(10px);
+    }
+    .login-box::before {
+      content:''; position: absolute; top:0; left:0; width:100%; height:5px; background:var(--neon-cyan);
+      box-shadow: 0 0 15px var(--neon-cyan);
     }
     .login-input {
-      width: 100%; padding: 15px; margin: 10px 0; background: #000; border: 2px solid #333; color: var(--neon-cyan);
-      font-family: var(--font-tech); font-size: 18px; text-align: center; outline: none;
+      width: 100%; padding: 15px; margin: 10px 0; background: #080808; border: 1px solid #333; color: var(--neon-cyan);
+      font-family: var(--font-tech); font-size: 18px; text-align: center; outline: none; transition: 0.3s;
     }
-    .login-input:focus { border-color: var(--neon-cyan); }
-    /* Styl dla pola hasła */
+    .login-input:focus { border-color: var(--neon-cyan); background: #111; }
     input[type="password"] { letter-spacing: 5px; color: var(--neon-red); }
 
     .login-btn {
       width: 100%; padding: 15px; margin-top: 20px; background: var(--neon-cyan); color: #000; font-weight: bold; border: none;
-      cursor: pointer; font-family: var(--font-tech); transition: 0.3s; font-size: 16px;
+      cursor: pointer; font-family: var(--font-tech); transition: 0.3s; font-size: 16px; letter-spacing: 2px;
     }
-    .login-btn:hover { background: #fff; box-shadow: 0 0 20px var(--neon-cyan); }
-    
-    .login-error {
-      color: var(--neon-red); font-size: 12px; height: 15px; margin-top: 10px; font-weight: bold;
-    }
+    .login-btn:hover { background: #fff; box-shadow: 0 0 30px var(--neon-cyan); }
+    .login-error { color: var(--neon-red); font-size: 12px; height: 20px; margin-top: 10px; font-weight: bold; font-family: var(--font-tech); }
 
-    /* --- 2. NETWORK GUARD --- */
+    /* --- NETWORK GUARD --- */
     #networkGuard {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.9); z-index: 8000; backdrop-filter: blur(10px);
+      background: rgba(0,0,0,0.95); z-index: 8000; backdrop-filter: blur(15px);
       display: none; align-items: center; justify-content: center; flex-direction: column;
     }
     .alert-box {
-      width: 500px; padding: 30px; border: 2px solid var(--neon-red); background: #080808;
-      text-align: center; border-radius: 12px; box-shadow: 0 0 60px rgba(255, 0, 60, 0.2);
-      animation: pulseAlert 2s infinite;
+      width: 600px; padding: 40px; border: 2px solid var(--neon-red); background: #050505;
+      text-align: center; border-radius: 12px; box-shadow: 0 0 100px rgba(255, 0, 60, 0.2);
     }
-    @keyframes pulseAlert { 0% { box-shadow: 0 0 30px rgba(255,0,60,0.1); } 50% { box-shadow: 0 0 60px rgba(255,0,60,0.3); } 100% { box-shadow: 0 0 30px rgba(255,0,60,0.1); } }
     .guard-btn {
-      width: 100%; padding: 18px; background: var(--neon-red); color: #fff; font-weight: bold;
-      border: none; cursor: pointer; font-family: var(--font-tech); font-size: 16px; margin-top: 10px;
+      width: 100%; padding: 20px; background: var(--neon-red); color: #fff; font-weight: bold;
+      border: none; cursor: pointer; font-family: var(--font-tech); font-size: 18px; margin-top: 20px;
     }
-    .skip-btn { margin-top: 10px; background: transparent; border: none; color: #555; text-decoration: underline; cursor: pointer; font-size: 11px; }
+    .guard-btn:hover { background: #ff3366; box-shadow: 0 0 30px var(--neon-red); }
 
     /* --- HEADER --- */
     header {
-      height: 60px; display: flex; justify-content: space-between; align-items: center; padding: 0 25px;
+      height: 70px; display: flex; justify-content: space-between; align-items: center; padding: 0 30px;
       background: rgba(0,0,0,0.8); border-bottom: 1px solid #333;
     }
-    .brand { font-size: 24px; font-weight: 700; color: #fff; letter-spacing: 2px; }
-    .brand span { color: var(--neon-cyan); }
-    .operator-info { display: flex; align-items: center; gap: 15px; font-family: var(--font-tech); color: #aaa; font-size: 14px; }
-    .operator-badge { background: #222; padding: 5px 15px; border-radius: 4px; border: 1px solid #444; color: var(--neon-cyan); transition: 0.3s; }
-    
-    /* Specjalny styl dla ADMINA */
-    .operator-badge.admin {
-      border-color: var(--neon-gold); color: var(--neon-gold);
-      box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
-    }
+    .brand { font-size: 26px; font-weight: 700; color: #fff; letter-spacing: 3px; }
+    .brand span { color: var(--neon-cyan); text-shadow: 0 0 10px var(--neon-cyan); }
+    .operator-info { display: flex; align-items: center; gap: 20px; font-family: var(--font-tech); color: #aaa; font-size: 14px; }
+    .operator-badge { background: #1a1a1a; padding: 6px 15px; border-radius: 4px; border: 1px solid #444; color: var(--neon-cyan); transition:0.3s; }
+    .operator-badge.admin { border-color: var(--neon-gold); color: var(--neon-gold); box-shadow: 0 0 15px rgba(255, 215, 0, 0.1); }
 
     /* --- DASHBOARD --- */
     .dashboard {
-      flex: 1; display: grid; grid-template-columns: 380px 1fr; gap: 20px; padding: 20px; overflow: hidden;
+      flex: 1; display: grid; grid-template-columns: 400px 1fr; gap: 20px; padding: 20px; overflow: hidden;
       opacity: 0; transition: opacity 1s;
     }
     .panel-left {
-      background: var(--panel-glass); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px;
-      display: flex; flex-direction: column; overflow-y: auto;
+      background: var(--panel-glass); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 25px;
+      display: flex; flex-direction: column; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
     }
     .panel-right {
       position: relative; background: #000; border: 2px solid #333; border-radius: 12px; overflow: hidden;
+      box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
     }
-    video { width: 100%; height: 100%; object-fit: contain; }
+    
+    /* KAMERA & FLIP */
+    video { width: 100%; height: 100%; object-fit: contain; transform: scaleX(1); transition: transform 0.3s; }
+    video.mirrored { transform: scaleX(-1); } /* Kluczowe dla lustrzanego odbicia */
 
-    /* UI COMPONENTS */
-    #scanInput {
-      width: 100%; background: #000; border: 1px solid #444; color: #fff; padding: 12px; font-size: 20px;
-      text-align: center; font-family: var(--font-tech); outline: none; border-radius: 5px; margin-bottom: 20px;
+    .cam-controls {
+      position: absolute; bottom: 20px; right: 20px; z-index: 50; display: flex; gap: 10px;
     }
-    #scanInput:focus { border-color: var(--neon-green); }
+    .cam-btn {
+      background: rgba(0,0,0,0.6); border: 1px solid var(--neon-cyan); color: var(--neon-cyan);
+      width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 20px; transition: 0.2s; backdrop-filter: blur(4px);
+    }
+    .cam-btn:hover { background: var(--neon-cyan); color: #000; }
+
+    /* UI ELEMENTS */
+    .input-label { font-size: 11px; color: var(--neon-cyan); letter-spacing: 1px; margin-bottom: 5px; display: block; font-weight: bold; }
+    #scanInput {
+      width: 100%; background: #000; border: 1px solid #444; color: #fff; padding: 15px; font-size: 24px;
+      text-align: center; font-family: var(--font-tech); outline: none; border-radius: 6px; margin-bottom: 25px;
+    }
+    #scanInput:focus { border-color: var(--neon-green); box-shadow: 0 0 20px rgba(10,255,0,0.2); }
     
     .checklist-btn {
-      width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); color: #aaa;
-      padding: 12px; margin-bottom: 8px; cursor: pointer; text-align: left; font-family: var(--font-ui);
-      display: flex; justify-content: space-between; transition: 0.2s; font-size: 14px;
+      width: 100%; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); color: #888;
+      padding: 15px; margin-bottom: 10px; cursor: pointer; text-align: left; font-family: var(--font-ui);
+      display: flex; justify-content: space-between; transition: 0.2s; font-size: 15px; border-radius: 6px;
     }
-    .checklist-btn.done { border-color: var(--neon-green); color: var(--neon-green); background: rgba(10,255,0,0.05); }
+    .checklist-btn:hover { background: rgba(255,255,255,0.05); color: #fff; border-color: #fff; }
+    .checklist-btn.done { border-color: var(--neon-green); color: var(--neon-green); background: rgba(10,255,0,0.1); }
 
     #actionBtn {
-      margin-top: auto; padding: 15px; width: 100%; background: #111; color: #444; font-weight: bold; border: none;
-      font-size: 14px; cursor: not-allowed; border-radius: 6px; text-transform: uppercase;
+      margin-top: auto; padding: 18px; width: 100%; background: #111; color: #444; font-weight: bold; border: none;
+      font-size: 16px; cursor: not-allowed; border-radius: 6px; text-transform: uppercase; letter-spacing: 1px;
     }
     #actionBtn.active {
       background: var(--neon-green); color: #000; cursor: pointer; animation: pulseBtn 2s infinite;
+      box-shadow: 0 0 20px var(--neon-green);
     }
-    @keyframes pulseBtn { 0% { box-shadow: 0 0 10px rgba(10,255,0,0.4); } 50% { box-shadow: 0 0 20px rgba(10,255,0,0.7); } 100% { box-shadow: 0 0 10px rgba(10,255,0,0.4); } }
+    @keyframes pulseBtn { 0% { box-shadow: 0 0 10px var(--neon-green); } 50% { box-shadow: 0 0 30px var(--neon-green); } 100% { box-shadow: 0 0 10px var(--neon-green); } }
 
     /* OVERLAYS */
-    .cam-overlay { position: absolute; top: 20px; left: 20px; display: flex; flex-direction: column; gap: 5px; }
+    .cam-overlay { position: absolute; top: 20px; left: 20px; display: flex; flex-direction: column; gap: 8px; }
     .tag {
-      background: rgba(0,0,0,0.8); color: #fff; padding: 4px 10px; font-family: var(--font-tech);
-      font-size: 13px; border-left: 3px solid var(--neon-cyan); backdrop-filter: blur(5px);
+      background: rgba(0,0,0,0.7); color: #fff; padding: 6px 12px; font-family: var(--font-tech);
+      font-size: 14px; border-left: 3px solid var(--neon-cyan); backdrop-filter: blur(5px);
     }
-    .status-bar {
-      height: 30px; background: #111; border-top: 1px solid #333; display: flex; align-items: center; justify-content: center;
-      font-family: var(--font-tech); font-size: 11px; color: #666; gap: 10px;
-    }
-    .status-bar.ok { color: var(--neon-green); }
 
-    /* MANAGER PANEL */
-    .database-trigger {
-      position: absolute; bottom: 30px; right: 30px; padding: 10px 20px; background: rgba(0,0,0,0.8);
-      border: 1px solid var(--neon-cyan); color: var(--neon-cyan); cursor: pointer; font-family: var(--font-tech);
-      z-index: 50; transition: 0.3s;
+    /* ADMIN & MANAGER PANELS */
+    .bar-bottom {
+      position: fixed; bottom: 0; left: 0; width: 100%; height: 40px; background: #080808; border-top: 1px solid #333;
+      display: flex; justify-content: flex-end; align-items: center; padding: 0 20px; gap: 10px; z-index: 100;
     }
-    .database-trigger:hover { background: var(--neon-cyan); color: #000; }
+    .bar-btn {
+      background: transparent; border: 1px solid #444; color: #aaa; padding: 5px 15px; font-family: var(--font-tech);
+      font-size: 11px; cursor: pointer; transition: 0.2s;
+    }
+    .bar-btn:hover { border-color: var(--neon-cyan); color: var(--neon-cyan); }
+    .bar-btn.admin-only { border-color: var(--neon-gold); color: var(--neon-gold); display: none; } /* Domyślnie ukryty */
 
-    #databasePanel {
-      position: fixed; bottom: 0; left: 0; width: 100%; height: 0; background: rgba(10, 15, 20, 0.98);
-      z-index: 200; transition: height 0.5s; overflow: hidden; border-top: 2px solid var(--neon-cyan);
-      display: flex; flex-direction: column;
+    /* SLIDING PANELS */
+    .slide-panel {
+      position: fixed; bottom: 0; left: 0; width: 100%; height: 0; background: rgba(10, 12, 16, 0.98);
+      z-index: 200; transition: height 0.5s cubic-bezier(0.25, 1, 0.5, 1); overflow: hidden;
+      border-top: 2px solid var(--neon-cyan); display: flex; flex-direction: column;
     }
-    #databasePanel.open { height: 80vh; }
-    .db-header { padding: 20px; background: #000; border-bottom: 1px solid #333; display: flex; justify-content: space-between; }
-    .db-content { flex: 1; overflow: auto; padding: 20px; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; color: #ccc; font-family: var(--font-tech); }
-    th { text-align: left; padding: 10px; border-bottom: 2px solid #333; color: var(--neon-cyan); background: #000; position: sticky; top: 0; }
-    td { padding: 10px; border-bottom: 1px solid #222; }
+    .slide-panel.open { height: 85vh; }
     
+    .panel-header { padding: 20px; background: #000; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
+    .panel-content { flex: 1; overflow: auto; padding: 30px; }
+
+    /* TABELE */
+    table { width: 100%; border-collapse: collapse; font-size: 13px; color: #ccc; font-family: var(--font-tech); }
+    th { text-align: left; padding: 12px; border-bottom: 2px solid #333; color: var(--neon-cyan); background: #000; position: sticky; top: 0; }
+    td { padding: 12px; border-bottom: 1px solid #222; }
+    tr:hover { background: rgba(255,255,255,0.05); }
+
     /* 3D SCENE */
-    .scene-container { height: 180px; perspective: 800px; display: flex; justify-content: center; align-items: center; margin-bottom: 10px; }
-    .tv-pivot { position: relative; width: 180px; height: 110px; transform-style: preserve-3d; transition: transform 0.8s; }
+    .scene-container { height: 180px; perspective: 1000px; display: flex; justify-content: center; align-items: center; margin-bottom: 20px; }
+    .tv-pivot { position: relative; width: 200px; height: 120px; transform-style: preserve-3d; transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); }
     .tv-panel { position: absolute; width: 100%; height: 100%; background: #000; border: 2px solid #333; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; }
-    .tv-front { background: linear-gradient(135deg, #050505, #1a1a1a); border: 1px solid #555; }
+    .tv-front { background: linear-gradient(135deg, #050505, #1a1a1a); border: 1px solid #555; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
     .tv-front::after { content: "OLED"; opacity: 0.3; font-weight: bold; }
-    .tv-back { transform: rotateY(180deg); background: #151515; }
-    .tv-stand { position: absolute; bottom: -15px; left: 50%; transform: translateX(-50%); width: 60px; height: 5px; background: #333; }
+    .tv-back { transform: rotateY(180deg); background: #151515; border: 1px solid #444; }
+    .tv-stand { position: absolute; bottom: -15px; left: 50%; transform: translateX(-50%); width: 80px; height: 6px; background: #333; border-radius: 4px; }
 
     canvas { display: none; }
   </style>
 </head>
 <body>
 
+<div class="audio-visualizer" id="visualizer"></div>
+
 <div id="loginScreen">
   <div class="login-box">
-    <h2 style="margin:0; color:#fff; font-family: 'Share Tech Mono';">OLED REPAIR SYSTEM</h2>
-    <div style="font-size:12px; color:#666; margin-bottom:20px;">V7.0 SECURE ACCESS</div>
+    <h2 style="margin:0; color:#fff; font-family: 'Share Tech Mono'; letter-spacing: 2px;">OLED REPAIR SYSTEM</h2>
+    <div style="font-size:12px; color:#666; margin-bottom:30px;">V8.0 ENTERPRISE</div>
     
-    <label style="color:var(--neon-cyan); font-size:10px; display:block; text-align:left; margin-left:10px;">UŻYTKOWNIK</label>
-    <input type="text" id="userInput" class="login-input" placeholder="IMIĘ">
+    <label style="color:var(--neon-cyan); font-size:10px; display:block; text-align:left; margin-left:5px;">UŻYTKOWNIK</label>
+    <input type="text" id="userInput" class="login-input" placeholder="LOGIN" autocomplete="off">
     
-    <label style="color:var(--neon-red); font-size:10px; display:block; text-align:left; margin-left:10px;">HASŁO</label>
+    <label style="color:var(--neon-red); font-size:10px; display:block; text-align:left; margin-left:5px;">HASŁO</label>
     <input type="password" id="passInput" class="login-input" placeholder="••••••••">
 
     <div id="loginError" class="login-error"></div>
-
-    <button class="login-btn" onclick="checkLogin()">ZALOGUJ</button>
+    <button class="login-btn" onclick="attemptLogin()">ROZPOCZNIJ ZMIANĘ</button>
   </div>
 </div>
 
 <div id="networkGuard">
   <div class="alert-box">
-    <h2 style="color:var(--neon-red); margin:0;">⚠️ KONFIGURACJA SIECIOWA ⚠️</h2>
-    <p style="font-size:14px; color:#ddd; margin:10px 0;">WYMAGANE POŁĄCZENIE Z FOLDEREM SIECIOWYM</p>
-    <div style="font-size:11px; color:#aaa; margin-bottom:5px;">ŚCIEŻKA DOCELOWA:</div>
-    <div style="background:#111; padding:10px; border:1px dashed #555; font-size:10px; color:#aaa;">\\plgorfs001\pub\SERVICE\LCDR\LCDR\OLED OBM Panels\Zdjęcia z napraw OLED</div>
+    <h1 style="color:var(--neon-red); margin:0; font-family:'Share Tech Mono'">⚠️ SYSTEM ROZŁĄCZONY ⚠️</h1>
+    <p style="font-size:16px; color:#ccc; margin:20px 0;">WYMAGANY DOSTĘP DO FOLDERU SIECIOWEGO</p>
+    <div style="font-size:11px; color:#aaa; margin-bottom:5px;">CEL:</div>
+    <div style="background:#111; padding:15px; border:1px dashed #555; font-size:11px; color:#fff; font-family:'Share Tech Mono'">\\plgorfs001\pub\SERVICE\LCDR\LCDR\OLED OBM Panels\Zdjęcia z napraw OLED</div>
     <button class="guard-btn" onclick="connectNetwork()">📡 POŁĄCZ Z SERWEREM</button>
-    <button class="skip-btn" onclick="skipNetwork()">Pracuj Offline (ZIP)</button>
   </div>
 </div>
 
 <header>
-  <div class="brand">TPV <span>OLED</span> REPAIR STATION</div>
+  <div class="brand">LG <span>OLED</span> STUDIO</div>
   <div class="operator-info">
-    <div class="operator-badge" id="operatorDisplay">---</div>
+    <div class="operator-badge" id="operatorBadge">---</div>
     <div id="clockDisplay">00:00</div>
   </div>
 </header>
@@ -219,43 +242,66 @@
       </div>
     </div>
     
-    <div style="font-size:11px; color:var(--neon-cyan); margin-bottom:5px;">SKANER SN</div>
-    <input type="text" id="scanInput" placeholder="ZESKANUJ..." autofocus>
+    <span class="input-label">SKANER KODÓW KRESKOWYCH</span>
+    <input type="text" id="scanInput" placeholder="OCZEKIWANIE NA SKAN..." autofocus>
 
-    <div style="margin-top:20px;">
-      <div id="btnFront" class="checklist-btn" onclick="capture('PRZOD')"><span>1. PRZÓD</span> <span>📷</span></div>
-      <div id="btnBack" class="checklist-btn" onclick="capture('TYL')"><span>2. TYŁ</span> <span>📷</span></div>
-      <div id="btnImage" class="checklist-btn" onclick="capture('OBRAZ')"><span>3. OBRAZ</span> <span>📷</span></div>
+    <div id="checklist">
+      <div id="btnFront" class="checklist-btn" onclick="capture('PRZOD')"><span>1. PRZÓD EKRANU</span> <span>📷</span></div>
+      <div id="btnBack" class="checklist-btn" onclick="capture('TYL')"><span>2. TYŁ (TABLICZKA)</span> <span>📷</span></div>
+      <div id="btnImage" class="checklist-btn" onclick="capture('OBRAZ')"><span>3. TEST OBRAZU</span> <span>📷</span></div>
     </div>
 
     <button id="actionBtn" onclick="saveData()">OCZEKIWANIE</button>
-    <div id="saveStatus" style="text-align:center; color:#666; margin-top:5px; font-size:10px;"></div>
+    <div id="saveStatus" style="text-align:center; color:#666; margin-top:10px; font-size:11px; height:15px;"></div>
   </aside>
 
   <main class="panel-right">
     <div class="cam-overlay">
-      <div class="tag" id="tagSN">SN: BRAK</div>
+      <div class="tag" id="tagSN">SN: ---</div>
       <div class="tag" id="tagOp">OP: ---</div>
+    </div>
+    <div class="cam-controls">
+      <div class="cam-btn" onclick="toggleMirror()" title="Odbicie lustrzane">↔</div>
     </div>
     <video id="videoFeed" autoplay playsinline></video>
   </main>
 </div>
 
-<div class="status-bar" id="bottomBar"><span id="connStatus">🔴 ROZŁĄCZONY</span></div>
+<div class="bar-bottom">
+  <div id="connStatus" style="margin-right:auto; color:#444; font-size:11px;">🔴 OFFLINE</div>
+  <button class="bar-btn admin-only" onclick="toggleUserPanel()">👥 UŻYTKOWNICY</button>
+  <button class="bar-btn" onclick="toggleReportPanel()">📂 BAZA NAPRAW</button>
+</div>
 
-<div class="database-trigger" onclick="toggleDatabase()">📂 BAZA DANYCH</div>
+<div id="userPanel" class="slide-panel">
+  <div class="panel-header">
+    <div style="font-size:20px; color:var(--neon-gold);">ZARZĄDZANIE PERSONELEM</div>
+    <button class="bar-btn" onclick="toggleUserPanel()">ZAMKNIJ X</button>
+  </div>
+  <div class="panel-content">
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 100px; gap:10px; margin-bottom:20px; padding:20px; background:#111; border:1px solid #333;">
+      <input type="text" id="newLogin" placeholder="NOWY LOGIN" style="background:#000; border:1px solid #444; color:#fff; padding:10px;">
+      <input type="text" id="newPass" placeholder="HASŁO" style="background:#000; border:1px solid #444; color:#fff; padding:10px;">
+      <select id="newRole" style="background:#000; border:1px solid #444; color:#fff; padding:10px;">
+        <option value="OPERATOR">OPERATOR</option>
+        <option value="ADMIN">ADMINISTRATOR</option>
+      </select>
+      <button onclick="addUser()" style="background:var(--neon-gold); border:none; color:#000; font-weight:bold; cursor:pointer;">DODAJ</button>
+    </div>
+    <table id="userTable"><thead><tr><th>LOGIN</th><th>HASŁO</th><th>ROLA</th><th>AKCJA</th></tr></thead><tbody></tbody></table>
+  </div>
+</div>
 
-<div id="databasePanel">
-  <div class="db-header">
-    <div style="font-size:18px; color:var(--neon-cyan);">RAPORTY</div>
-    <div style="display:flex; gap:10px;">
-      <button onclick="scanNetworkForReports()" style="padding:5px; background:var(--neon-cyan); border:none; cursor:pointer;">ODŚWIEŻ</button>
-      <button onclick="exportToCSV()" style="padding:5px; background:#333; color:#fff; border:1px solid #555; cursor:pointer;">CSV</button>
-      <button onclick="toggleDatabase()" style="padding:5px; background:#333; color:#fff; border:1px solid #555; cursor:pointer;">X</button>
+<div id="reportPanel" class="slide-panel">
+  <div class="panel-header">
+    <div style="font-size:20px; color:var(--neon-cyan);">HISTORIA NAPRAW</div>
+    <div>
+      <button class="bar-btn" onclick="scanNetwork()">🔄 SKANUJ SERWER</button>
+      <button class="bar-btn" onclick="exportCSV()">💾 CSV</button>
+      <button class="bar-btn" onclick="toggleReportPanel()">ZAMKNIJ X</button>
     </div>
   </div>
-  <div class="db-content">
-    <div id="loader" style="display:none; text-align:center; color:var(--neon-cyan);">Skanowanie...</div>
+  <div class="panel-content">
     <table id="reportTable"><thead><tr><th>DATA</th><th>SN</th><th>OPERATOR</th><th>STATUS</th></tr></thead><tbody></tbody></table>
   </div>
 </div>
@@ -263,123 +309,187 @@
 <canvas id="photoCanvas"></canvas>
 
 <script>
-  /* --- BAZA UŻYTKOWNIKÓW --- */
-  const USERS = {
-    "DAWID": { pass: "OLED12345!", role: "OPERATOR", label: "DAWID" },
-    "LUKASZ": { pass: "050699", role: "ADMIN", label: "WŁAŚCICIEL" }
+  /* --- SYSTEM CORE --- */
+  const CONFIG = {
+    networkPath: String.raw`\\plgorfs001\pub\SERVICE\LCDR\LCDR\OLED OBM Panels\Zdjęcia z napraw OLED`,
+    defaultUsers: [
+      { login: "DAWID", pass: "OLED12345!", role: "OPERATOR" },
+      { login: "LUKASZ", pass: "050699", role: "ADMIN" }
+    ]
   };
 
-  /* --- KONFIGURACJA --- */
-  const NETWORK_PATH = String.raw`\\plgorfs001\pub\SERVICE\LCDR\LCDR\OLED OBM Panels\Zdjęcia z napraw OLED`;
+  /* --- STATE --- */
+  let users = [];
   let currentUser = null;
   let dirHandle = null;
   let currentSN = "";
   let photos = { PRZOD: null, TYL: null, OBRAZ: null };
-  let reportCache = [];
+  let isMirrored = false;
+  let reportsCache = [];
 
-  const video = document.getElementById('videoFeed');
-  const canvas = document.getElementById('photoCanvas');
-  const ctx = canvas.getContext('2d');
-  const scanInput = document.getElementById('scanInput');
-  const actionBtn = document.getElementById('actionBtn');
-  const tv3d = document.getElementById('tv3d');
+  /* --- SOUND ENGINE (SYNTH) --- */
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  
+  function playSound(type) {
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
 
-  setInterval(() => document.getElementById('clockDisplay').innerText = new Date().toLocaleTimeString().slice(0,5), 1000);
+    const now = audioCtx.currentTime;
+    
+    // Wizualizacja
+    const vis = document.getElementById('visualizer');
+    vis.classList.add('active'); setTimeout(()=>vis.classList.remove('active'), 100);
 
-  /* --- 1. SYSTEM LOGOWANIA (NOWY) --- */
-  function checkLogin() {
-    const user = document.getElementById('userInput').value.trim().toUpperCase();
-    const pass = document.getElementById('passInput').value.trim();
-    const err = document.getElementById('loginError');
+    if (type === 'scan') { // Hi-Tech Beep
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(800, now);
+      osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+      osc.start(now); osc.stop(now + 0.1);
+    } 
+    else if (type === 'cam') { // Shutter
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(200, now);
+      osc.frequency.exponentialRampToValueAtTime(50, now + 0.1);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+      osc.start(now); osc.stop(now + 0.15);
+    }
+    else if (type === 'success') { // Success Fanfare
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(440, now);
+      osc.frequency.setValueAtTime(554, now + 0.1);
+      osc.frequency.setValueAtTime(659, now + 0.2);
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.linearRampToValueAtTime(0, now + 0.6);
+      osc.start(now); osc.stop(now + 0.6);
+    }
+    else if (type === 'error') { // Buzzer
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(100, now);
+      osc.frequency.linearRampToValueAtTime(50, now + 0.2);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.linearRampToValueAtTime(0, now + 0.2);
+      osc.start(now); osc.stop(now + 0.2);
+    }
+  }
 
-    if (USERS[user]) {
-      if (USERS[user].pass === pass) {
-        // Zalogowano pomyślnie
-        currentUser = USERS[user];
-        proceedToSystem();
-      } else {
-        err.innerText = "BŁĘDNE HASŁO!";
-        animateShake();
-      }
+  /* --- INIT --- */
+  window.onload = () => {
+    loadUsers();
+    setInterval(() => document.getElementById('clockDisplay').innerText = new Date().toLocaleTimeString().slice(0,5), 1000);
+  };
+
+  /* --- USER MANAGEMENT (LOCAL STORAGE) --- */
+  function loadUsers() {
+    const stored = localStorage.getItem('oled_users');
+    if (stored) {
+      users = JSON.parse(stored);
     } else {
-      err.innerText = "UŻYTKOWNIK NIE ISTNIEJE!";
-      animateShake();
+      users = CONFIG.defaultUsers;
+      localStorage.setItem('oled_users', JSON.stringify(users));
     }
   }
 
-  function proceedToSystem() {
-    // Ustawienie interfejsu
-    const badge = document.getElementById('operatorDisplay');
-    badge.innerText = currentUser.label;
-    document.getElementById('tagOp').innerText = "OP: " + currentUser.label;
+  function saveUsers() {
+    localStorage.setItem('oled_users', JSON.stringify(users));
+    renderUserTable();
+  }
 
-    if (currentUser.role === "ADMIN") {
-      badge.classList.add('admin');
-      badge.style.borderColor = "#ffd700";
-      badge.style.color = "#ffd700";
+  function attemptLogin() {
+    const l = document.getElementById('userInput').value.trim().toUpperCase();
+    const p = document.getElementById('passInput').value.trim();
+    const u = users.find(user => user.login === l && user.pass === p);
+
+    if (u) {
+      currentUser = u;
+      document.getElementById('loginScreen').style.opacity = '0';
+      playSound('success');
+      setTimeout(() => {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('networkGuard').style.display = 'flex';
+        document.getElementById('mainDashboard').style.opacity = '1';
+        setupInterface();
+      }, 800);
+    } else {
+      document.getElementById('loginError').innerText = "BŁĘDNY LOGIN LUB HASŁO";
+      playSound('error');
     }
-
-    // Ukrywanie loginu
-    document.getElementById('loginScreen').style.opacity = '0';
-    setTimeout(() => {
-      document.getElementById('loginScreen').style.display = 'none';
-      document.getElementById('mainDashboard').style.opacity = '1';
-      document.getElementById('networkGuard').style.display = 'flex'; // Blokada sieciowa
-    }, 800);
   }
 
-  function animateShake() {
-    const box = document.querySelector('.login-box');
-    box.style.transform = "translateX(10px)";
-    setTimeout(() => box.style.transform = "translateX(-10px)", 50);
-    setTimeout(() => box.style.transform = "translateX(5px)", 100);
-    setTimeout(() => box.style.transform = "translateX(0)", 150);
+  function setupInterface() {
+    document.getElementById('operatorBadge').innerText = currentUser.login;
+    document.getElementById('tagOp').innerText = "OP: " + currentUser.login;
+    if(currentUser.role === 'ADMIN') {
+      document.getElementById('operatorBadge').classList.add('admin');
+      document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'inline-block');
+      renderUserTable();
+    }
   }
 
-  // Obsługa Entera w polach logowania
-  document.getElementById('passInput').addEventListener('keydown', e => { if(e.key==='Enter') checkLogin() });
-  document.getElementById('userInput').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('passInput').focus() });
+  function addUser() {
+    const l = document.getElementById('newLogin').value.trim().toUpperCase();
+    const p = document.getElementById('newPass').value.trim();
+    const r = document.getElementById('newRole').value;
+    if(l && p) {
+      users.push({login:l, pass:p, role:r});
+      saveUsers();
+      document.getElementById('newLogin').value=""; document.getElementById('newPass').value="";
+    }
+  }
 
-  /* --- 2. NETWORK --- */
+  function removeUser(idx) {
+    if(confirm("Usunąć użytkownika?")) { users.splice(idx, 1); saveUsers(); }
+  }
+
+  function renderUserTable() {
+    const tb = document.querySelector('#userTable tbody'); tb.innerHTML = "";
+    users.forEach((u, i) => {
+      tb.innerHTML += `<tr><td>${u.login}</td><td>${u.role === 'ADMIN' ? '***' : u.pass}</td><td style="color:${u.role==='ADMIN'?'var(--neon-gold)':'#fff'}">${u.role}</td><td><button onclick="removeUser(${i})" style="color:red; background:none; border:none; cursor:pointer;">USUŃ</button></td></tr>`;
+    });
+  }
+
+  /* --- NETWORK --- */
   async function connectNetwork() {
     try {
-      alert("Skopiowano ścieżkę do schowka.");
-      await navigator.clipboard.writeText(NETWORK_PATH);
+      await navigator.clipboard.writeText(CONFIG.networkPath);
+      alert("Ścieżka skopiowana. Wklej w oknie.");
       dirHandle = await window.showDirectoryPicker();
       document.getElementById('networkGuard').style.display = 'none';
-      document.getElementById('connStatus').innerHTML = "🟢 POŁĄCZONO Z SIECIĄ";
-      document.getElementById('bottomBar').classList.add('ok');
+      document.getElementById('connStatus').innerHTML = "🟢 ONLINE: ...Obm Panels\\Zdjęcia";
+      document.getElementById('connStatus').style.color = "var(--neon-green)";
       initCamera();
-      scanInput.focus();
-    } catch (e) {
-      alert("Wymagane jest wybranie folderu!");
-    }
+      document.getElementById('scanInput').focus();
+      playSound('success');
+    } catch(e) { alert("Błąd połączenia"); }
   }
 
-  function skipNetwork() {
-    if(confirm("Praca OFFLINE?")) {
-      document.getElementById('networkGuard').style.display = 'none';
-      document.getElementById('connStatus').innerHTML = "🔴 OFFLINE";
-      initCamera();
-      scanInput.focus();
-    }
-  }
-
-  /* --- 3. KAMERA --- */
+  /* --- CAMERA --- */
   async function initCamera() {
+    const v = document.getElementById('videoFeed');
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 3840 }, height: { ideal: 2160 } } });
-      video.srcObject = stream;
-    } catch (e) { alert("Błąd kamery!"); }
+      const s = await navigator.mediaDevices.getUserMedia({video:{width:{ideal:3840}, height:{ideal:2160}}});
+      v.srcObject = s;
+    } catch(e) { alert("Brak kamery"); }
   }
 
-  /* --- 4. GŁÓWNA LOGIKA --- */
-  scanInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
-      const sn = scanInput.value.trim().toUpperCase();
-      if (sn.length > 3) startSession(sn);
-      else alert("Błędny SN");
-      scanInput.value = ""; scanInput.blur();
+  function toggleMirror() {
+    isMirrored = !isMirrored;
+    const v = document.getElementById('videoFeed');
+    if(isMirrored) { v.classList.add('mirrored'); } else { v.classList.remove('mirrored'); }
+    playSound('click');
+  }
+
+  /* --- WORKFLOW --- */
+  document.getElementById('scanInput').addEventListener('keydown', e => {
+    if(e.key==='Enter') {
+      const v = e.target.value.trim().toUpperCase();
+      if(v.length > 3) { startSession(v); playSound('scan'); }
+      e.target.value = ""; e.target.blur();
     }
   });
 
@@ -387,110 +497,134 @@
     currentSN = sn; photos = { PRZOD: null, TYL: null, OBRAZ: null };
     document.getElementById('tagSN').innerText = "SN: " + sn;
     document.querySelectorAll('.checklist-btn').forEach(b => b.classList.remove('done'));
-    actionBtn.className = ""; actionBtn.innerText = "OCZEKIWANIE (0/3)";
-    tv3d.style.transform = "rotateY(0deg)";
+    document.getElementById('actionBtn').innerText = "OCZEKIWANIE (0/3)";
+    document.getElementById('actionBtn').classList.remove('active');
+    document.getElementById('tv3d').style.transform = "rotateY(0deg)";
+    document.getElementById('saveStatus').innerText = "";
   }
 
   function capture(type) {
-    if (!currentSN) { scanInput.focus(); return alert("Zeskanuj SN!"); }
-    tv3d.style.transform = type === 'TYL' ? "rotateY(180deg)" : "rotateY(0deg)";
+    if(!currentSN) return document.getElementById('scanInput').focus();
     
-    // Flash
+    // Rotate 3D Model
+    document.getElementById('tv3d').style.transform = type === 'TYL' ? "rotateY(180deg)" : "rotateY(0deg)";
+    
+    // SFX & Flash
+    playSound('cam');
     const f = document.createElement('div');
-    f.style.cssText = "position:absolute;top:0;left:0;width:100%;height:100%;background:#fff;opacity:0.8;z-index:99";
+    f.style.cssText = "position:absolute;top:0;left:0;width:100%;height:100%;background:#fff;opacity:0.6;z-index:99";
     document.querySelector('.panel-right').appendChild(f);
-    setTimeout(() => f.remove(), 80);
+    setTimeout(()=>f.remove(), 80);
 
-    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-    ctx.drawImage(video, 0, 0);
+    const v = document.getElementById('videoFeed');
+    const c = document.getElementById('photoCanvas');
+    const x = c.getContext('2d');
+    c.width = v.videoWidth; c.height = v.videoHeight;
     
+    // Handle Mirroring in Canvas
+    x.save();
+    if(isMirrored) {
+      x.translate(c.width, 0);
+      x.scale(-1, 1);
+    }
+    x.drawImage(v, 0, 0);
+    x.restore();
+
     // Watermark
-    const fs = Math.floor(video.videoHeight/25);
-    ctx.font = `bold ${fs}px Consolas`; ctx.lineWidth = 4; ctx.strokeStyle = "black"; ctx.fillStyle = "#0aff00";
-    ctx.strokeText(`SN: ${currentSN}`, 50, fs+20); ctx.fillText(`SN: ${currentSN}`, 50, fs+20);
-    ctx.fillStyle = "#00f3ff";
-    ctx.strokeText(`TYP: ${type}`, 50, (fs*2)+40); ctx.fillText(`TYP: ${type}`, 50, (fs*2)+40);
-    
-    // Używamy currentUser.label zamiast starej zmiennej globalnej
-    const operatorLabel = currentUser ? currentUser.label : "UNKNOWN";
-    ctx.fillStyle = "white"; ctx.font = `bold ${Math.floor(fs*0.8)}px Consolas`;
-    ctx.strokeText(`OP: ${operatorLabel}`, 50, (fs*3)+60); ctx.fillText(`OP: ${operatorLabel}`, 50, (fs*3)+60);
+    const fs = Math.floor(c.height/25);
+    x.font = `bold ${fs}px Consolas`; x.lineWidth=4; x.strokeStyle="black"; x.fillStyle="#0aff00";
+    x.strokeText(`SN: ${currentSN}`, 50, fs+20); x.fillText(`SN: ${currentSN}`, 50, fs+20);
+    x.fillStyle = "#00f3ff";
+    x.strokeText(`TYP: ${type}`, 50, (fs*2)+40); x.fillText(`TYP: ${type}`, 50, (fs*2)+40);
+    x.fillStyle = "white"; x.font = `bold ${Math.floor(fs*0.8)}px Consolas`;
+    x.strokeText(`OP: ${currentUser.login}`, 50, (fs*3)+60); x.fillText(`OP: ${currentUser.login}`, 50, (fs*3)+60);
 
-    canvas.toBlob(blob => {
-      photos[type] = blob;
-      const done = Object.values(photos).filter(p=>p).length;
-      actionBtn.innerText = `BRAK ZDJĘĆ (${done}/3)`;
+    c.toBlob(b => {
+      photos[type] = b;
+      const count = Object.values(photos).filter(o=>o).length;
+      document.getElementById('actionBtn').innerText = `BRAK ZDJĘĆ (${count}/3)`;
       const map = {'PRZOD':'btnFront','TYL':'btnBack','OBRAZ':'btnImage'};
       document.getElementById(map[type]).classList.add('done');
-      if(done===3) { actionBtn.classList.add('active'); actionBtn.innerText = "💾 ZAPISZ"; }
+      if(count===3) {
+        document.getElementById('actionBtn').classList.add('active');
+        document.getElementById('actionBtn').innerText = "💾 ZAPISZ";
+        playSound('success');
+      }
     }, 'image/jpeg', 0.95);
   }
 
   async function saveData() {
-    if(!actionBtn.classList.contains('active')) return;
+    if(!document.getElementById('actionBtn').classList.contains('active')) return;
     document.getElementById('saveStatus').innerText = "ZAPISYWANIE...";
     
-    const operatorLabel = currentUser ? currentUser.label : "UNKNOWN";
-    const txt = `SN: ${currentSN}\nDATA: ${new Date().toLocaleString()}\nOPERATOR: ${operatorLabel}\nSTATUS: OK`;
+    const txt = `SN: ${currentSN}\nDATA: ${new Date().toLocaleString()}\nOPERATOR: ${currentUser.login}\nSTATUS: OK`;
 
     if(dirHandle) {
       try {
-        const folder = await dirHandle.getDirectoryHandle(currentSN, {create:true});
-        await writeF(folder, `${currentSN}_PRZOD.jpg`, photos.PRZOD);
-        await writeF(folder, `${currentSN}_TYL.jpg`, photos.TYL);
-        await writeF(folder, `${currentSN}_OBRAZ.jpg`, photos.OBRAZ);
-        await writeF(folder, `RAPORT_${currentSN}.txt`, new Blob([txt], {type:'text/plain'}));
-        
-        document.getElementById('saveStatus').innerText = "ZAPISANO NA SERWERZE!";
-        setTimeout(() => { currentSN=""; startSession(""); scanInput.focus(); }, 1500);
-      } catch(e) { alert("Błąd zapisu sieciowego!"); }
+        const d = await dirHandle.getDirectoryHandle(currentSN, {create:true});
+        await write(d, `${currentSN}_PRZOD.jpg`, photos.PRZOD);
+        await write(d, `${currentSN}_TYL.jpg`, photos.TYL);
+        await write(d, `${currentSN}_OBRAZ.jpg`, photos.OBRAZ);
+        await write(d, `RAPORT_${currentSN}.txt`, new Blob([txt],{type:'text/plain'}));
+        document.getElementById('saveStatus').innerText = "ZAPISANO POPRAWNIE";
+        document.getElementById('saveStatus').style.color = "#0aff00";
+        playSound('success');
+        setTimeout(()=>{ currentSN=""; startSession(""); document.getElementById('scanInput').focus(); }, 1500);
+      } catch(e) { document.getElementById('saveStatus').innerText = "BŁĄD ZAPISU"; playSound('error'); }
     } else {
       const z = new JSZip(); const f = z.folder(currentSN);
-      f.file("info.txt", txt);
-      f.file("foto.jpg", photos.PRZOD); // Fallback example
-      z.generateAsync({type:"blob"}).then(c => saveAs(c, `${currentSN}.zip`));
+      f.file("info.txt", txt); f.file("1.jpg", photos.PRZOD);
+      z.generateAsync({type:"blob"}).then(c=>saveAs(c, `${currentSN}.zip`));
     }
   }
-  async function writeF(dh, n, b) { const h = await dh.getFileHandle(n,{create:true}); const w = await h.createWritable(); await w.write(b); await w.close(); }
+  async function write(dh, n, b) { const h = await dh.getFileHandle(n,{create:true}); const w = await h.createWritable(); await w.write(b); await w.close(); }
 
-  /* --- 5. MANAGER --- */
-  function toggleDatabase() { document.getElementById('databasePanel').classList.toggle('open'); }
-
-  async function scanNetworkForReports() {
-    if (!dirHandle) return alert("Brak sieci!");
-    const tb = document.querySelector('#reportTable tbody'); tb.innerHTML = "";
-    document.getElementById('loader').style.display = 'block';
-    reportCache = [];
-    try {
-      for await (const entry of dirHandle.values()) {
-        if (entry.kind === 'directory') {
-          const sn = entry.name; let op = "---"; let date = "---"; let stat = "TYLKO FOTO";
-          try {
-            const snDir = await dirHandle.getDirectoryHandle(sn);
-            for await (const f of snDir.values()) {
-              if (f.name.includes("RAPORT")) {
-                const file = await f.getFile();
-                const text = await f.text(); // Pobieranie treści raportu
-                date = file.lastModifiedDate.toLocaleString();
-                const m = text.match(/OPERATOR: (.*)/);
-                if(m) op = m[1];
-                stat = "KOMPLET";
-              }
-            }
-          } catch(e){}
-          reportCache.push({date, sn, op, stat});
-          tb.innerHTML += `<tr><td>${date}</td><td>${sn}</td><td>${op}</td><td style="color:${stat==='KOMPLET'?'#0f0':'#f00'}">${stat}</td></tr>`;
-        }
-      }
-    } catch(e){ alert("Błąd skanowania"); }
-    document.getElementById('loader').style.display = 'none';
+  /* --- PANELS --- */
+  function toggleUserPanel() { 
+    document.getElementById('userPanel').classList.toggle('open'); 
+    document.getElementById('reportPanel').classList.remove('open');
+  }
+  function toggleReportPanel() { 
+    document.getElementById('reportPanel').classList.toggle('open'); 
+    document.getElementById('userPanel').classList.remove('open');
   }
 
-  function exportToCSV() {
-    if(!reportCache.length) return alert("Pusta baza");
+  async function scanNetwork() {
+    if(!dirHandle) return alert("Brak sieci");
+    const tb = document.querySelector('#reportTable tbody'); tb.innerHTML = "<tr><td colspan='4'>SKANOWANIE...</td></tr>";
+    reportsCache = [];
+    try {
+      for await (const e of dirHandle.values()) {
+        if(e.kind === 'directory') {
+          const sn = e.name; let op="---", date="---", st="FOTO";
+          try {
+            const sub = await dirHandle.getDirectoryHandle(sn);
+            for await (const f of sub.values()) {
+              if(f.name.includes('RAPORT')) {
+                const fl = await f.getFile();
+                const tx = await fl.text();
+                date = fl.lastModifiedDate.toLocaleString();
+                const m = tx.match(/OPERATOR: (.*)/);
+                if(m) op=m[1];
+                st="KOMPLET";
+              }
+            }
+          } catch(err){}
+          reportsCache.push({date, sn, op, st});
+        }
+      }
+      tb.innerHTML = "";
+      reportsCache.forEach(r => {
+        tb.innerHTML += `<tr><td>${r.date}</td><td>${r.sn}</td><td>${r.op}</td><td style="color:${r.st==='KOMPLET'?'#0f0':'#f00'}">${r.st}</td></tr>`;
+      });
+    } catch(e) { alert("Błąd skanowania"); }
+  }
+
+  function exportCSV() {
+    if(!reportsCache.length) return alert("Pusto");
     let c = "DATA,SN,OPERATOR,STATUS\n";
-    reportCache.forEach(r => c += `${r.date},${r.sn},${r.op},${r.stat}\n`);
-    saveAs(new Blob([c], {type:"text/csv"}), "raport.csv");
+    reportsCache.forEach(r => c+=`${r.date},${r.sn},${r.op},${r.st}\n`);
+    saveAs(new Blob([c],{type:'text/csv'}), "raport.csv");
   }
 </script>
 </body>
