@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED Repair Dashboard</title>
+  <title>OLED Repair SERVICE MODE</title>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
@@ -10,161 +10,244 @@
       font-family: 'Segoe UI', sans-serif;
       margin: 0;
       padding: 0;
-      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      background: linear-gradient(135deg, #1e1e1e, #2a2a2a, #000);
       color: #fff;
     }
     header {
-      background-color: rgba(0,0,0,0.4);
-      padding: 20px;
+      background-color: #d32f2f; /* Czerwony nagłówek dla trybu serwisowego */
+      padding: 15px;
       text-align: center;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
     }
     header h1 {
-      font-size: 2em;
+      font-size: 1.8em;
       margin: 0;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    /* KONTENER SERWISOWY (Skaner + Kamera) */
+    #service-panel {
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: center;
-      gap: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      margin: 20px auto;
+      padding: 20px;
+      max-width: 800px;
+      border-radius: 15px;
+      border: 1px solid rgba(255,255,255,0.1);
     }
-    #counter, #search, #exportBtn, #camera-container {
-      display: block;
-      margin: 10px auto;
-      max-width: 600px;
-    }
-    #search {
-      padding: 10px;
-      border-radius: 8px;
-      width: 90%;
-      font-size: 16px;
-    }
-    #exportBtn {
-      padding: 10px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      width: 100%; /* Dopasowanie szerokości */
-    }
-    /* STYL DO KAMERY */
-    #camera-container {
-      background: rgba(0, 0, 0, 0.3);
+
+    /* Pole skanowania */
+    #scanInput {
+      width: 80%;
       padding: 15px;
-      border-radius: 12px;
+      font-size: 24px;
       text-align: center;
-      border: 1px solid rgba(255,255,255,0.2);
+      border: 2px solid #4CAF50;
+      border-radius: 10px;
+      background-color: #222;
+      color: #fff;
+      margin-bottom: 20px;
+      outline: none;
+      transition: box-shadow 0.3s;
     }
+    #scanInput:focus {
+      box-shadow: 0 0 15px rgba(76, 175, 80, 0.7);
+      background-color: #333;
+    }
+
+    /* Kontener kamery */
+    #camera-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 640px;
+      text-align: center;
+    }
+
+    #current-serial-display {
+      font-size: 20px;
+      font-weight: bold;
+      color: #FFC107;
+      margin-bottom: 5px;
+      min-height: 30px;
+    }
+
     #camImage {
-      max-width: 100%;
+      width: 100%;
       height: auto;
       border-radius: 8px;
-      border: 2px solid #555;
-      margin-top: 10px;
-      min-height: 200px;
+      border: 4px solid #444;
       background-color: #000;
       display: block;
-      margin: 10px auto;
-    }
-    #snapBtn {
-      padding: 10px 20px;
-      background-color: #2196F3; /* Niebieski przycisk */
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 16px;
-      margin-top: 10px;
-    }
-    #snapBtn:hover {
-      background-color: #1976D2;
     }
     
-    table {
-      width: 95%;
-      margin: 20px auto;
-      border-collapse: collapse;
-      background-color: rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
+    .btn-group {
+      margin-top: 15px;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
     }
-    th, td {
-      padding: 10px;
-      border: 1px solid rgba(255,255,255,0.2);
-      color: white;
+
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 14px;
+      transition: transform 0.1s;
     }
-    #chart-container {
-      width: 95%;
-      max-width: 600px;
-      margin: 50px auto;
-      background: rgba(0, 0, 0, 0.2);
-      padding: 20px;
-      border-radius: 12px;
+    button:active { transform: scale(0.95); }
+    
+    #snapBtn { background-color: #2196F3; color: white; }
+    #downloadImgBtn { background-color: #FF9800; color: white; }
+    #exportBtn { background-color: #4CAF50; color: white; margin-top: 10px; width: 100%; }
+
+    /* Ukrywanie/Pokazywanie sekcji analitycznej */
+    #analytics-section {
+      opacity: 0.6;
+      transition: opacity 0.3s;
+      margin-top: 50px;
+      padding-bottom: 50px;
     }
-    canvas {
-      background: white;
-      border-radius: 10px;
-    }
+    #analytics-section:hover { opacity: 1; }
+
+    /* Tabela i wykres (zachowane style) */
+    table { width: 95%; margin: 20px auto; border-collapse: collapse; background: rgba(255,255,255,0.05); }
+    th, td { padding: 8px; border: 1px solid rgba(255,255,255,0.1); font-size: 14px; }
+    #chart-container { width: 95%; max-width: 500px; margin: 20px auto; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>OLED Repair Dashboard</h1>
-  </header>
-  
-  <div id="counter">Wczytywanie danych...</div>
-  
-  <textarea id="search" placeholder="🔍 Wyszukaj SERIAL NUMBER lub wklej dane z arkusza" rows="3"></textarea>
-  
-  <button id="exportBtn">Eksportuj CSV (DATA, STATUS, SERIAL NUMBER)</button>
 
-  <div id="camera-container">
-    <h3 style="margin: 0; color: #ddd;">Podgląd Stanowiska</h3>
-    <img id="camImage" alt="Obraz z kamery niedostępny - sprawdź połączenie" src="">
-    <button id="snapBtn" onclick="refreshCamera()">📸 Zrób Zdjęcie</button>
-    <p style="font-size: 12px; color: #aaa;">Jeśli obraz nie działa: sprawdź czy jesteś w tej samej sieci Wi-Fi co kamera.</p>
+  <header>
+    <h1>OLED REPAIR - SERVICE STATION</h1>
+  </header>
+
+  <div id="service-panel">
+    
+    <label for="scanInput" style="color: #aaa; margin-bottom: 5px;">Zeskanuj Serial Number:</label>
+    <input type="text" id="scanInput" placeholder="Kliknij tu i zeskanuj kod..." autofocus autocomplete="off">
+
+    <div id="camera-wrapper">
+      <div id="current-serial-display">Oczekiwanie na skan...</div>
+      
+      <img id="camImage" alt="Brak połączenia z kamerą" src="">
+      
+      <div class="btn-group">
+        <button id="snapBtn" onclick="manualTrigger()">📸 Ręczne Zdjęcie</button>
+        <a id="downloadLink" style="display:none;"></a> 
+        <button id="downloadImgBtn" onclick="downloadCurrentImage()">💾 Pobierz JPG</button>
+      </div>
+    </div>
   </div>
 
-  <table id="oledTable"><thead></thead><tbody></tbody></table>
-  
-  <div id="chart-container">
-    <h2 style="text-align:center; color: white;">STATUS z ostatnich 7 dni</h2>
-    <canvas id="statusChart" height="120"></canvas>
+  <div id="analytics-section">
+    <div style="text-align: center; color: #888;">Dane historyczne (zjedź niżej)</div>
+    <div id="counter" style="text-align:center; margin:10px;">Wczytywanie bazy...</div>
+    
+    <div style="width: 300px; margin: auto;">
+      <button id="exportBtn">Eksportuj CSV</button>
+    </div>
+
+    <table id="oledTable"><thead></thead><tbody></tbody></table>
+    
+    <div id="chart-container">
+      <h2 style="text-align:center; color: white;">Statusy (7 dni)</h2>
+      <canvas id="statusChart"></canvas>
+    </div>
   </div>
 
 <script>
-/* KONFIGURACJA KAMERY */
-// Uwaga: wpisywanie hasła w kodzie HTML jest niebezpieczne, jeśli strona jest publiczna.
-// Każdy może podejrzeć źródło strony (Ctrl+U) i zobaczyć hasło.
+/* --- KONFIGURACJA KAMERY --- */
 const CAM_IP = "172.26.35.148";
 const CAM_USER = "admin";
 const CAM_PASS = "Admin369";
-
-// Różne kamery mają różne końcówki. Jeśli snapshot.jpg nie zadziała, spróbuj odkomentować inne:
 const SNAPSHOT_PATH = "/snapshot.jpg"; 
-// const SNAPSHOT_PATH = "/cgi-bin/snapshot.cgi"; // Częste w starszych kamerach
-// const SNAPSHOT_PATH = "/ISAPI/Streaming/channels/101/picture"; // Hikvision
 
-function refreshCamera() {
+let currentSN = ""; // Przechowuje aktualnie zeskanowany numer
+
+// Funkcja robiąca zdjęcie (odświeżająca SRC)
+function refreshCamera(serialNumber = null) {
     const img = document.getElementById('camImage');
+    const display = document.getElementById('current-serial-display');
     const timestamp = new Date().getTime();
     
-    // Konstrukcja adresu z loginem i hasłem
-    // Format: http://user:password@IP/sciezka?t=czas
+    // Jeśli podano SN, zaktualizuj wyświetlacz
+    if (serialNumber) {
+        currentSN = serialNumber;
+        display.textContent = "SN: " + serialNumber;
+        display.style.color = "#4CAF50"; // Zielony kolor sukcesu
+    } else {
+        display.style.color = "#FFC107"; // Żółty dla manualnego
+    }
+
+    // Ładowanie obrazu
     const url = `http://${CAM_USER}:${CAM_PASS}@${CAM_IP}${SNAPSHOT_PATH}?t=${timestamp}`;
-    
     img.src = url;
-    
-    // Obsługa błędu ładowania (np. zły adres lub zablokowane przez przeglądarkę)
+
     img.onerror = function() {
-        console.error("Błąd ładowania obrazu. Sprawdź konsolę (F12) pod kątem błędów Mixed Content.");
-        alert("Nie udało się załadować zdjęcia.\n1. Upewnij się, że jesteś w tej samej sieci co kamera.\n2. Jeśli jesteś na https://, przeglądarka mogła zablokować http (Mixed Content).");
+        display.textContent = "BŁĄD KAMERY - Sprawdź sieć";
+        display.style.color = "red";
     };
 }
 
-// Załaduj zdjęcie automatycznie przy starcie
-// window.onload = refreshCamera; // Odkomentuj jeśli chcesz zdjęcie od razu po wejściu
+// Funkcja ręcznego przycisku
+function manualTrigger() {
+    refreshCamera(null);
+    document.getElementById('current-serial-display').textContent = "Zdjęcie wywołane ręcznie";
+}
+
+// OBSŁUGA SKANERA (KLAWIATURY)
+const scanInput = document.getElementById('scanInput');
+
+scanInput.addEventListener('keydown', function(event) {
+    // Skanery zazwyczaj kończą ciąg znakiem ENTER (kod 13)
+    if (event.key === 'Enter') {
+        event.preventDefault(); // Zatrzymaj przeładowanie formularza
+        
+        const scannedValue = this.value.trim();
+        
+        if (scannedValue.length > 0) {
+            console.log("Zeskanowano:", scannedValue);
+            refreshCamera(scannedValue); // Zrób zdjęcie i przypisz SN
+            this.value = ""; // Wyczyść pole dla następnego produktu
+        }
+    }
+});
+
+// Zapewnij, że pole jest aktywne, żeby można było skanować bez klikania
+document.body.addEventListener('click', function() {
+    // Opcjonalnie: automatyczny focus na pole po kliknięciu gdziekolwiek w tło
+    // scanInput.focus(); 
+});
+// Focus na start
+window.onload = function() {
+    scanInput.focus();
+    refreshCamera(); // Próba pobrania podglądu na start
+};
+
+// Funkcja pobierania zdjęcia na dysk (z nazwą SN)
+function downloadCurrentImage() {
+    const img = document.getElementById('camImage');
+    const link = document.createElement('a');
+    link.href = img.src;
+    
+    // Ustaw nazwę pliku: SN_Data.jpg lub Zdjęcie_Data.jpg
+    const fileName = currentSN ? `${currentSN}.jpg` : `OLED_Foto_${new Date().getTime()}.jpg`;
+    
+    link.download = fileName;
+    link.target = "_blank"; // Otwórz w nowym oknie jeśli pobieranie bezpośrednie zablokowane
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
 </script>
 
 <script>
+/* --- LOGIKA TABELI I WYKRESÓW (ZACHOWANA Z POPRZEDNIEJ WERSJI) --- */
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXdlq02wklbShCqO4st2FuEURvqcXpMQPmhFx_bB3C4efqANIbPKCYOMA9BNzdn5ceQz3wasIJXw05/pub?gid=661466938&single=true&output=csv";
 
 function getDateStringsISO(days = 7) {
@@ -234,26 +317,8 @@ Papa.parse(CSV_URL, {
       }
     });
 
-    document.getElementById("counter").textContent = `Liczba wpisów z ${yesterday} i ${today}: ${exportRows.length}`;
+    document.getElementById("counter").textContent = `Baza wczytana: ${exportRows.length} wpisów (Dziś/Wczoraj)`;
     document.getElementById("exportBtn").onclick = () => downloadCSV(headers, exportRows);
-
-    document.getElementById("search").addEventListener("input", function () {
-      const terms = this.value.toLowerCase().split(/\n|,|;/).map(t => t.trim()).filter(Boolean);
-      tbody.innerHTML = '';
-      const filtered = allRows.filter(row => {
-        const rowText = row.join(" ").toLowerCase();
-        return terms.length === 0 || terms.some(t => rowText.includes(t));
-      });
-      filtered.forEach(row => {
-        const tr = document.createElement("tr");
-        row.forEach(cell => {
-          const td = document.createElement("td");
-          td.textContent = cell;
-          tr.appendChild(td);
-        });
-        tbody.appendChild(tr);
-      });
-    });
 
     const ctx = document.getElementById('statusChart').getContext('2d');
     const colorMap = {"OK":"#4CAF50","NG":"#F44336","NDF":"#2196F3","WTG":"#FFC107","DMNT":"#9E9E9E"};
@@ -273,27 +338,11 @@ Papa.parse(CSV_URL, {
       options: {
         plugins: {
           legend: { labels: { color: 'white' } },
-          tooltip: { enabled: true },
         }
-      },
-      plugins: [{
-        id: 'centerText',
-        beforeDraw: chart => {
-          const {width, height, ctx} = chart;
-          ctx.restore();
-          ctx.font = `${(height / 10).toFixed(2)}px sans-serif`;
-          ctx.textBaseline = "middle";
-          ctx.fillStyle = "black";
-          const text = `OK: ${okCount}`;
-          ctx.fillText(text, width / 2 - ctx.measureText(text).width / 2, height / 2);
-          ctx.save();
-        }
-      }]
+      }
     });
   }
 });
-
-setTimeout(() => location.reload(), 180000);
 </script>
 </body>
 </html>
