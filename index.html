@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED Repair SERVICE MODE</title>
+  <title>OLED Service - USB CAM</title>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
@@ -14,7 +14,7 @@
       color: #fff;
     }
     header {
-      background-color: #d32f2f; /* Czerwony nagłówek dla trybu serwisowego */
+      background-color: #2196F3; /* Niebieski dla USB Mode */
       padding: 15px;
       text-align: center;
       box-shadow: 0 4px 6px rgba(0,0,0,0.3);
@@ -26,7 +26,7 @@
       letter-spacing: 2px;
     }
 
-    /* KONTENER SERWISOWY (Skaner + Kamera) */
+    /* KONTENER SERWISOWY */
     #service-panel {
       display: flex;
       flex-direction: column;
@@ -39,50 +39,56 @@
       border: 1px solid rgba(255,255,255,0.1);
     }
 
-    /* Pole skanowania */
     #scanInput {
       width: 80%;
       padding: 15px;
       font-size: 24px;
       text-align: center;
-      border: 2px solid #4CAF50;
+      border: 2px solid #2196F3;
       border-radius: 10px;
       background-color: #222;
       color: #fff;
       margin-bottom: 20px;
       outline: none;
-      transition: box-shadow 0.3s;
     }
     #scanInput:focus {
-      box-shadow: 0 0 15px rgba(76, 175, 80, 0.7);
+      box-shadow: 0 0 15px rgba(33, 150, 243, 0.7);
       background-color: #333;
     }
 
-    /* Kontener kamery */
     #camera-wrapper {
       position: relative;
       width: 100%;
       max-width: 640px;
       text-align: center;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 4px solid #444;
     }
 
-    #current-serial-display {
-      font-size: 20px;
-      font-weight: bold;
-      color: #FFC107;
-      margin-bottom: 5px;
-      min-height: 30px;
-    }
-
-    #camImage {
+    /* Video (podgląd na żywo) */
+    video {
       width: 100%;
       height: auto;
-      border-radius: 8px;
-      border: 4px solid #444;
-      background-color: #000;
       display: block;
     }
-    
+
+    /* Canvas (ukryte, służy do robienia zdjęcia) */
+    canvas {
+      display: none; /* Ukryte domyślnie, pokazujemy jako wynik */
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+    }
+
+    .status-text {
+      margin: 10px 0;
+      font-size: 18px;
+      color: #FFC107;
+      min-height: 25px;
+    }
+
     .btn-group {
       margin-top: 15px;
       display: flex;
@@ -97,15 +103,12 @@
       cursor: pointer;
       font-weight: bold;
       font-size: 14px;
-      transition: transform 0.1s;
     }
-    button:active { transform: scale(0.95); }
-    
-    #snapBtn { background-color: #2196F3; color: white; }
-    #downloadImgBtn { background-color: #FF9800; color: white; }
+    #resetBtn { background-color: #F44336; color: white; display: none; }
+    #downloadImgBtn { background-color: #4CAF50; color: white; display: none; }
     #exportBtn { background-color: #4CAF50; color: white; margin-top: 10px; width: 100%; }
 
-    /* Ukrywanie/Pokazywanie sekcji analitycznej */
+    /* Sekcja analityczna */
     #analytics-section {
       opacity: 0.6;
       transition: opacity 0.3s;
@@ -113,8 +116,7 @@
       padding-bottom: 50px;
     }
     #analytics-section:hover { opacity: 1; }
-
-    /* Tabela i wykres (zachowane style) */
+    
     table { width: 95%; margin: 20px auto; border-collapse: collapse; background: rgba(255,255,255,0.05); }
     th, td { padding: 8px; border: 1px solid rgba(255,255,255,0.1); font-size: 14px; }
     #chart-container { width: 95%; max-width: 500px; margin: 20px auto; }
@@ -123,37 +125,33 @@
 <body>
 
   <header>
-    <h1>OLED REPAIR - SERVICE STATION</h1>
+    <h1>OLED USB STATION</h1>
   </header>
 
   <div id="service-panel">
-    
     <label for="scanInput" style="color: #aaa; margin-bottom: 5px;">Zeskanuj Serial Number:</label>
-    <input type="text" id="scanInput" placeholder="Kliknij tu i zeskanuj kod..." autofocus autocomplete="off">
+    <input type="text" id="scanInput" placeholder="Kliknij i zeskanuj..." autofocus autocomplete="off">
+    
+    <div class="status-text" id="statusInfo">Podgląd na żywo</div>
 
     <div id="camera-wrapper">
-      <div id="current-serial-display">Oczekiwanie na skan...</div>
-      
-      <img id="camImage" alt="Brak połączenia z kamerą" src="">
-      
-      <div class="btn-group">
-        <button id="snapBtn" onclick="manualTrigger()">📸 Ręczne Zdjęcie</button>
-        <a id="downloadLink" style="display:none;"></a> 
-        <button id="downloadImgBtn" onclick="downloadCurrentImage()">💾 Pobierz JPG</button>
-      </div>
+      <video id="videoFeed" autoplay playsinline></video>
+      <canvas id="photoCanvas"></canvas>
+    </div>
+
+    <div class="btn-group">
+      <button id="resetBtn" onclick="resetCamera()">🔄 Wróć do Podglądu</button>
+      <button id="downloadImgBtn" onclick="downloadPhoto()">💾 Pobierz Zdjęcie</button>
     </div>
   </div>
 
   <div id="analytics-section">
-    <div style="text-align: center; color: #888;">Dane historyczne (zjedź niżej)</div>
+    <div style="text-align: center; color: #888;">Dane historyczne</div>
     <div id="counter" style="text-align:center; margin:10px;">Wczytywanie bazy...</div>
-    
     <div style="width: 300px; margin: auto;">
       <button id="exportBtn">Eksportuj CSV</button>
     </div>
-
     <table id="oledTable"><thead></thead><tbody></tbody></table>
-    
     <div id="chart-container">
       <h2 style="text-align:center; color: white;">Statusy (7 dni)</h2>
       <canvas id="statusChart"></canvas>
@@ -161,93 +159,106 @@
   </div>
 
 <script>
-/* --- KONFIGURACJA KAMERY --- */
-const CAM_IP = "172.26.35.148";
-const CAM_USER = "admin";
-const CAM_PASS = "Admin369";
-const SNAPSHOT_PATH = "/snapshot.jpg"; 
-
-let currentSN = ""; // Przechowuje aktualnie zeskanowany numer
-
-// Funkcja robiąca zdjęcie (odświeżająca SRC)
-function refreshCamera(serialNumber = null) {
-    const img = document.getElementById('camImage');
-    const display = document.getElementById('current-serial-display');
-    const timestamp = new Date().getTime();
-    
-    // Jeśli podano SN, zaktualizuj wyświetlacz
-    if (serialNumber) {
-        currentSN = serialNumber;
-        display.textContent = "SN: " + serialNumber;
-        display.style.color = "#4CAF50"; // Zielony kolor sukcesu
-    } else {
-        display.style.color = "#FFC107"; // Żółty dla manualnego
-    }
-
-    // Ładowanie obrazu
-    const url = `http://${CAM_USER}:${CAM_PASS}@${CAM_IP}${SNAPSHOT_PATH}?t=${timestamp}`;
-    img.src = url;
-
-    img.onerror = function() {
-        display.textContent = "BŁĄD KAMERY - Sprawdź sieć";
-        display.style.color = "red";
-    };
-}
-
-// Funkcja ręcznego przycisku
-function manualTrigger() {
-    refreshCamera(null);
-    document.getElementById('current-serial-display').textContent = "Zdjęcie wywołane ręcznie";
-}
-
-// OBSŁUGA SKANERA (KLAWIATURY)
+/* --- OBSŁUGA KAMERY USB --- */
+const video = document.getElementById('videoFeed');
+const canvas = document.getElementById('photoCanvas');
+const ctx = canvas.getContext('2d');
 const scanInput = document.getElementById('scanInput');
+const statusInfo = document.getElementById('statusInfo');
+const downloadBtn = document.getElementById('downloadImgBtn');
+const resetBtn = document.getElementById('resetBtn');
 
+let currentSN = "";
+
+// 1. Uruchomienie kamery przy starcie
+async function startCamera() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { width: { ideal: 1280 }, height: { ideal: 720 } } // Jakość HD
+        });
+        video.srcObject = stream;
+    } catch (err) {
+        console.error("Błąd kamery:", err);
+        statusInfo.textContent = "BŁĄD: Nie wykryto kamery lub brak zgody!";
+        statusInfo.style.color = "red";
+    }
+}
+
+// 2. Funkcja robienia zdjęcia (Capture)
+function takePhoto(serialNumber) {
+    currentSN = serialNumber;
+    
+    // Ustaw wymiary canvas takie same jak wideo
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    // Narysuj klatkę z wideo na canvasie
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // DODATEK: Wypalanie napisów na zdjęciu
+    ctx.font = "bold 30px Arial";
+    ctx.fillStyle = "yellow";
+    ctx.shadowColor="black";
+    ctx.shadowBlur=4;
+    ctx.fillText("SN: " + serialNumber, 20, 50); // Numer seryjny w lewym górnym
+    
+    const dateStr = new Date().toLocaleString();
+    ctx.font = "20px Arial";
+    ctx.fillStyle = "white";
+    ctx.fillText(dateStr, 20, 85); // Data pod spodem
+
+    // Przełącz widok: Ukryj wideo, pokaż zdjęcie
+    video.style.display = "none";
+    canvas.style.display = "block";
+    
+    // Pokaż przyciski
+    downloadBtn.style.display = "block";
+    resetBtn.style.display = "block";
+    
+    statusInfo.textContent = "Zdjęcie gotowe dla: " + serialNumber;
+    statusInfo.style.color = "#4CAF50";
+}
+
+// 3. Reset (powrót do podglądu)
+function resetCamera() {
+    video.style.display = "block";
+    canvas.style.display = "none";
+    downloadBtn.style.display = "none";
+    resetBtn.style.display = "none";
+    scanInput.value = "";
+    scanInput.focus();
+    statusInfo.textContent = "Gotowy do skanowania (Podgląd LIVE)";
+    statusInfo.style.color = "#FFC107";
+}
+
+// 4. Pobieranie pliku
+function downloadPhoto() {
+    const link = document.createElement('a');
+    link.download = `${currentSN}.jpg`;
+    link.href = canvas.toDataURL("image/jpeg");
+    link.click();
+}
+
+// 5. Obsługa Skanera (Enter)
 scanInput.addEventListener('keydown', function(event) {
-    // Skanery zazwyczaj kończą ciąg znakiem ENTER (kod 13)
     if (event.key === 'Enter') {
-        event.preventDefault(); // Zatrzymaj przeładowanie formularza
-        
-        const scannedValue = this.value.trim();
-        
-        if (scannedValue.length > 0) {
-            console.log("Zeskanowano:", scannedValue);
-            refreshCamera(scannedValue); // Zrób zdjęcie i przypisz SN
-            this.value = ""; // Wyczyść pole dla następnego produktu
+        const val = this.value.trim();
+        if (val) {
+            takePhoto(val);
+            this.blur(); // Usuń kursor z pola, żeby przypadkiem nie skasować
         }
     }
 });
 
-// Zapewnij, że pole jest aktywne, żeby można było skanować bez klikania
-document.body.addEventListener('click', function() {
-    // Opcjonalnie: automatyczny focus na pole po kliknięciu gdziekolwiek w tło
-    // scanInput.focus(); 
-});
-// Focus na start
+// Startuj kamerę po załadowaniu
 window.onload = function() {
+    startCamera();
     scanInput.focus();
-    refreshCamera(); // Próba pobrania podglądu na start
 };
-
-// Funkcja pobierania zdjęcia na dysk (z nazwą SN)
-function downloadCurrentImage() {
-    const img = document.getElementById('camImage');
-    const link = document.createElement('a');
-    link.href = img.src;
-    
-    // Ustaw nazwę pliku: SN_Data.jpg lub Zdjęcie_Data.jpg
-    const fileName = currentSN ? `${currentSN}.jpg` : `OLED_Foto_${new Date().getTime()}.jpg`;
-    
-    link.download = fileName;
-    link.target = "_blank"; // Otwórz w nowym oknie jeśli pobieranie bezpośrednie zablokowane
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
 </script>
 
 <script>
-/* --- LOGIKA TABELI I WYKRESÓW (ZACHOWANA Z POPRZEDNIEJ WERSJI) --- */
+/* --- LOGIKA DANYCH (TABELA/WYKRES) - BEZ ZMIAN --- */
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXdlq02wklbShCqO4st2FuEURvqcXpMQPmhFx_bB3C4efqANIbPKCYOMA9BNzdn5ceQz3wasIJXw05/pub?gid=661466938&single=true&output=csv";
 
 function getDateStringsISO(days = 7) {
@@ -277,7 +288,6 @@ Papa.parse(CSV_URL, {
     const headers = data[0];
     const dateIndex = headers.findIndex(h => h.trim().toLowerCase() === "data");
     const statusIndex = headers.findIndex(h => h.trim().toLowerCase() === "status");
-
     const today = new Date().toISOString().split('T')[0];
     const yesterday = new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().split('T')[0];
     const last7Days = getDateStringsISO(7);
@@ -285,7 +295,6 @@ Papa.parse(CSV_URL, {
     const thead = document.querySelector("#oledTable thead");
     const tbody = document.querySelector("#oledTable tbody");
     thead.innerHTML = tbody.innerHTML = '';
-
     headers.forEach(h => {
       const th = document.createElement("th");
       th.textContent = h;
@@ -308,38 +317,28 @@ Papa.parse(CSV_URL, {
       if (rowDate === today || rowDate === yesterday) {
         const tr = document.createElement("tr");
         row.forEach(cell => {
-          const td = document.createElement("td");
-          td.textContent = cell;
-          tr.appendChild(td);
+            const td = document.createElement("td");
+            td.textContent = cell;
+            tr.appendChild(td);
         });
         tbody.appendChild(tr);
         exportRows.push(row);
       }
     });
 
-    document.getElementById("counter").textContent = `Baza wczytana: ${exportRows.length} wpisów (Dziś/Wczoraj)`;
+    document.getElementById("counter").textContent = `Baza wczytana: ${exportRows.length} wpisów`;
     document.getElementById("exportBtn").onclick = () => downloadCSV(headers, exportRows);
 
     const ctx = document.getElementById('statusChart').getContext('2d');
     const colorMap = {"OK":"#4CAF50","NG":"#F44336","NDF":"#2196F3","WTG":"#FFC107","DMNT":"#9E9E9E"};
     const colors = Object.keys(statusCounts).map(k => colorMap[k] || "#9C27B0");
-
     new Chart(ctx, {
       type: 'doughnut',
       data: {
         labels: Object.keys(statusCounts),
-        datasets: [{
-          data: Object.values(statusCounts),
-          backgroundColor: colors,
-          borderColor: '#111',
-          borderWidth: 1
-        }]
+        datasets: [{ data: Object.values(statusCounts), backgroundColor: colors, borderColor: '#111', borderWidth: 1 }]
       },
-      options: {
-        plugins: {
-          legend: { labels: { color: 'white' } },
-        }
-      }
+      options: { plugins: { legend: { labels: { color: 'white' } } } }
     });
   }
 });
