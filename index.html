@@ -26,7 +26,7 @@
       justify-content: center;
       gap: 10px;
     }
-    #counter, #search, #exportBtn {
+    #counter, #search, #exportBtn, #camera-container {
       display: block;
       margin: 10px auto;
       max-width: 600px;
@@ -44,10 +44,44 @@
       border: none;
       border-radius: 8px;
       cursor: pointer;
+      width: 100%; /* Dopasowanie szerokości */
     }
+    /* STYL DO KAMERY */
+    #camera-container {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 15px;
+      border-radius: 12px;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    #camImage {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      border: 2px solid #555;
+      margin-top: 10px;
+      min-height: 200px;
+      background-color: #000;
+      display: block;
+      margin: 10px auto;
+    }
+    #snapBtn {
+      padding: 10px 20px;
+      background-color: #2196F3; /* Niebieski przycisk */
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+    #snapBtn:hover {
+      background-color: #1976D2;
+    }
+    
     table {
       width: 95%;
-      margin: auto;
+      margin: 20px auto;
       border-collapse: collapse;
       background-color: rgba(255, 255, 255, 0.1);
       border-radius: 8px;
@@ -75,14 +109,61 @@
   <header>
     <h1>OLED Repair Dashboard</h1>
   </header>
+  
   <div id="counter">Wczytywanie danych...</div>
+  
   <textarea id="search" placeholder="🔍 Wyszukaj SERIAL NUMBER lub wklej dane z arkusza" rows="3"></textarea>
+  
   <button id="exportBtn">Eksportuj CSV (DATA, STATUS, SERIAL NUMBER)</button>
+
+  <div id="camera-container">
+    <h3 style="margin: 0; color: #ddd;">Podgląd Stanowiska</h3>
+    <img id="camImage" alt="Obraz z kamery niedostępny - sprawdź połączenie" src="">
+    <button id="snapBtn" onclick="refreshCamera()">📸 Zrób Zdjęcie</button>
+    <p style="font-size: 12px; color: #aaa;">Jeśli obraz nie działa: sprawdź czy jesteś w tej samej sieci Wi-Fi co kamera.</p>
+  </div>
+
   <table id="oledTable"><thead></thead><tbody></tbody></table>
+  
   <div id="chart-container">
     <h2 style="text-align:center; color: white;">STATUS z ostatnich 7 dni</h2>
     <canvas id="statusChart" height="120"></canvas>
   </div>
+
+<script>
+/* KONFIGURACJA KAMERY */
+// Uwaga: wpisywanie hasła w kodzie HTML jest niebezpieczne, jeśli strona jest publiczna.
+// Każdy może podejrzeć źródło strony (Ctrl+U) i zobaczyć hasło.
+const CAM_IP = "172.26.35.148";
+const CAM_USER = "admin";
+const CAM_PASS = "Admin369";
+
+// Różne kamery mają różne końcówki. Jeśli snapshot.jpg nie zadziała, spróbuj odkomentować inne:
+const SNAPSHOT_PATH = "/snapshot.jpg"; 
+// const SNAPSHOT_PATH = "/cgi-bin/snapshot.cgi"; // Częste w starszych kamerach
+// const SNAPSHOT_PATH = "/ISAPI/Streaming/channels/101/picture"; // Hikvision
+
+function refreshCamera() {
+    const img = document.getElementById('camImage');
+    const timestamp = new Date().getTime();
+    
+    // Konstrukcja adresu z loginem i hasłem
+    // Format: http://user:password@IP/sciezka?t=czas
+    const url = `http://${CAM_USER}:${CAM_PASS}@${CAM_IP}${SNAPSHOT_PATH}?t=${timestamp}`;
+    
+    img.src = url;
+    
+    // Obsługa błędu ładowania (np. zły adres lub zablokowane przez przeglądarkę)
+    img.onerror = function() {
+        console.error("Błąd ładowania obrazu. Sprawdź konsolę (F12) pod kątem błędów Mixed Content.");
+        alert("Nie udało się załadować zdjęcia.\n1. Upewnij się, że jesteś w tej samej sieci co kamera.\n2. Jeśli jesteś na https://, przeglądarka mogła zablokować http (Mixed Content).");
+    };
+}
+
+// Załaduj zdjęcie automatycznie przy starcie
+// window.onload = refreshCamera; // Odkomentuj jeśli chcesz zdjęcie od razu po wejściu
+</script>
+
 <script>
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTXdlq02wklbShCqO4st2FuEURvqcXpMQPmhFx_bB3C4efqANIbPKCYOMA9BNzdn5ceQz3wasIJXw05/pub?gid=661466938&single=true&output=csv";
 
