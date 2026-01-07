@@ -2,10 +2,11 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR v11.0 PRINT MASTER</title>
+  <title>OLED REPAIR v11.0 ONYX + DIAGNOSTICS</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  
   <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;600;700&family=Roboto:wght@400;500;700&display=swap&subset=latin-ext" rel="stylesheet">
   
   <style>
@@ -18,42 +19,23 @@
       --neon-red: #ff003c;
       --neon-gold: #ffd700;
       --neon-purple: #bc13fe;
+      --neon-orange: #ff9d00;
+      
       --font-ui: 'Roboto', sans-serif;
       --font-tech: 'Oxanium', cursive;
     }
     
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; user-select: none; }
     
     body {
       margin: 0; background-color: var(--bg-deep); color: #fff;
       font-family: var(--font-ui); height: 100vh; overflow: hidden;
       display: flex; flex-direction: column;
-      background-image: linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+      background-image: 
+        linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
       background-size: 50px 50px;
     }
-
-    /* --- PRINT STYLES (ETIKIETA) --- */
-    @media print {
-      body * { visibility: hidden; } /* Ukryj wszystko */
-      #printableLabel, #printableLabel * { visibility: visible; } /* Pokaż tylko etykietę */
-      
-      #printableLabel {
-        position: fixed; left: 0; top: 0;
-        width: 100%; height: 100%;
-        background: white; color: black;
-        display: flex !important; flex-direction: column;
-        align-items: center; justify-content: center;
-        border: 4px solid black; /* Ramka etykiety */
-        padding: 10px;
-        font-family: 'Arial', sans-serif; /* Prosta czcionka dla drukarki */
-      }
-      
-      /* Ukrywamy tła i kolory dla oszczędności tuszu */
-      .login-box, header, .dashboard, .bar-bottom { display: none !important; }
-    }
-
-    /* Ukryta etykieta w normalnym widoku (pokaże się w popupie) */
-    #printableLabel { display: none; }
 
     /* --- LOGIN SCREEN --- */
     #loginScreen {
@@ -65,16 +47,19 @@
       text-align: center; border-radius: 12px; position: relative; overflow: hidden;
       box-shadow: 0 0 60px rgba(0, 243, 255, 0.1); backdrop-filter: blur(10px);
     }
+    .login-box h2 { font-family: var(--font-tech); font-weight: 700; letter-spacing: 1px; margin-bottom: 5px; }
     .login-input {
       width: 100%; padding: 15px; margin: 10px 0; background: #080808; border: 1px solid #333; color: var(--neon-cyan);
       font-family: var(--font-tech); font-size: 18px; text-align: center; outline: none; transition: 0.3s;
     }
     .login-input:focus { border-color: var(--neon-cyan); background: #111; }
+    input[type="password"] { letter-spacing: 5px; color: var(--neon-red); }
     .login-btn {
       width: 100%; padding: 15px; margin-top: 20px; background: var(--neon-cyan); color: #000; font-weight: bold; border: none;
       cursor: pointer; font-family: var(--font-tech); transition: 0.3s; font-size: 16px; letter-spacing: 2px;
     }
     .login-btn:hover { background: #fff; box-shadow: 0 0 30px var(--neon-cyan); }
+    .login-error { color: var(--neon-red); font-size: 12px; height: 20px; margin-top: 10px; font-weight: bold; font-family: var(--font-ui); }
 
     /* --- NETWORK GUARD --- */
     #networkGuard {
@@ -82,106 +67,211 @@
       background: rgba(0,0,0,0.95); z-index: 8000; backdrop-filter: blur(15px);
       display: none; align-items: center; justify-content: center; flex-direction: column;
     }
-    .alert-box { width: 600px; padding: 40px; border: 2px solid var(--neon-red); background: #050505; text-align: center; border-radius: 12px; }
-    .guard-btn { width: 100%; padding: 20px; background: var(--neon-red); color: #fff; font-weight: bold; border: none; cursor: pointer; font-family: var(--font-tech); font-size: 18px; margin-top: 20px; }
+    .alert-box {
+      width: 600px; padding: 40px; border: 2px solid var(--neon-red); background: #050505;
+      text-align: center; border-radius: 12px; box-shadow: 0 0 100px rgba(255, 0, 60, 0.2);
+    }
+    .alert-box h1 { font-family: var(--font-tech); letter-spacing: 1px; }
+    .path-box {
+      background:#111; padding:15px; border:1px dashed #555; font-size:12px; color:#fff; 
+      font-family:var(--font-tech); margin-top: 5px; word-break: break-all;
+    }
+    .guard-btn {
+      width: 100%; padding: 20px; background: var(--neon-red); color: #fff; font-weight: bold;
+      border: none; cursor: pointer; font-family: var(--font-tech); font-size: 18px; margin-top: 20px;
+    }
 
     /* --- HEADER --- */
-    header { height: 70px; display: flex; justify-content: space-between; align-items: center; padding: 0 30px; background: rgba(0,0,0,0.8); border-bottom: 1px solid #333; }
+    header {
+      height: 70px; display: flex; justify-content: space-between; align-items: center; padding: 0 30px;
+      background: rgba(0,0,0,0.8); border-bottom: 1px solid #333;
+    }
     .brand { font-family: var(--font-tech); font-size: 28px; font-weight: 700; color: #fff; letter-spacing: 2px; }
     .brand span { color: var(--neon-cyan); text-shadow: 0 0 10px var(--neon-cyan); }
     .operator-info { display: flex; align-items: center; gap: 20px; font-family: var(--font-tech); color: #aaa; font-size: 14px; }
-    .operator-badge { background: #1a1a1a; padding: 6px 15px; border-radius: 4px; border: 1px solid #444; color: var(--neon-cyan); font-weight: bold; }
-    .operator-badge.admin { border-color: var(--neon-gold); color: var(--neon-gold); }
-    .operator-badge.coord { border-color: var(--neon-purple); color: var(--neon-purple); }
+    
+    .operator-badge { background: #1a1a1a; padding: 6px 15px; border-radius: 4px; border: 1px solid #444; color: var(--neon-cyan); transition:0.3s; font-weight: bold; }
+    .operator-badge.admin { border-color: var(--neon-gold); color: var(--neon-gold); box-shadow: 0 0 15px rgba(255, 215, 0, 0.1); }
+    .operator-badge.coord { border-color: var(--neon-purple); color: var(--neon-purple); box-shadow: 0 0 15px rgba(188, 19, 254, 0.2); }
 
     /* --- DASHBOARD --- */
-    .dashboard { flex: 1; display: grid; grid-template-columns: 420px 1fr; gap: 20px; padding: 20px; overflow: hidden; opacity: 0; transition: opacity 1s; }
-    .panel-left { background: var(--panel-glass); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; overflow-y: auto; }
-    .panel-right { position: relative; background: #000; border: 2px solid #333; border-radius: 12px; overflow: hidden; }
-    video { width: 100%; height: 100%; object-fit: contain; }
+    .dashboard {
+      flex: 1; display: grid; grid-template-columns: 420px 1fr; gap: 20px; padding: 20px; overflow: hidden;
+      opacity: 0; transition: opacity 1s;
+    }
+    .panel-left {
+      background: var(--panel-glass); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px;
+      display: flex; flex-direction: column; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    }
+    .panel-right {
+      position: relative; background: #000; border: 2px solid #333; border-radius: 12px; overflow: hidden;
+      box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
+    }
+    
+    video { width: 100%; height: 100%; object-fit: contain; transform: scaleX(1); transition: transform 0.3s; }
+    video.mirrored { transform: scaleX(-1); }
+
+    /* --- DRAWING & CONTROLS --- */
+    #drawCanvas {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 60; cursor: crosshair; display: none;
+    }
+    .draw-toolbar {
+      position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 100;
+      display: none; background: rgba(0,0,0,0.8); padding: 10px 20px; border-radius: 30px; border: 1px solid var(--neon-cyan);
+      backdrop-filter: blur(5px);
+    }
+    .color-btn {
+      width: 25px; height: 25px; border-radius: 50%; border: 2px solid #fff; cursor: pointer; display: inline-block; margin: 0 5px;
+    }
+    .tool-btn {
+      background: transparent; border: 1px solid #aaa; color: #fff; padding: 5px 12px; cursor: pointer; 
+      font-family: var(--font-tech); font-size: 12px; margin-left: 10px; border-radius: 4px;
+    }
+    .tool-btn.confirm { background: var(--neon-cyan); color: #000; border-color: var(--neon-cyan); font-weight: bold; }
+
+    /* CAM CONTROLS */
     .cam-controls { position: absolute; bottom: 20px; right: 20px; z-index: 50; display: flex; gap: 10px; }
-    .cam-btn { background: rgba(0,0,0,0.6); border: 1px solid var(--neon-cyan); color: var(--neon-cyan); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .cam-btn {
+      background: rgba(0,0,0,0.6); border: 1px solid var(--neon-cyan); color: var(--neon-cyan);
+      width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 20px; transition: 0.2s; backdrop-filter: blur(4px);
+    }
+    .cam-btn:hover { background: var(--neon-cyan); color: #000; }
 
     /* UI ELEMENTS */
     .input-label { font-size: 11px; color: var(--neon-cyan); letter-spacing: 1px; margin-bottom: 5px; display: block; font-weight: bold; font-family: var(--font-tech); }
-    #scanInput { width: 100%; background: #000; border: 1px solid #444; color: #fff; padding: 12px; font-size: 22px; text-align: center; font-family: var(--font-tech); outline: none; border-radius: 6px; margin-bottom: 15px; }
+    #scanInput {
+      width: 100%; background: #000; border: 1px solid #444; color: #fff; padding: 12px; font-size: 22px;
+      text-align: center; font-family: var(--font-tech); outline: none; border-radius: 6px; margin-bottom: 15px;
+    }
     #scanInput:focus { border-color: var(--neon-green); box-shadow: 0 0 20px rgba(10,255,0,0.2); }
     
-    .checklist-btn { width: 100%; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); color: #888; padding: 12px; margin-bottom: 8px; cursor: pointer; text-align: left; font-family: var(--font-ui); display: flex; justify-content: space-between; transition: 0.2s; font-size: 14px; border-radius: 6px; font-weight: 500; }
+    .checklist-btn {
+      width: 100%; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); color: #888;
+      padding: 12px; margin-bottom: 8px; cursor: pointer; text-align: left; font-family: var(--font-ui);
+      display: flex; justify-content: space-between; transition: 0.2s; font-size: 14px; border-radius: 6px; font-weight: 500;
+    }
+    .checklist-btn:hover { background: rgba(255,255,255,0.05); color: #fff; border-color: #fff; }
     .checklist-btn.done { border-color: var(--neon-green); color: var(--neon-green); background: rgba(10,255,0,0.1); font-weight: 700; }
 
-    .custom-select, .custom-textarea { width: 100%; background: #080808; color: #fff; border: 1px solid #444; padding: 10px; font-family: var(--font-tech); border-radius: 5px; margin-bottom: 10px; }
-    .custom-select { border-color: var(--neon-purple); }
+    /* DECISION & ACTION */
+    .decision-panel { border-top: 1px solid #333; margin-top: 10px; padding-top: 15px; }
+    .custom-select {
+      width: 100%; background: #080808; color: #fff; border: 1px solid var(--neon-purple); padding: 10px;
+      font-family: var(--font-tech); font-size: 14px; border-radius: 5px; outline: none; cursor: pointer; margin-bottom: 10px;
+    }
+    .custom-textarea {
+      width: 100%; background: #080808; color: #ccc; border: 1px solid #444; padding: 10px;
+      font-family: var(--font-ui); font-size: 14px; border-radius: 5px; outline: none; resize: vertical; margin-bottom: 10px;
+    }
+    .custom-textarea:focus { border-color: var(--neon-cyan); color: #fff; }
 
-    #actionBtn { margin-top: auto; padding: 15px; width: 100%; background: #111; color: #444; font-weight: bold; border: none; font-size: 16px; cursor: not-allowed; border-radius: 6px; font-family: var(--font-tech); }
-    #actionBtn.active { background: var(--neon-green); color: #000; cursor: pointer; animation: pulseBtn 2s infinite; }
+    #actionBtn {
+      margin-top: auto; padding: 15px; width: 100%; background: #111; color: #444; font-weight: bold; border: none;
+      font-size: 16px; cursor: not-allowed; border-radius: 6px; text-transform: uppercase; letter-spacing: 1px; font-family: var(--font-tech);
+    }
+    #actionBtn.active {
+      background: var(--neon-green); color: #000; cursor: pointer; animation: pulseBtn 2s infinite; box-shadow: 0 0 20px var(--neon-green);
+    }
     @keyframes pulseBtn { 0% { box-shadow: 0 0 10px var(--neon-green); } 50% { box-shadow: 0 0 30px var(--neon-green); } 100% { box-shadow: 0 0 10px var(--neon-green); } }
 
-    /* QR / PRINT POPUP */
+    /* PANELS */
+    .bar-bottom {
+      position: fixed; bottom: 0; left: 0; width: 100%; height: 40px; background: #080808; border-top: 1px solid #333;
+      display: flex; justify-content: space-between; align-items: center; padding: 0 20px; z-index: 100;
+    }
+    .bar-group { display: flex; gap: 10px; }
+    .bar-btn {
+      background: transparent; border: 1px solid #444; color: #aaa; padding: 5px 15px; font-family: var(--font-tech);
+      font-size: 11px; cursor: pointer; transition: 0.2s;
+    }
+    .bar-btn:hover { border-color: var(--neon-cyan); color: var(--neon-cyan); }
+    .bar-btn.admin-only { border-color: var(--neon-gold); color: var(--neon-gold); display: none; }
+
+    .slide-panel {
+      position: fixed; bottom: 0; left: 0; width: 100%; height: 0; background: rgba(10, 12, 16, 0.98);
+      z-index: 200; transition: height 0.5s cubic-bezier(0.25, 1, 0.5, 1); overflow: hidden;
+      border-top: 2px solid var(--neon-cyan); display: flex; flex-direction: column;
+    }
+    .slide-panel.open { height: 85vh; }
+    .panel-header { padding: 20px; background: #000; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
+    .panel-content { flex: 1; overflow: auto; padding: 30px; }
+
+    /* ANALYTICS & TABLES */
+    table { width: 100%; border-collapse: collapse; font-size: 13px; color: #ccc; font-family: var(--font-tech); }
+    th { text-align: left; padding: 12px; border-bottom: 2px solid #333; color: var(--neon-cyan); background: #000; position: sticky; top: 0; }
+    td { padding: 12px; border-bottom: 1px solid #222; }
+    tr:hover { background: rgba(255,255,255,0.05); }
+
+    /* STATS BOXES */
+    .stats-container { display: flex; gap: 20px; margin-bottom: 20px; }
+    .stat-box {
+      flex: 1; background: #111; border: 1px solid #333; padding: 20px; border-radius: 8px; text-align: center;
+    }
+    .stat-val { font-size: 32px; font-weight: bold; color: #fff; font-family: var(--font-tech); }
+    .stat-label { font-size: 12px; color: #888; letter-spacing: 1px; }
+
+    /* QR PASS POPUP */
     #qrPopup {
       position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-      background: #111; border: 2px solid var(--neon-cyan); padding: 30px; border-radius: 12px; z-index: 500;
-      text-align: center; display: none; box-shadow: 0 0 100px rgba(0,0,0,0.9); width: 400px;
+      background: #fff; color: #000; padding: 30px; border-radius: 10px; z-index: 500;
+      text-align: center; display: none; box-shadow: 0 0 100px rgba(0,0,0,1); border: 5px solid var(--neon-cyan);
     }
-    
-    /* TO JEST PODGLĄD ETYKIETY NA EKRANIE (CIEMNY) */
-    .label-preview-box {
-      background: #fff; color: #000; padding: 15px; margin: 20px auto;
-      border-radius: 4px; width: 300px; text-align: center; font-family: sans-serif;
-    }
-    
-    .print-btn { background: var(--neon-green); color: #000; border: none; padding: 10px 25px; font-weight: bold; cursor: pointer; font-family: var(--font-tech); margin-top: 10px; font-size: 16px; }
-    .close-btn { background: #333; color: #fff; border: 1px solid #555; padding: 10px 25px; cursor: pointer; font-family: var(--font-tech); margin-top: 10px; }
+    #qrCodeBox { margin: 20px auto; }
 
-    /* PANELS */
-    .bar-bottom { position: fixed; bottom: 0; left: 0; width: 100%; height: 40px; background: #080808; border-top: 1px solid #333; display: flex; justify-content: flex-end; padding: 0 20px; gap: 10px; z-index: 100; align-items: center; }
-    .bar-btn { background: transparent; border: 1px solid #444; color: #aaa; padding: 5px 15px; font-family: var(--font-tech); font-size: 11px; cursor: pointer; }
-    .bar-btn:hover { border-color: var(--neon-cyan); color: var(--neon-cyan); }
-    .slide-panel { position: fixed; bottom: 0; left: 0; width: 100%; height: 0; background: rgba(10, 12, 16, 0.98); z-index: 200; transition: height 0.5s; overflow: hidden; border-top: 2px solid var(--neon-cyan); display: flex; flex-direction: column; }
-    .slide-panel.open { height: 85vh; }
+    /* 3D SCENE */
+    .scene-container { height: 140px; perspective: 1000px; display: flex; justify-content: center; align-items: center; margin-bottom: 10px; }
+    .tv-pivot { position: relative; width: 160px; height: 90px; transform-style: preserve-3d; transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    .tv-panel { position: absolute; width: 100%; height: 100%; background: #000; border: 2px solid #333; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; }
+    .tv-front { background: linear-gradient(135deg, #050505, #1a1a1a); border: 1px solid #555; }
+    .tv-front::after { content: "OLED"; opacity: 0.3; font-weight: bold; font-family: var(--font-tech); }
+    .tv-back { transform: rotateY(180deg); background: #151515; border: 1px solid #444; }
     
+    .cam-overlay { position: absolute; top: 20px; left: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 55; }
+    .tag { background: rgba(0,0,0,0.7); color: #fff; padding: 6px 12px; font-family: var(--font-tech); font-size: 14px; border-left: 3px solid var(--neon-cyan); backdrop-filter: blur(5px); }
+
     canvas { display: none; }
+
+    /* PATTERN OVERLAY */
+    #patternOverlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+        z-index: 99999; display: none; cursor: pointer;
+    }
+
   </style>
 </head>
 <body>
 
-<div id="printableLabel">
-  <div style="border: 4px solid black; padding: 10px; width: 350px; text-align: center; margin: 0 auto;">
-    <h1 style="margin: 0; font-size: 36px; font-weight: 900;">QC <span id="printStatus">PASS</span></h1>
-    <hr style="border: 1px solid black; margin: 10px 0;">
-    <div id="printQrCode" style="display:flex; justify-content:center; margin: 10px 0;"></div>
-    <div style="font-size: 18px; font-weight: bold; font-family: monospace;" id="printSN">SN: XXXXXXXXX</div>
-    <div style="font-size: 12px; margin-top: 5px;">
-      <span id="printDate">2023-01-01</span> | OP: <span id="printOp">TEST</span>
-    </div>
-    <div style="font-size: 10px; margin-top: 5px;">OLED REPAIR CENTER</div>
-  </div>
-</div>
+<div id="patternOverlay" onclick="nextPattern()"></div>
 
 <div id="loginScreen">
   <div class="login-box">
     <h2 style="color:#fff;">OLED REPAIR SYSTEM</h2>
-    <div style="font-size:12px; color:#666; margin-bottom:30px; font-family: var(--font-tech);">V11.0 PRINT MASTER</div>
-    <label class="input-label" style="text-align:left;">UŻYTKOWNIK</label>
-    <input type="text" id="userInput" class="login-input" placeholder="LOGIN">
-    <label class="input-label" style="text-align:left; color:var(--neon-red);">HASŁO</label>
+    <div style="font-size:12px; color:#666; margin-bottom:30px; font-family: var(--font-tech);">V11.0 ONYX + DIAGNOSTICS</div>
+    
+    <label class="input-label" style="text-align:left; margin-left:5px;">UŻYTKOWNIK</label>
+    <input type="text" id="userInput" class="login-input" placeholder="LOGIN" autocomplete="off">
+    <label class="input-label" style="text-align:left; margin-left:5px; color:var(--neon-red);">HASŁO</label>
     <input type="password" id="passInput" class="login-input" placeholder="••••••••">
-    <div id="loginError" style="color:red; height:20px;"></div>
-    <button class="login-btn" onclick="attemptLogin()">ROZPOCZNIJ PRACĘ</button>
+    <div id="loginError" class="login-error"></div>
+    <button class="login-btn" onclick="attemptLogin()">ROZPOCZNIJ ZMIANĘ</button>
   </div>
 </div>
 
 <div id="networkGuard">
   <div class="alert-box">
-    <h1 style="color:var(--neon-red); margin:0;">⚠️ WYMAGANE POŁĄCZENIE ⚠️</h1>
-    <div style="margin:20px; font-family:var(--font-tech); color:#aaa;">\\plgorfs001\pub\SERVICE\LCDR\LCDR\OLED OBM Panels\Zdjęcia z napraw OLED</div>
+    <h1 style="color:var(--neon-red); margin:0;">⚠️ SYSTEM ROZŁĄCZONY ⚠️</h1>
+    <p style="font-size:16px; color:#ccc; margin:20px 0;">WYMAGANY DOSTĘP DO FOLDERU SIECIOWEGO</p>
+    <div class="input-label" style="color:#aaa;">CEL:</div>
+    <div class="path-box">\\plgorfs001\pub\SERVICE\LCDR\LCDR\OLED OBM Panels\Zdjęcia z napraw OLED</div>
     <button class="guard-btn" onclick="connectNetwork()">📡 POŁĄCZ Z SERWEREM</button>
   </div>
 </div>
 
 <header>
-  <div class="brand">LG <span>OLED</span> STUDIO</div>
+  <div class="brand">TPV <span>OLED</span> REPAIR STATION</div>
   <div class="operator-info">
+    <button class="bar-btn" onclick="toggleFullScreen()" title="Kiosk Mode">⛶</button>
     <div class="operator-badge" id="operatorBadge">---</div>
     <div id="clockDisplay">00:00</div>
   </div>
@@ -189,17 +279,22 @@
 
 <div class="dashboard" id="mainDashboard">
   <aside class="panel-left">
-    <div style="text-align:center; margin-bottom:10px;">
-      <div style="width:100px; height:60px; background:#111; border:1px solid #333; margin:auto; display:flex; align-items:center; justify-content:center; color:#555;">TV MODEL</div>
+    <div class="scene-container">
+      <div class="tv-pivot" id="tv3d">
+        <div class="tv-panel tv-front"></div>
+        <div class="tv-panel tv-back">SERWIS</div>
+      </div>
     </div>
     
     <span class="input-label">SKANER KODÓW KRESKOWYCH</span>
     <input type="text" id="scanInput" placeholder="OCZEKIWANIE NA SKAN..." autofocus>
 
     <div id="checklist">
-      <div id="btnFront" class="checklist-btn" onclick="capture('PRZOD')"><span>1. PRZÓD EKRANU</span> <span>📷</span></div>
-      <div id="btnBack" class="checklist-btn" onclick="capture('TYL')"><span>2. TYŁ (TABLICZKA)</span> <span>📷</span></div>
-      <div id="btnImage" class="checklist-btn" onclick="capture('OBRAZ')"><span>3. TEST OBRAZU</span> <span>📷</span></div>
+        <button class="checklist-btn" style="border-color:var(--neon-purple); color:var(--neon-purple);" onclick="togglePatterns()"><span>🖥️ TEST EKRANU (PATTERNS)</span> <span>⏯</span></button>
+        <div style="height:10px;"></div>
+        <div id="btnFront" class="checklist-btn" onclick="capture('PRZOD')"><span>1. PRZÓD EKRANU</span> <span>📷</span></div>
+        <div id="btnBack" class="checklist-btn" onclick="capture('TYL')"><span>2. TYŁ (TABLICZKA)</span> <span>📷</span></div>
+        <div id="btnImage" class="checklist-btn" onclick="capture('OBRAZ')"><span>3. TEST OBRAZU</span> <span>📷</span></div>
     </div>
 
     <div class="decision-panel">
@@ -212,58 +307,107 @@
         <option value="SCRAP">⚫ SCRAP (ZŁOM)</option>
         <option value="OFFRS_OK">🟣 OFFRS OK</option>
       </select>
+      <span class="input-label">KOMENTARZ / OPIS USTERKI</span>
       <textarea id="commentInput" class="custom-textarea" rows="2" placeholder="Wpisz uwagi..."></textarea>
     </div>
 
     <button id="actionBtn" onclick="saveData()">OCZEKIWANIE</button>
-    <div id="saveStatus" style="text-align:center; margin-top:5px; font-size:11px; color:#666;"></div>
+    <div id="saveStatus" style="text-align:center; color:#666; margin-top:10px; font-size:11px; height:15px; font-family: var(--font-tech);"></div>
   </aside>
 
   <main class="panel-right">
-    <div style="position:absolute; top:20px; left:20px;">
+    <div class="cam-overlay">
       <div class="tag" id="tagSN">SN: ---</div>
+      <div class="tag" id="tagOp">OP: ---</div>
+    </div>
+    
+    <div class="draw-toolbar" id="drawToolbar">
+      <span style="color:#fff; font-size:12px; margin-right:10px;">ZAZNACZ WADĘ:</span>
+      <div class="color-btn" style="background:red;" onclick="setDrawColor('red')"></div>
+      <div class="color-btn" style="background:#0aff00;" onclick="setDrawColor('#0aff00')"></div>
+      <button class="tool-btn" onclick="clearDraw()">WYCZYŚĆ</button>
+      <button class="tool-btn confirm" onclick="confirmPhoto()">ZAPISZ</button>
+      <button class="tool-btn" onclick="cancelPhoto()">ANULUJ</button>
+    </div>
+
+    <div class="cam-controls">
+      <div class="cam-btn" onclick="toggleMirror()" title="Odbicie lustrzane">↔</div>
     </div>
     <video id="videoFeed" autoplay playsinline></video>
+    <canvas id="drawCanvas"></canvas>
   </main>
 </div>
 
 <div class="bar-bottom">
-  <div id="connStatus" style="margin-right:auto; font-size:11px; color:#444;">🔴 OFFLINE</div>
-  <button class="bar-btn admin-only" style="display:none;" onclick="toggleUserPanel()">👥 UŻYTKOWNICY</button>
-  <button class="bar-btn" onclick="location.reload()">WYLOGUJ</button>
+  <div id="connStatus" style="color:#444; font-size:11px;">🔴 OFFLINE</div>
+  <div class="bar-group">
+    <button class="bar-btn admin-only" onclick="toggleUserPanel()">👥 UŻYTKOWNICY</button>
+    <button class="bar-btn" onclick="toggleReportPanel()">📂 BAZA DANYCH / STATYSTYKI</button>
+  </div>
 </div>
 
 <div id="userPanel" class="slide-panel">
-  <div style="padding:20px; background:#000; border-bottom:1px solid #333; display:flex; justify-content:space-between;">
-    <span style="color:var(--neon-gold); font-size:20px;">ADMINISTRACJA</span>
-    <button class="bar-btn" onclick="toggleUserPanel()">ZAMKNIJ</button>
+  <div class="panel-header">
+    <div style="font-size:20px; color:var(--neon-gold); font-family: var(--font-tech);">ZARZĄDZANIE PERSONELEM</div>
+    <button class="bar-btn" onclick="toggleUserPanel()">ZAMKNIJ X</button>
   </div>
-  <div style="padding:20px;">
-    <div style="display:flex; gap:10px; margin-bottom:20px;">
-      <input id="newLogin" placeholder="Login" style="background:#111; color:#fff; border:1px solid #444; padding:5px;">
-      <input id="newPass" placeholder="Hasło" style="background:#111; color:#fff; border:1px solid #444; padding:5px;">
-      <select id="newRole" style="background:#111; color:#fff; border:1px solid #444; padding:5px;">
+  <div class="panel-content">
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 100px; gap:10px; margin-bottom:20px; padding:20px; background:#111; border:1px solid #333;">
+      <input type="text" id="newLogin" placeholder="NOWY LOGIN" style="background:#000; border:1px solid #444; color:#fff; padding:10px; font-family: var(--font-tech);">
+      <input type="text" id="newPass" placeholder="HASŁO" style="background:#000; border:1px solid #444; color:#fff; padding:10px; font-family: var(--font-tech);">
+      <select id="newRole" style="background:#000; border:1px solid #444; color:#fff; padding:10px; font-family: var(--font-tech);">
         <option value="OPERATOR">OPERATOR</option>
-        <option value="KOORDYNATOR">KOORDYNATOR</option>
-        <option value="ADMIN">ADMIN</option>
+        <option value="KOORDYNATOR" style="color:var(--neon-purple)">KOORDYNATOR</option>
+        <option value="ADMIN" style="color:var(--neon-gold)">ADMINISTRATOR</option>
       </select>
-      <button onclick="addUser()" style="background:var(--neon-gold); border:none; cursor:pointer; font-weight:bold;">DODAJ</button>
+      <button onclick="addUser()" style="background:var(--neon-gold); border:none; color:#000; font-weight:bold; cursor:pointer; font-family: var(--font-tech);">DODAJ</button>
     </div>
-    <div id="userList" style="color:#aaa;"></div>
+    <table id="userTable"><thead><tr><th>LOGIN</th><th>HASŁO</th><th>ROLA</th><th>AKCJA</th></tr></thead><tbody></tbody></table>
+  </div>
+</div>
+
+<div id="reportPanel" class="slide-panel">
+  <div class="panel-header">
+    <div style="font-size:20px; color:var(--neon-cyan); font-family: var(--font-tech);">ANALYTICS CENTER</div>
+    <div>
+      <input type="text" id="searchDB" placeholder="SZUKAJ SN..." onkeyup="filterTable()" style="background:#111; border:1px solid #444; color:#fff; padding:5px 10px; margin-right:10px; font-family:var(--font-tech);">
+      <button class="bar-btn" onclick="scanNetwork()">🔄 SKANUJ SERWER</button>
+      <button class="bar-btn" onclick="exportCSV()">💾 CSV</button>
+      <button class="bar-btn" onclick="toggleReportPanel()">ZAMKNIJ X</button>
+    </div>
+  </div>
+  <div class="panel-content">
+    
+    <div class="stats-container">
+      <div class="stat-box" style="border-color:var(--neon-cyan)">
+        <div class="stat-val" id="statTotal">0</div>
+        <div class="stat-label">WSZYSTKIE NAPRAWY</div>
+      </div>
+      <div class="stat-box" style="border-color:var(--neon-green)">
+        <div class="stat-val" id="statOK">0</div>
+        <div class="stat-label">STATUS OK</div>
+      </div>
+      <div class="stat-box" style="border-color:var(--neon-red)">
+        <div class="stat-val" id="statNG">0</div>
+        <div class="stat-label">STATUS NG/SCRAP</div>
+      </div>
+      <div class="stat-box" style="border-color:var(--neon-orange)">
+        <div class="stat-val" id="statYield">0%</div>
+        <div class="stat-label">YIELD (SKUTECZNOŚĆ)</div>
+      </div>
+    </div>
+
+    <table id="reportTable"><thead><tr><th>DATA</th><th>SN</th><th>OPERATOR</th><th>DECYZJA</th><th>UWAGI</th></tr></thead><tbody></tbody></table>
   </div>
 </div>
 
 <div id="qrPopup">
-  <h2 style="color:var(--neon-green); font-family:var(--font-tech); margin-top:0;">SUKCES! GOTOWE DO DRUKU</h2>
-  
-  <div class="label-preview-box">
-    <h1 style="margin:0; font-size:28px;">QC PASS</h1>
-    <div id="previewQr" style="display:flex; justify-content:center; margin:10px 0;"></div>
-    <div style="font-weight:bold;" id="previewSN">SN: XXXXXX</div>
-  </div>
-
-  <button class="print-btn" onclick="printLabel()">🖨️ DRUKUJ NAKLEJKĘ</button>
-  <button class="close-btn" onclick="closeQr()">ZAMKNIJ</button>
+  <h2 style="font-family: var(--font-tech); margin-top:0;">OLED PASSPORT</h2>
+  <div id="qrCodeBox"></div>
+  <div id="qrSnDisplay" style="font-weight:bold; font-family:var(--font-tech);">SN: ---</div>
+  <div id="qrStatusDisplay" style="color:green; margin-bottom:10px;">STATUS: OK</div>
+  <button onclick="closeQr()" style="padding:10px 20px; background:#000; color:#fff; border:none; cursor:pointer;">ZAMKNIJ</button>
+  <button onclick="window.print()" style="padding:10px 20px; background:var(--neon-cyan); color:#000; border:none; cursor:pointer;">DRUKUJ</button>
 </div>
 
 <canvas id="photoCanvas"></canvas>
@@ -279,84 +423,187 @@
     ]
   };
 
+  /* --- AUDIO SYSTEM (FEATURE 3) --- */
+  const SoundFX = {
+    ctx: null,
+    init: function() { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
+    play: function(type) {
+      if(!this.ctx) this.init();
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.connect(gain); gain.connect(this.ctx.destination);
+      
+      const now = this.ctx.currentTime;
+      if(type === 'beep') { // Scan OK
+        osc.type = 'sine'; osc.frequency.setValueAtTime(1200, now);
+        gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now+0.1);
+        osc.start(now); osc.stop(now+0.1);
+      } else if(type === 'error') { // NG / Error
+        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now); osc.frequency.linearRampToValueAtTime(100, now+0.3);
+        gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0.01, now+0.3);
+        osc.start(now); osc.stop(now+0.3);
+      } else if(type === 'shutter') { // Photo
+        // White noise workaround for simple osc
+        osc.type = 'square'; osc.frequency.setValueAtTime(800, now);
+        gain.gain.setValueAtTime(0.05, now); gain.gain.exponentialRampToValueAtTime(0.001, now+0.05);
+        osc.start(now); osc.stop(now+0.05);
+      } else if(type === 'success') { // Save
+        osc.type = 'triangle'; 
+        osc.frequency.setValueAtTime(440, now); 
+        osc.frequency.setValueAtTime(554, now+0.1); 
+        osc.frequency.setValueAtTime(659, now+0.2); 
+        gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now+0.4);
+        osc.start(now); osc.stop(now+0.4);
+      }
+    }
+  };
+
+  /* --- STATE --- */
   let users = [];
   let currentUser = null;
   let dirHandle = null;
   let currentSN = "";
   let photos = { PRZOD: null, TYL: null, OBRAZ: null };
+  let isMirrored = false;
+  let reportsCache = [];
+  
+  // Drawing State
+  let isDrawing = false;
+  let drawColor = "red";
+  let tempPhotoType = "";
 
   /* --- INIT --- */
   window.onload = () => {
     loadUsers();
     setInterval(() => document.getElementById('clockDisplay').innerText = new Date().toLocaleTimeString().slice(0,5), 1000);
+    
+    // Canvas Listeners
+    const c = document.getElementById('drawCanvas');
+    c.addEventListener('mousedown', startDraw);
+    c.addEventListener('mouseup', endDraw);
+    c.addEventListener('mousemove', draw);
+    // Touch support
+    c.addEventListener('touchstart', (e)=>{e.preventDefault(); startDraw(e.touches[0])});
+    c.addEventListener('touchend', (e)=>{e.preventDefault(); endDraw()});
+    c.addEventListener('touchmove', (e)=>{e.preventDefault(); draw(e.touches[0])});
   };
 
   /* --- USERS --- */
   function loadUsers() {
-    const s = localStorage.getItem('oled_users');
-    users = s ? JSON.parse(s) : CONFIG.defaultUsers;
+    const stored = localStorage.getItem('oled_users');
+    users = stored ? JSON.parse(stored) : CONFIG.defaultUsers;
   }
-  function saveUsers() { localStorage.setItem('oled_users', JSON.stringify(users)); renderUsers(); }
+  function saveUsers() { localStorage.setItem('oled_users', JSON.stringify(users)); renderUserTable(); }
   function attemptLogin() {
     const l = document.getElementById('userInput').value.trim().toUpperCase();
     const p = document.getElementById('passInput').value.trim();
-    const u = users.find(x => x.login === l && x.pass === p);
-    if(u) {
+    const u = users.find(user => user.login === l && user.pass === p);
+    if (u) {
       currentUser = u;
-      document.getElementById('loginScreen').style.opacity = 0;
+      document.getElementById('loginScreen').style.opacity = '0';
       setTimeout(() => {
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('networkGuard').style.display = 'flex';
-        document.getElementById('mainDashboard').style.opacity = 1;
-        setupUI();
+        document.getElementById('mainDashboard').style.opacity = '1';
+        setupInterface();
       }, 800);
-    } else { document.getElementById('loginError').innerText = "Błąd logowania"; }
+    } else { 
+      SoundFX.play('error');
+      document.getElementById('loginError').innerText = "BŁĘDNY LOGIN LUB HASŁO"; 
+    }
   }
-  function setupUI() {
-    document.getElementById('operatorBadge').innerText = currentUser.login;
+  function setupInterface() {
     const b = document.getElementById('operatorBadge');
-    b.className = "operator-badge";
-    if(currentUser.role === 'ADMIN') { b.classList.add('admin'); document.querySelector('.admin-only').style.display = 'block'; renderUsers(); }
+    b.innerText = currentUser.login;
+    document.getElementById('tagOp').innerText = "OP: " + currentUser.login;
+    b.className = "operator-badge"; 
+    if(currentUser.role === 'ADMIN') { b.classList.add('admin'); document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'inline-block'); renderUserTable(); }
     if(currentUser.role === 'KOORDYNATOR') b.classList.add('coord');
   }
   function addUser() {
-    const l = document.getElementById('newLogin').value.toUpperCase();
-    const p = document.getElementById('newPass').value;
+    const l = document.getElementById('newLogin').value.trim().toUpperCase();
+    const p = document.getElementById('newPass').value.trim();
     const r = document.getElementById('newRole').value;
     if(l && p) { users.push({login:l, pass:p, role:r}); saveUsers(); }
   }
-  function renderUsers() {
-    let h = "";
-    users.forEach((u,i) => h += `<div>${u.login} [${u.role}] <button onclick="users.splice(${i},1);saveUsers()">X</button></div>`);
-    document.getElementById('userList').innerHTML = h;
+  function removeUser(idx) { if(confirm("Usunąć?")) { users.splice(idx, 1); saveUsers(); } }
+  function renderUserTable() {
+    const tb = document.querySelector('#userTable tbody'); tb.innerHTML = "";
+    users.forEach((u, i) => {
+      let color = '#fff';
+      if(u.role === 'ADMIN') color = 'var(--neon-gold)';
+      if(u.role === 'KOORDYNATOR') color = 'var(--neon-purple)';
+      tb.innerHTML += `<tr><td>${u.login}</td><td>***</td><td style="color:${color}">${u.role}</td><td><button onclick="removeUser(${i})" style="color:red;background:none;border:none;cursor:pointer;">USUŃ</button></td></tr>`;
+    });
   }
-  function toggleUserPanel() { document.getElementById('userPanel').classList.toggle('open'); }
 
   /* --- NETWORK --- */
   async function connectNetwork() {
     try {
       await navigator.clipboard.writeText(CONFIG.networkPath);
+      alert("Ścieżka skopiowana!");
       dirHandle = await window.showDirectoryPicker();
       document.getElementById('networkGuard').style.display = 'none';
-      document.getElementById('connStatus').innerText = "🟢 POŁĄCZONO Z SIECIĄ";
+      document.getElementById('connStatus').innerHTML = "🟢 ONLINE";
       document.getElementById('connStatus').style.color = "var(--neon-green)";
       initCamera();
       document.getElementById('scanInput').focus();
     } catch(e) { alert("Wybierz folder!"); }
   }
 
-  /* --- CAMERA & LOGIC --- */
+  /* --- CAMERA & DRAWING (FEATURE 1) --- */
   async function initCamera() {
     try {
       const s = await navigator.mediaDevices.getUserMedia({video:{width:{ideal:3840}, height:{ideal:2160}}});
       document.getElementById('videoFeed').srcObject = s;
     } catch(e) { alert("Brak kamery"); }
   }
+  function toggleMirror() {
+    isMirrored = !isMirrored;
+    const v = document.getElementById('videoFeed');
+    isMirrored ? v.classList.add('mirrored') : v.classList.remove('mirrored');
+  }
+  function toggleFullScreen() {
+    if(!document.fullscreenElement) document.documentElement.requestFullscreen();
+    else if(document.exitFullscreen) document.exitFullscreen();
+  }
 
+  // --- DRAWING LOGIC ---
+  function startDraw(e) { isDrawing = true; draw(e); }
+  function endDraw() { isDrawing = false; const c = document.getElementById('drawCanvas'); c.getContext('2d').beginPath(); }
+  function draw(e) {
+    if(!isDrawing) return;
+    const c = document.getElementById('drawCanvas');
+    const ctx = c.getContext('2d');
+    const rect = c.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = drawColor;
+    
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  }
+  function setDrawColor(col) { drawColor = col; }
+  function clearDraw() {
+    const c = document.getElementById('drawCanvas');
+    c.getContext('2d').clearRect(0, 0, c.width, c.height);
+  }
+
+  /* --- WORKFLOW --- */
   document.getElementById('scanInput').addEventListener('keydown', e => {
-    if(e.key === 'Enter') {
+    if(e.key==='Enter') {
       const v = e.target.value.trim().toUpperCase();
-      if(v.length > 3) startSession(v);
+      if(v.length > 3) {
+        SoundFX.play('beep');
+        startSession(v);
+      } else {
+        SoundFX.play('error');
+      }
       e.target.value = ""; e.target.blur();
     }
   });
@@ -367,32 +614,83 @@
     document.querySelectorAll('.checklist-btn').forEach(b => b.classList.remove('done'));
     document.getElementById('actionBtn').innerText = "OCZEKIWANIE (0/3)";
     document.getElementById('actionBtn').classList.remove('active');
+    document.getElementById('tv3d').style.transform = "rotateY(0deg)";
+    document.getElementById('commentInput').value = "";
   }
 
+  // Capture - Modified for Drawing
   function capture(type) {
     if(!currentSN) return document.getElementById('scanInput').focus();
+    tempPhotoType = type;
+    
+    // Animacja 3D
+    document.getElementById('tv3d').style.transform = type === 'TYL' ? "rotateY(180deg)" : "rotateY(0deg)";
+
+    // Freeze video
     const v = document.getElementById('videoFeed');
-    const c = document.getElementById('photoCanvas');
-    const x = c.getContext('2d');
-    c.width = v.videoWidth; c.height = v.videoHeight;
-    x.drawImage(v, 0, 0);
+    v.pause();
+    SoundFX.play('shutter');
+
+    // Show drawing UI
+    document.getElementById('drawToolbar').style.display = 'block';
+    const c = document.getElementById('drawCanvas');
+    c.style.display = 'block';
+    c.width = v.offsetWidth;
+    c.height = v.offsetHeight;
+    clearDraw();
+  }
+
+  function confirmPhoto() {
+    const v = document.getElementById('videoFeed');
+    const drawC = document.getElementById('drawCanvas');
+    const finalC = document.getElementById('photoCanvas');
     
-    // Watermark
-    const fs = Math.floor(c.height/30);
-    x.font = `bold ${fs}px Roboto`; x.fillStyle="#0aff00"; x.strokeStyle="black"; x.lineWidth=4;
-    x.strokeText(`SN: ${currentSN}`, 50, fs+20); x.fillText(`SN: ${currentSN}`, 50, fs+20);
-    
-    c.toBlob(b => {
-      photos[type] = b;
-      const count = Object.values(photos).filter(o=>o).length;
-      document.getElementById('actionBtn').innerText = `BRAK ZDJĘĆ (${count}/3)`;
-      const map = {'PRZOD':'btnFront','TYL':'btnBack','OBRAZ':'btnImage'};
-      document.getElementById(map[type]).classList.add('done');
-      if(count===3) {
-        document.getElementById('actionBtn').classList.add('active');
-        document.getElementById('actionBtn').innerText = "💾 ZAPISZ";
-      }
-    }, 'image/jpeg', 0.9);
+    finalC.width = v.videoWidth;
+    finalC.height = v.videoHeight;
+    const ctx = finalC.getContext('2d');
+
+    // 1. Draw Video Frame
+    ctx.save();
+    if(isMirrored) { ctx.translate(finalC.width, 0); ctx.scale(-1, 1); }
+    ctx.drawImage(v, 0, 0);
+    ctx.restore();
+
+    // 2. Overlay Drawing (Scaled)
+    ctx.drawImage(drawC, 0, 0, finalC.width, finalC.height);
+
+    // 3. Watermark
+    const fs = Math.floor(finalC.height/25);
+    ctx.font = `bold ${fs}px Roboto`; ctx.lineWidth=4; ctx.strokeStyle="black"; ctx.fillStyle="#0aff00";
+    ctx.strokeText(`SN: ${currentSN}`, 50, fs+20); ctx.fillText(`SN: ${currentSN}`, 50, fs+20);
+    ctx.fillStyle = "#00f3ff";
+    ctx.strokeText(`TYP: ${tempPhotoType}`, 50, (fs*2)+40); ctx.fillText(`TYP: ${tempPhotoType}`, 50, (fs*2)+40);
+    ctx.fillStyle = "white"; ctx.font = `bold ${Math.floor(fs*0.8)}px Roboto`;
+    ctx.strokeText(`OP: ${currentUser.login}`, 50, (fs*3)+60); ctx.fillText(`OP: ${currentUser.login}`, 50, (fs*3)+60);
+
+    // Save Blob
+    finalC.toBlob(b => {
+      photos[tempPhotoType] = b;
+      updateUIafterPhoto();
+      cancelPhoto(); // Clean up UI
+    }, 'image/jpeg', 0.95);
+  }
+
+  function cancelPhoto() {
+    const v = document.getElementById('videoFeed');
+    v.play();
+    document.getElementById('drawToolbar').style.display = 'none';
+    document.getElementById('drawCanvas').style.display = 'none';
+  }
+
+  function updateUIafterPhoto() {
+    const count = Object.values(photos).filter(o=>o).length;
+    document.getElementById('actionBtn').innerText = `BRAK ZDJĘĆ (${count}/3)`;
+    const map = {'PRZOD':'btnFront','TYL':'btnBack','OBRAZ':'btnImage'};
+    document.getElementById(map[tempPhotoType]).classList.add('done');
+    if(count===3) {
+      document.getElementById('actionBtn').classList.add('active');
+      document.getElementById('actionBtn').innerText = "💾 ZAPISZ";
+    }
   }
 
   async function saveData() {
@@ -400,7 +698,19 @@
     document.getElementById('saveStatus').innerText = "ZAPISYWANIE...";
     
     const decision = document.getElementById('statusSelect').value;
-    const txt = `SN: ${currentSN}\nOP: ${currentUser.login}\nDEC: ${decision}\nDATE: ${new Date().toLocaleString()}`;
+    const comment = document.getElementById('commentInput').value.replace(/\n/g, " ");
+    const txt = `
+RAPORT SERWISOWY OLED
+---------------------
+SN: ${currentSN}
+DATA: ${new Date().toLocaleString()}
+OPERATOR: ${currentUser.login}
+---------------------
+DECYZJA: ${decision}
+UWAGI: ${comment}
+---------------------
+ZDJĘCIA: 3/3 OK
+`.trim();
 
     if(dirHandle) {
       try {
@@ -410,46 +720,157 @@
         await write(d, `${currentSN}_OBRAZ.jpg`, photos.OBRAZ);
         await write(d, `RAPORT_${currentSN}.txt`, new Blob([txt],{type:'text/plain'}));
         
+        SoundFX.play('success');
         document.getElementById('saveStatus').innerText = "ZAPISANO!";
         document.getElementById('saveStatus').style.color = "#0aff00";
-        
-        // POKAŻ OKNO DRUKOWANIA
-        preparePrint(currentSN, decision);
-        
-      } catch(e) { alert("Błąd zapisu!"); }
+        showQr(currentSN, decision);
+        setTimeout(()=>{ currentSN=""; startSession(""); }, 1500);
+      } catch(e) { 
+          SoundFX.play('error');
+          document.getElementById('saveStatus').innerText = "BŁĄD ZAPISU"; 
+      }
+    } else {
+      const z = new JSZip(); const f = z.folder(currentSN);
+      f.file("raport.txt", txt); f.file("1.jpg", photos.PRZOD);
+      z.generateAsync({type:"blob"}).then(c=>saveAs(c, `${currentSN}.zip`));
     }
   }
   async function write(dh, n, b) { const h = await dh.getFileHandle(n,{create:true}); const w = await h.createWritable(); await w.write(b); await w.close(); }
 
-  /* --- PRINTING MODULE --- */
-  function preparePrint(sn, status) {
-    const shortStatus = (status === 'OK' || status === 'OFFRS_OK' || status === 'NDF') ? 'PASS' : 'FAIL';
-    
-    // Generuj QR dla podglądu
-    document.getElementById('previewQr').innerHTML = "";
-    new QRCode(document.getElementById('previewQr'), { text: sn, width: 100, height: 100 });
-    document.getElementById('previewSN').innerText = "SN: " + sn;
-    
-    // Generuj QR dla DRUKU (Ukryty element)
-    document.getElementById('printQrCode').innerHTML = "";
-    new QRCode(document.getElementById('printQrCode'), { text: sn, width: 128, height: 128 });
-    
-    // Wypełnij dane druku
-    document.getElementById('printStatus').innerText = shortStatus;
-    document.getElementById('printSN').innerText = "SN: " + sn;
-    document.getElementById('printDate').innerText = new Date().toLocaleDateString();
-    document.getElementById('printOp').innerText = currentUser.login;
+  /* --- PATTERN GENERATOR (FEATURE 2) --- */
+  const patterns = ['#fff', '#f00', '#0f0', '#00f', '#000', 'linear-gradient(90deg, white, black)'];
+  let currentPatternIdx = -1;
 
+  function togglePatterns() {
+    const ov = document.getElementById('patternOverlay');
+    if(ov.style.display === 'block') {
+      ov.style.display = 'none';
+      currentPatternIdx = -1;
+    } else {
+      ov.style.display = 'block';
+      nextPattern();
+    }
+  }
+  function nextPattern() {
+    currentPatternIdx++;
+    const ov = document.getElementById('patternOverlay');
+    if(currentPatternIdx >= patterns.length) {
+      ov.style.display = 'none';
+      currentPatternIdx = -1;
+      return;
+    }
+    ov.style.background = patterns[currentPatternIdx];
+  }
+  // Obsługa ESC do wyjścia z patterns
+  document.addEventListener('keydown', (e) => {
+      if(e.key === "Escape") {
+          document.getElementById('patternOverlay').style.display = 'none';
+          currentPatternIdx = -1;
+      }
+  });
+
+  /* --- QR PASSPORT --- */
+  function showQr(sn, status) {
+    const box = document.getElementById('qrCodeBox'); box.innerHTML = "";
+    new QRCode(box, {
+      text: `${sn}|${status}|${new Date().toLocaleDateString()}`,
+      width: 128, height: 128
+    });
+    document.getElementById('qrSnDisplay').innerText = "SN: " + sn;
+    document.getElementById('qrStatusDisplay').innerText = "STATUS: " + status;
     document.getElementById('qrPopup').style.display = "block";
   }
-
-  function printLabel() {
-    window.print(); // To uruchamia styl @media print
-  }
-
   function closeQr() {
     document.getElementById('qrPopup').style.display = "none";
-    currentSN = ""; startSession(""); document.getElementById('scanInput').focus();
+    document.getElementById('scanInput').focus();
+  }
+
+  /* --- MANAGER & ANALYTICS --- */
+  function toggleUserPanel() { 
+    document.getElementById('userPanel').classList.toggle('open'); 
+    document.getElementById('reportPanel').classList.remove('open');
+  }
+  function toggleReportPanel() { 
+    document.getElementById('reportPanel').classList.toggle('open'); 
+    document.getElementById('userPanel').classList.remove('open');
+  }
+
+  async function scanNetwork() {
+    if(!dirHandle) return alert("Brak sieci");
+    const tb = document.querySelector('#reportTable tbody'); tb.innerHTML = "<tr><td colspan='5'>SKANOWANIE...</td></tr>";
+    reportsCache = [];
+    try {
+      for await (const e of dirHandle.values()) {
+        if(e.kind === 'directory') {
+          const sn = e.name; let op="---", date="---", dec="---", com="---";
+          try {
+            const sub = await dirHandle.getDirectoryHandle(sn);
+            for await (const f of sub.values()) {
+              if(f.name.includes('RAPORT')) {
+                const fl = await f.getFile();
+                const tx = await fl.text();
+                date = fl.lastModifiedDate.toLocaleString();
+                const mOp = tx.match(/OPERATOR: (.*)/); if(mOp) op=mOp[1];
+                const mDec = tx.match(/DECYZJA: (.*)/); if(mDec) dec=mDec[1];
+                const mCom = tx.match(/UWAGI: (.*)/); if(mCom) com=mCom[1];
+              }
+            }
+          } catch(err){}
+          reportsCache.push({date, sn, op, dec, com});
+        }
+      }
+      renderReportTable();
+      calculateStats();
+    } catch(e) { alert("Błąd skanowania"); }
+  }
+
+  function renderReportTable(filter = "") {
+    const tb = document.querySelector('#reportTable tbody'); tb.innerHTML = "";
+    reportsCache.forEach(r => {
+      if(filter && !r.sn.includes(filter)) return;
+      let color = "#fff";
+      if(r.dec === 'NG' || r.dec === 'SCRAP') color = "var(--neon-red)";
+      if(r.dec === 'OK' || r.dec === 'OFFRS_OK') color = "var(--neon-green)";
+      if(r.dec === 'RMA') color = "orange";
+      tb.innerHTML += `<tr><td>${r.date}</td><td>${r.sn}</td><td>${r.op}</td><td style="color:${color};font-weight:bold;">${r.dec}</td><td>${r.com}</td></tr>`;
+    });
+  }
+
+  function filterTable() {
+    const v = document.getElementById('searchDB').value.trim().toUpperCase();
+    renderReportTable(v);
+  }
+
+  function calculateStats() {
+    const total = reportsCache.length;
+    let ok = 0;
+    let ng = 0;
+    reportsCache.forEach(r => {
+      if(r.dec === 'OK' || r.dec === 'OFFRS_OK' || r.dec === 'NDF') ok++;
+      else if(r.dec === 'NG' || r.dec === 'SCRAP' || r.dec === 'RMA') ng++;
+    });
+    
+    document.getElementById('statTotal').innerText = total;
+    document.getElementById('statOK').innerText = ok;
+    document.getElementById('statNG').innerText = ng;
+    
+    let yieldRate = 0;
+    if(total > 0) yieldRate = ((ok / total) * 100).toFixed(1);
+    
+    const yieldEl = document.getElementById('statYield');
+    yieldEl.innerText = yieldRate + "%";
+    
+    // Dynamiczny kolor yield
+    if(yieldRate > 90) yieldEl.style.color = "var(--neon-green)";
+    else if(yieldRate > 70) yieldEl.style.color = "var(--neon-orange)";
+    else yieldEl.style.color = "var(--neon-red)";
+  }
+
+  function exportCSV() {
+    if(!reportsCache.length) return alert("Pusto");
+    let c = "DATA,SN,OPERATOR,DECYZJA,UWAGI\n";
+    reportsCache.forEach(r => c+=`${r.date},${r.sn},${r.op},${r.dec},${r.com}\n`);
+    saveAs(new Blob([c],{type:'text/csv'}), "raport_serwisowy.csv");
   }
 </script>
 </body>
