@@ -8,104 +8,96 @@
   
   <style>
     :root {
-      --primary: #00f3ff;   /* Cyber Blue */
-      --success: #00ff66;   /* Cyber Green */
-      --danger: #ff0055;    /* Cyber Red */
+      --primary: #00f3ff;
+      --success: #00ff66;
+      --danger: #ff0055;
       --bg-dark: #050505;
-      --panel: rgba(20, 20, 25, 0.9);
-      --glass: rgba(255, 255, 255, 0.05);
+      --panel: rgba(20, 20, 25, 0.95);
     }
 
     body {
-      font-family: 'Segoe UI', 'Roboto', monospace;
+      font-family: 'Segoe UI', monospace;
       margin: 0;
       background-color: var(--bg-dark);
-      background-image: 
-        radial-gradient(circle at 10% 20%, rgba(0, 243, 255, 0.1) 0%, transparent 20%),
-        radial-gradient(circle at 90% 80%, rgba(255, 0, 85, 0.1) 0%, transparent 20%);
+      background-image: radial-gradient(circle at 50% 50%, rgba(0, 243, 255, 0.05) 0%, transparent 50%);
       color: #eee;
       height: 100vh;
-      overflow-x: hidden;
+      overflow: hidden; /* Brak paska przewijania całej strony */
       display: flex;
       flex-direction: column;
     }
 
     /* HEADER */
     header {
-      padding: 15px 30px;
+      padding: 10px 30px;
       border-bottom: 1px solid rgba(255,255,255,0.1);
       display: flex;
       justify-content: space-between;
       align-items: center;
       background: rgba(0,0,0,0.8);
-      backdrop-filter: blur(10px);
     }
     header h1 {
       margin: 0;
-      font-size: 24px;
+      font-size: 20px;
       letter-spacing: 2px;
+      color: var(--primary);
       text-transform: uppercase;
-      background: linear-gradient(90deg, #fff, var(--primary));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
     }
 
-    /* CONTAINER */
+    /* SETTINGS PANEL (Ukryty) */
+    #settingsPanel {
+      display: none;
+      position: absolute;
+      top: 60px; right: 20px;
+      width: 300px;
+      background: #1a1a1a;
+      border: 1px solid var(--primary);
+      padding: 15px;
+      z-index: 100;
+      border-radius: 8px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.8);
+    }
+    #settingsPanel input {
+      width: 90%;
+      background: #000;
+      border: 1px solid #444;
+      color: #fff;
+      padding: 8px;
+      margin-top: 5px;
+    }
+    .settings-btn {
+      background: transparent;
+      border: 1px solid #444;
+      color: #aaa;
+      cursor: pointer;
+      padding: 5px 10px;
+      font-size: 12px;
+    }
+    .settings-btn:hover { color: #fff; border-color: #fff; }
+
+    /* LAYOUT */
     .main-grid {
       display: grid;
-      grid-template-columns: 1.2fr 0.8fr;
-      gap: 20px;
-      padding: 20px;
+      grid-template-columns: 1fr 400px; /* Lewa elastyczna, Prawa stała */
+      gap: 15px;
+      padding: 15px;
       flex: 1;
-      overflow-y: auto;
+      overflow: hidden;
     }
 
-    /* PANELS */
     .panel {
       background: var(--panel);
       border: 1px solid rgba(255,255,255,0.1);
       border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 0 30px rgba(0,0,0,0.5);
-      position: relative;
-    }
-    .panel h2 {
-      margin-top: 0;
-      color: var(--primary);
-      font-size: 16px;
-      text-transform: uppercase;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-      padding-bottom: 10px;
-    }
-
-    /* INPUT SECTION */
-    .scan-wrapper {
-      position: relative;
-      margin-bottom: 20px;
-    }
-    #scanInput {
-      width: 100%;
       padding: 15px;
-      font-size: 22px;
-      background: rgba(0,0,0,0.5);
-      border: 2px solid #333;
-      border-radius: 8px;
-      color: var(--success);
-      font-family: monospace;
-      text-align: center;
-      outline: none;
-      transition: 0.3s;
-      box-sizing: border-box;
-    }
-    #scanInput:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden; /* Ważne dla scrollowania tabeli */
     }
 
-    /* CAMERA VIEW */
+    /* KAMERA */
     .camera-frame {
-      width: 100%;
-      height: 400px;
+      flex: 1;
       background: #000;
       border-radius: 8px;
       overflow: hidden;
@@ -117,266 +109,199 @@
     .overlay-info {
       position: absolute;
       top: 10px; left: 10px;
-      background: rgba(0,0,0,0.7);
+      background: rgba(0,0,0,0.8);
       padding: 5px 10px;
       border-left: 3px solid var(--primary);
-      font-family: monospace;
       font-size: 14px;
     }
 
-    /* 3D TV MODEL */
+    /* INPUT */
+    #scanInput {
+      width: 100%;
+      padding: 15px;
+      font-size: 24px;
+      background: #000;
+      border: 2px solid #333;
+      color: var(--success);
+      text-align: center;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      outline: none; 
+      box-sizing: border-box;
+    }
+    #scanInput:focus { border-color: var(--primary); }
+
+    /* 3D BOX */
     .scene-3d {
-      height: 180px;
+      height: 120px;
       perspective: 800px;
-      margin: 20px 0;
+      margin: 10px 0;
       display: flex;
       justify-content: center;
-      align-items: center;
     }
     .tv-cube {
-      width: 240px;
-      height: 140px;
+      width: 180px;
+      height: 100px;
       position: relative;
       transform-style: preserve-3d;
-      transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      transition: transform 0.8s;
     }
     .face {
       position: absolute;
-      width: 100%;
-      height: 100%;
+      width: 100%; height: 100%;
       backface-visibility: hidden;
-      border: 2px solid #444;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+      border: 2px solid #555;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: bold; font-size: 14px;
     }
-    .face-front {
-      background: linear-gradient(135deg, #111, #1a1a1a);
-      color: var(--primary);
-      border-bottom: 8px solid #000;
-    }
-    .face-back {
-      background: #222;
-      color: #888;
-      transform: rotateY(180deg);
-      border: 2px dashed #555;
-    }
-
-    /* PROGRESS BAR */
-    .progress-container {
-      background: #333;
-      height: 10px;
-      border-radius: 5px;
-      margin: 15px 0;
-      overflow: hidden;
-    }
-    .progress-bar {
-      height: 100%;
-      width: 0%;
-      background: var(--danger); /* Zaczyna jako czerwony */
-      transition: width 0.3s, background 0.3s;
-    }
+    .face-front { background: #111; color: var(--primary); border-bottom: 5px solid #000; }
+    .face-back { background: #222; transform: rotateY(180deg); color: #888; }
 
     /* BUTTONS */
-    .btn-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
+    .btn-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-bottom: 10px; }
     .action-btn {
-      padding: 15px 5px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.2);
-      color: #fff;
-      cursor: pointer;
-      border-radius: 6px;
-      transition: 0.2s;
-      font-size: 13px;
+      padding: 10px; background: #222; border: 1px solid #444; color: #fff;
+      cursor: pointer; border-radius: 4px; font-size: 11px;
+    }
+    .action-btn.done { border-color: var(--success); color: var(--success); background: rgba(0,255,100,0.1); }
+    
+    #finalizeBtn {
+      width: 100%; padding: 15px; background: #333; color: #777;
+      border: none; font-weight: bold; cursor: not-allowed; border-radius: 6px;
+    }
+    #finalizeBtn.active { background: var(--success); color: #000; cursor: pointer; }
+
+    /* TABELA HISTORII */
+    .history-section {
+      margin-top: auto; /* Pycha tabelę na dół */
+      flex: 1;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      gap: 5px;
+      overflow: hidden;
+      border-top: 1px solid #333;
+      padding-top: 10px;
     }
-    .action-btn:hover { background: rgba(255,255,255,0.1); }
-    .action-btn.done {
-      border-color: var(--success);
-      color: var(--success);
-      background: rgba(0, 255, 102, 0.1);
-    }
-    .action-btn.done::after { content: "✔ OK"; font-size: 10px; }
-
-    #finalizeBtn {
-      width: 100%;
-      padding: 18px;
-      background: #333;
-      color: #777;
-      border: none;
-      font-size: 16px;
-      font-weight: bold;
-      border-radius: 8px;
-      cursor: not-allowed;
-      transition: 0.3s;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-    /* Styl aktywnego przycisku */
-    #finalizeBtn.active {
-      background: var(--success);
-      color: #000;
-      cursor: pointer;
-      box-shadow: 0 0 20px rgba(0, 255, 102, 0.4);
-    }
-    #finalizeBtn.active:hover { transform: scale(1.02); }
-
-    /* DATABASE TABLE */
-    .db-container {
-      margin-top: 20px;
-      max-height: 200px;
+    .table-scroll {
       overflow-y: auto;
+      flex: 1;
     }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th { text-align: left; color: #888; padding: 5px; position: sticky; top: 0; background: var(--panel); }
+    td { padding: 8px 5px; border-bottom: 1px solid #222; vertical-align: middle; }
+    
+    .folder-btn {
+      background: transparent; border: 1px solid #555; color: #aaa;
+      cursor: pointer; padding: 2px 6px; border-radius: 3px; font-size: 10px;
     }
-    th { text-align: left; color: #888; border-bottom: 1px solid #333; padding: 5px; }
-    td { padding: 8px 5px; border-bottom: 1px solid #222; }
-    .status-badge {
-      background: var(--success);
-      color: black;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 10px;
-      font-weight: bold;
-    }
+    .folder-btn:hover { border-color: var(--primary); color: var(--primary); }
 
-    /* ALERTS (TOAST) */
+    /* TOAST */
     #toast {
-      position: fixed;
-      bottom: 30px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #333;
-      padding: 15px 30px;
-      border-radius: 50px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-      font-weight: bold;
-      opacity: 0;
-      pointer-events: none;
-      transition: 0.3s;
-      z-index: 1000;
-      display: flex;
-      align-items: center;
-      gap: 10px;
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: #333; padding: 10px 20px; border-radius: 30px;
+      opacity: 0; pointer-events: none; transition: 0.3s; z-index: 999;
     }
-    #toast.error { background: var(--danger); color: white; }
-    #toast.success { background: var(--success); color: black; }
-    #toast.show { opacity: 1; bottom: 50px; }
-
+    #toast.show { opacity: 1; bottom: 40px; }
+    
     canvas { display: none; }
   </style>
 </head>
 <body>
 
 <header>
-  <h1>OLED REPAIR <span style="font-size:0.5em; opacity:0.7">MASTER STATION</span></h1>
-  <div style="font-size: 12px; color: #aaa;">Lokalna Baza Danych: AKTYWNA</div>
+  <h1>OLED REPAIR SYSTEM</h1>
+  <div>
+    <button class="settings-btn" onclick="toggleSettings()">⚙ ŚCIEŻKA ZAPISU</button>
+  </div>
 </header>
+
+<div id="settingsPanel">
+  <label style="font-size:12px; color:#aaa;">Główny folder na dysku (np. D:\Serwis):</label>
+  <input type="text" id="rootPathInput" placeholder="C:\OLED_DATA">
+  <div style="margin-top:10px; text-align:right;">
+    <button class="settings-btn" onclick="saveSettings()">ZAPISZ</button>
+  </div>
+  <p style="font-size:10px; color:#666; margin-top:5px;">
+    *To służy do generowania linków w historii. Przeglądarka nie otworzy folderu sama - będziesz mógł skopiować ścieżkę.
+  </p>
+</div>
 
 <div class="main-grid">
   
   <div class="panel">
-    <h2>1. Skanowanie</h2>
-    <div class="scan-wrapper">
-      <input type="text" id="scanInput" placeholder="Skup się tu i ZESKANUJ..." autofocus autocomplete="off">
-    </div>
-
     <div class="camera-frame">
       <video id="videoFeed" autoplay playsinline></video>
       <div class="overlay-info">
-        <div id="overlaySN">SN: BRAK</div>
-        <div id="overlayDate" style="font-size:10px; opacity:0.7">--</div>
+        <div id="overlaySN">OCZEKIWANIE...</div>
       </div>
     </div>
   </div>
 
   <div class="panel">
-    <h2>2. Dokumentacja (Wymagane 3)</h2>
+    
+    <input type="text" id="scanInput" placeholder="ZESKANUJ TUTAJ" autofocus autocomplete="off">
     
     <div class="scene-3d">
       <div class="tv-cube" id="tvModel">
-        <div class="face face-front">EKRAN (PRZÓD/OBRAZ)</div>
-        <div class="face face-back">ELEKTRONIKA (TYŁ)</div>
+        <div class="face face-front">EKRAN</div>
+        <div class="face face-back">TYŁ</div>
       </div>
     </div>
 
-    <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px;">
-      <span>Postęp zdjęć:</span>
-      <span id="progressText">0 / 3</span>
-    </div>
-    <div class="progress-container">
-      <div class="progress-bar" id="progressBar"></div>
-    </div>
-
+    <div style="font-size:12px; text-align:center; margin-bottom:5px; color:#888;">Postęp: <span id="progressText">0/3</span></div>
+    
     <div class="btn-grid">
-      <button class="action-btn" id="btnFront" onclick="captureStep('PRZOD')">
-        📸 1. PRZÓD
-      </button>
-      <button class="action-btn" id="btnBack" onclick="captureStep('TYL')">
-        📸 2. TYŁ
-      </button>
-      <button class="action-btn" id="btnImage" onclick="captureStep('OBRAZ')">
-        📸 3. OBRAZ
-      </button>
+      <button class="action-btn" id="btnFront" onclick="captureStep('PRZOD')">1. PRZÓD 📸</button>
+      <button class="action-btn" id="btnBack" onclick="captureStep('TYL')">2. TYŁ 📸</button>
+      <button class="action-btn" id="btnImage" onclick="captureStep('OBRAZ')">3. OBRAZ 📸</button>
     </div>
 
-    <button id="finalizeBtn" onclick="finalizeProcess()">
-      🔒 Zablokowane (Brakuje zdjęć)
-    </button>
+    <button id="finalizeBtn" onclick="finalizeProcess()">🔒 BRAK ZDJĘĆ</button>
 
-    <div style="margin-top: 30px;">
-      <h2>Historia Sesji (Lokalna)</h2>
-      <div class="db-container">
+    <div class="history-section">
+      <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+        <span style="font-weight:bold; color:var(--primary);">HISTORIA</span>
+        <button onclick="clearDB()" style="background:none; border:none; color:#555; cursor:pointer; font-size:10px;">[WYCZYŚĆ]</button>
+      </div>
+      
+      <div class="table-scroll">
         <table id="dbTable">
           <thead>
-            <tr><th>Godz.</th><th>Serial Number</th><th>Status</th></tr>
+            <tr>
+              <th>Godzina</th>
+              <th>Serial Number</th>
+              <th>Folder</th>
+            </tr>
           </thead>
           <tbody></tbody>
         </table>
       </div>
-      <button onclick="clearDB()" style="margin-top:10px; background:transparent; border:none; color:#555; cursor:pointer; font-size:11px;">[Wyczyść historię]</button>
     </div>
   </div>
 </div>
 
 <canvas id="photoCanvas"></canvas>
-
-<div id="toast">Komunikat</div>
+<div id="toast">Info</div>
 
 <script>
-  /* --- ZMIENNE SYSTEMOWE --- */
+  /* --- ZMIENNE GLOBALNE --- */
   let currentSN = "";
-  let sessionPhotos = {
-    PRZOD: null,
-    TYL: null,
-    OBRAZ: null
-  };
-  
+  let sessionPhotos = { PRZOD: null, TYL: null, OBRAZ: null };
+  let rootPath = localStorage.getItem('oled_root_path') || "C:\\OLED_DATA"; // Domyślna ścieżka
+
+  // Elementy DOM
   const video = document.getElementById('videoFeed');
   const canvas = document.getElementById('photoCanvas');
   const ctx = canvas.getContext('2d');
   const tv3d = document.getElementById('tvModel');
-  
-  // Elementy UI
-  const progressText = document.getElementById('progressText');
-  const progressBar = document.getElementById('progressBar');
   const finalizeBtn = document.getElementById('finalizeBtn');
 
-  /* --- 1. INICJALIZACJA KAMERY --- */
+  // Inicjalizacja
+  document.getElementById('rootPathInput').value = rootPath;
+  initCamera();
+  loadHistory();
+
+  /* --- 1. KAMERA --- */
   async function initCamera() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -384,119 +309,110 @@
       });
       video.srcObject = stream;
     } catch (e) {
-      showToast("Błąd kamery! Sprawdź USB.", "error");
+      showToast("Błąd kamery!", "red");
     }
-    loadHistory(); // Załaduj tabelę przy starcie
   }
-  initCamera();
 
-  /* --- 2. OBSŁUGA SKANOWANIA --- */
+  /* --- 2. USTAWIENIA ŚCIEŻKI --- */
+  function toggleSettings() {
+    const p = document.getElementById('settingsPanel');
+    p.style.display = p.style.display === 'block' ? 'none' : 'block';
+  }
+  function saveSettings() {
+    let path = document.getElementById('rootPathInput').value.trim();
+    // Usuń slash na końcu jeśli user dodał, żeby nie było podwójnych
+    if(path.endsWith('\\') || path.endsWith('/')) path = path.slice(0, -1);
+    
+    localStorage.setItem('oled_root_path', path);
+    rootPath = path;
+    toggleSettings();
+    showToast("Ścieżka zapisana! Odświeżam tabelę...");
+    loadHistory(); // Przeładuj tabelę z nowymi ścieżkami
+  }
+
+  /* --- 3. LOGIKA SKANERA --- */
   document.getElementById('scanInput').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
       const val = this.value.trim().toUpperCase();
       if (val.length > 3) {
-        startNewSession(val);
+        newSession(val);
         this.value = "";
         this.blur();
       } else {
-        showToast("Za krótki kod SN!", "error");
+        showToast("Błędny kod SN!");
       }
     }
   });
 
-  function startNewSession(sn) {
+  function newSession(sn) {
     currentSN = sn;
-    // Reset zmiennych
     sessionPhotos = { PRZOD: null, TYL: null, OBRAZ: null };
-    
-    // Update UI
     document.getElementById('overlaySN').textContent = "SN: " + sn;
-    document.getElementById('overlayDate').textContent = new Date().toLocaleString();
     
     // Reset przycisków
     ['btnFront', 'btnBack', 'btnImage'].forEach(id => {
       document.getElementById(id).classList.remove('done');
     });
     
-    updateProgress();
+    updateUI();
     rotate3D('front');
-    showToast(`Zeskanowano: ${sn}`, "success");
+    showToast(`Rozpoczęto: ${sn}`);
   }
 
-  /* --- 3. ROBIENIE ZDJĘĆ I WALIDACJA --- */
+  /* --- 4. ZDJĘCIA --- */
   function captureStep(type) {
     if (!currentSN) {
-      showToast("BŁĄD: Najpierw zeskanuj kod!", "error");
       document.getElementById('scanInput').focus();
-      return;
+      return showToast("ZESKANUJ KOD!");
     }
 
-    // Efekt obrotu TV
     if (type === 'TYL') rotate3D('back');
     else rotate3D('front');
 
-    // Rysowanie na canvas
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     ctx.drawImage(video, 0, 0);
 
-    // WATERMARK (Wypalanie danych)
-    ctx.font = "bold 30px Consolas";
+    // Wypalanie napisów
+    ctx.font = "bold 40px Arial";
     ctx.fillStyle = "#00ff66";
-    ctx.shadowColor = "black";
-    ctx.shadowBlur = 4;
-    ctx.fillText(`SN: ${currentSN}`, 30, 50);
+    ctx.strokeStyle = "black";
+    ctx.lineWidth = 4;
+    ctx.strokeText(`SN: ${currentSN}`, 40, 60);
+    ctx.fillText(`SN: ${currentSN}`, 40, 60);
+    
     ctx.fillStyle = "#00f3ff";
-    ctx.fillText(`WIDOK: ${type}`, 30, 90);
-    ctx.fillStyle = "white";
-    ctx.font = "20px Consolas";
-    ctx.fillText(new Date().toLocaleString(), 30, 125);
+    ctx.fillText(type, 40, 110);
 
-    // Zapis do Bloba
     canvas.toBlob(blob => {
       sessionPhotos[type] = blob;
-      
-      // Oznacz przycisk jako zrobiony
       let btnId = type === 'PRZOD' ? 'btnFront' : (type === 'TYL' ? 'btnBack' : 'btnImage');
       document.getElementById(btnId).classList.add('done');
-      
-      updateProgress();
-    }, 'image/jpeg', 0.90);
+      updateUI();
+    }, 'image/jpeg', 0.9);
   }
 
-  /* --- 4. LOGIKA PROGRESU (0/3 -> OK) --- */
-  function updateProgress() {
-    const taken = Object.values(sessionPhotos).filter(p => p !== null).length;
-    const total = 3;
-    const percent = (taken / total) * 100;
+  function updateUI() {
+    const count = Object.values(sessionPhotos).filter(p => p).length;
+    document.getElementById('progressText').textContent = `${count}/3`;
 
-    progressText.textContent = `${taken} / ${total}`;
-    progressBar.style.width = `${percent}%`;
-
-    if (taken === 3) {
-      // Sukces - odblokuj przycisk
-      progressBar.style.background = "var(--success)";
+    if (count === 3) {
       finalizeBtn.classList.add('active');
-      finalizeBtn.innerHTML = "💾 ZAPISZ I POBIERZ PACZKĘ";
-      finalizeBtn.onclick = finalizeProcess;
-      showToast("Komplet! Możesz zapisać.", "success");
+      finalizeBtn.innerHTML = "💾 ZAPISZ I POBIERZ ZIP";
     } else {
-      // Niekompletne
-      progressBar.style.background = "var(--danger)";
       finalizeBtn.classList.remove('active');
-      finalizeBtn.innerHTML = `🔒 Brakuje zdjęć (${3-taken})`;
-      finalizeBtn.onclick = () => showToast(`Brakuje jeszcze ${3-taken} zdjęć!`, "error");
+      finalizeBtn.innerHTML = `🔒 Brakuje ${3-count} zdjęć`;
     }
   }
 
-  /* --- 5. FINALIZACJA I BAZA DANYCH (LocalStorage) --- */
+  /* --- 5. FINALIZACJA --- */
   function finalizeProcess() {
-    if (!currentSN) return;
+    if (!currentSN || !finalizeBtn.classList.contains('active')) return;
 
-    // 1. Zapis do Historii (Baza Lokalna)
-    saveToLocalDB(currentSN, "OK");
+    // 1. Zapis do Bazy
+    saveToDB(currentSN);
 
-    // 2. Generowanie ZIP
+    // 2. Pobieranie ZIP
     const zip = new JSZip();
     const folder = zip.folder(currentSN);
     folder.file(`${currentSN}_PRZOD.jpg`, sessionPhotos.PRZOD);
@@ -504,77 +420,84 @@
     folder.file(`${currentSN}_OBRAZ.jpg`, sessionPhotos.OBRAZ);
 
     zip.generateAsync({type:"blob"}).then(content => {
-      saveAs(content, `${currentSN}_COMPLETE.zip`);
-      showToast("Pobieranie rozpoczęte...", "success");
+      saveAs(content, `${currentSN}.zip`);
+      showToast("Pobrano ZIP!");
       
-      // 3. Reset sesji po zapisie
+      // Reset po chwili
       setTimeout(() => {
         currentSN = "";
-        document.getElementById('overlaySN').textContent = "GOTOWY";
+        document.getElementById('overlaySN').textContent = "OCZEKIWANIE";
         document.getElementById('scanInput').focus();
-        document.getElementById('scanInput').value = "";
-        // Reset wizualny
-        ['btnFront', 'btnBack', 'btnImage'].forEach(id => document.getElementById(id).classList.remove('done'));
-        progressBar.style.width = "0%";
-        finalizeBtn.classList.remove('active');
-        finalizeBtn.innerHTML = "🔒 Oczekiwanie na skan";
-      }, 2000);
+        updateUI(); // zresetuje przyciski
+      }, 1500);
     });
   }
 
-  // --- OBSŁUGA LOCAL STORAGE ---
-  function saveToLocalDB(sn, status) {
-    let db = JSON.parse(localStorage.getItem('oled_repair_db') || "[]");
+  /* --- 6. BAZA DANYCH I HISTORIA --- */
+  function saveToDB(sn) {
+    let db = JSON.parse(localStorage.getItem('oled_db') || "[]");
     
-    // Dodaj nowy wpis na początek
-    db.unshift({
-      time: new Date().toLocaleTimeString(),
-      sn: sn,
-      status: status
-    });
+    // Zapisz pełną datę i czas (do sekundy)
+    const now = new Date();
+    // Format: 2023-10-25 14:30:05
+    const timestamp = now.toLocaleDateString() + " " + now.toLocaleTimeString();
 
-    // Ogranicz do ostatnich 50 wpisów
-    if (db.length > 50) db.pop();
-
-    localStorage.setItem('oled_repair_db', JSON.stringify(db));
-    loadHistory(); // Odśwież tabelę
+    db.unshift({ time: timestamp, sn: sn });
+    if(db.length > 50) db.pop();
+    
+    localStorage.setItem('oled_db', JSON.stringify(db));
+    loadHistory();
   }
 
   function loadHistory() {
-    let db = JSON.parse(localStorage.getItem('oled_repair_db') || "[]");
+    let db = JSON.parse(localStorage.getItem('oled_db') || "[]");
     const tbody = document.querySelector("#dbTable tbody");
     tbody.innerHTML = "";
 
     db.forEach(row => {
+      // Generujemy pełną ścieżkę do skopiowania
+      // Jeśli rootPath to C:\Data, a SN to 123, wynik: C:\Data\123
+      const fullPath = `${rootPath}\\${row.sn}`;
+
       let tr = document.createElement("tr");
       tr.innerHTML = `
-        <td>${row.time}</td>
-        <td style="font-family:monospace; color:#fff;">${row.sn}</td>
-        <td><span class="status-badge">${row.status}</span></td>
+        <td style="color:#aaa;">${row.time}</td>
+        <td style="font-weight:bold; color:#fff;">${row.sn}</td>
+        <td>
+          <button class="folder-btn" onclick="copyPath('${fullPath.replace(/\\/g, '\\\\')}')">
+            📂 KOPIUJ ŚCIEŻKĘ
+          </button>
+        </td>
       `;
       tbody.appendChild(tr);
     });
   }
 
+  function copyPath(path) {
+    navigator.clipboard.writeText(path).then(() => {
+      showToast(`Skopiowano: ${path}`);
+    }).catch(err => {
+      showToast("Błąd kopiowania", "red");
+    });
+  }
+
   function clearDB() {
-    if(confirm("Czy na pewno usunąć historię lokalną?")) {
-      localStorage.removeItem('oled_repair_db');
+    if(confirm("Usunąć historię?")) {
+      localStorage.removeItem('oled_db');
       loadHistory();
     }
   }
 
-  /* --- POMOCNICZE --- */
-  function rotate3D(view) {
-    if (view === 'back') tv3d.style.transform = "rotateY(180deg)";
-    else tv3d.style.transform = "rotateY(0deg)";
+  /* --- HELPERS --- */
+  function rotate3D(side) {
+    tv3d.style.transform = side === 'back' ? "rotateY(180deg)" : "rotateY(0deg)";
   }
-
-  function showToast(msg, type) {
+  function showToast(msg, color) {
     const t = document.getElementById('toast');
     t.textContent = msg;
-    t.className = type; // success lub error
+    t.style.background = color === 'red' ? '#ff0055' : '#333';
     t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 3000);
+    setTimeout(() => t.classList.remove('show'), 2500);
   }
 </script>
 
