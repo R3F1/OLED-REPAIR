@@ -2,469 +2,627 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED MASTER REPAIR STATION</title>
+  <title>OLED REPAIR STUDIO v3.0</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
   
   <style>
     :root {
-      --primary: #00f3ff;
-      --success: #00ff66;
-      --danger: #ff0055;
-      --bg-dark: #050505;
-      --panel: rgba(20, 20, 25, 0.95);
+      --bg-color: #050505;
+      --panel-bg: rgba(15, 20, 30, 0.85);
+      --neon-blue: #00f3ff;
+      --neon-purple: #bc13fe;
+      --neon-green: #0aff00;
+      --neon-red: #ff003c;
+      --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+      --blur: blur(12px);
     }
 
+    * { box-sizing: border-box; }
+
     body {
-      font-family: 'Segoe UI', monospace;
       margin: 0;
-      background-color: var(--bg-dark);
-      background-image: radial-gradient(circle at 50% 50%, rgba(0, 243, 255, 0.05) 0%, transparent 50%);
-      color: #eee;
+      padding: 0;
+      background-color: var(--bg-color);
+      /* Tło techniczne - siatka */
+      background-image: 
+        linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      color: #fff;
+      font-family: 'Rajdhani', sans-serif;
       height: 100vh;
-      overflow: hidden; /* Brak paska przewijania całej strony */
+      overflow: hidden;
       display: flex;
       flex-direction: column;
     }
 
-    /* HEADER */
+    /* --- GÓRNY PASEK --- */
     header {
-      padding: 10px 30px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
+      height: 60px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: rgba(0,0,0,0.8);
+      padding: 0 30px;
+      border-bottom: 1px solid rgba(0, 243, 255, 0.3);
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: var(--blur);
+      z-index: 10;
+      box-shadow: 0 0 15px rgba(0, 243, 255, 0.1);
     }
-    header h1 {
-      margin: 0;
-      font-size: 20px;
-      letter-spacing: 2px;
-      color: var(--primary);
+    .brand {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 24px;
+      color: var(--neon-blue);
       text-transform: uppercase;
-    }
-
-    /* SETTINGS PANEL (Ukryty) */
-    #settingsPanel {
-      display: none;
-      position: absolute;
-      top: 60px; right: 20px;
-      width: 300px;
-      background: #1a1a1a;
-      border: 1px solid var(--primary);
-      padding: 15px;
-      z-index: 100;
-      border-radius: 8px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.8);
-    }
-    #settingsPanel input {
-      width: 90%;
-      background: #000;
-      border: 1px solid #444;
-      color: #fff;
-      padding: 8px;
-      margin-top: 5px;
+      letter-spacing: 2px;
+      text-shadow: 0 0 10px var(--neon-blue);
     }
     .settings-btn {
       background: transparent;
-      border: 1px solid #444;
-      color: #aaa;
+      border: 1px solid var(--neon-blue);
+      color: var(--neon-blue);
+      padding: 5px 15px;
       cursor: pointer;
-      padding: 5px 10px;
-      font-size: 12px;
+      font-family: 'Share Tech Mono', monospace;
+      transition: 0.3s;
     }
-    .settings-btn:hover { color: #fff; border-color: #fff; }
+    .settings-btn:hover { background: rgba(0, 243, 255, 0.2); box-shadow: 0 0 15px var(--neon-blue); }
 
-    /* LAYOUT */
-    .main-grid {
-      display: grid;
-      grid-template-columns: 1fr 400px; /* Lewa elastyczna, Prawa stała */
-      gap: 15px;
-      padding: 15px;
+    /* --- GŁÓWNY UKŁAD --- */
+    .dashboard {
       flex: 1;
+      display: grid;
+      grid-template-columns: 350px 1fr; /* Lewy panel stały, kamera reszta */
+      gap: 20px;
+      padding: 20px;
       overflow: hidden;
     }
 
-    .panel {
-      background: var(--panel);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 12px;
-      padding: 15px;
+    /* LEWY PANEL (STEROWANIE) */
+    .control-panel {
+      background: var(--panel-bg);
+      border: var(--glass-border);
+      border-radius: 10px;
       display: flex;
       flex-direction: column;
-      overflow: hidden; /* Ważne dla scrollowania tabeli */
+      padding: 20px;
+      box-shadow: 0 0 30px rgba(0,0,0,0.5);
+      overflow-y: auto;
     }
 
-    /* KAMERA */
-    .camera-frame {
-      flex: 1;
-      background: #000;
-      border-radius: 8px;
-      overflow: hidden;
-      position: relative;
-      border: 2px solid #333;
-    }
-    video { width: 100%; height: 100%; object-fit: cover; }
-    
-    .overlay-info {
-      position: absolute;
-      top: 10px; left: 10px;
-      background: rgba(0,0,0,0.8);
-      padding: 5px 10px;
-      border-left: 3px solid var(--primary);
-      font-size: 14px;
+    h2 {
+      margin: 0 0 15px 0;
+      font-size: 16px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-bottom: 1px solid #333;
+      padding-bottom: 5px;
     }
 
-    /* INPUT */
+    /* INPUT SKANOWANIA */
+    .scan-box { position: relative; margin-bottom: 25px; }
     #scanInput {
       width: 100%;
-      padding: 15px;
-      font-size: 24px;
       background: #000;
       border: 2px solid #333;
-      color: var(--success);
+      padding: 15px;
+      font-size: 22px;
+      color: var(--neon-green);
+      font-family: 'Share Tech Mono', monospace;
       text-align: center;
-      margin-bottom: 10px;
-      border-radius: 8px;
-      outline: none; 
-      box-sizing: border-box;
+      border-radius: 6px;
+      outline: none;
+      transition: 0.3s;
     }
-    #scanInput:focus { border-color: var(--primary); }
+    #scanInput:focus {
+      border-color: var(--neon-green);
+      box-shadow: 0 0 20px rgba(10, 255, 0, 0.2);
+    }
+    .scan-label {
+      position: absolute; top: -10px; left: 10px;
+      background: var(--panel-bg); padding: 0 5px;
+      font-size: 12px; color: var(--neon-green);
+    }
 
-    /* 3D BOX */
+    /* 3D TV MODEL */
     .scene-3d {
-      height: 120px;
-      perspective: 800px;
-      margin: 10px 0;
+      height: 180px;
+      perspective: 1000px;
+      margin-bottom: 20px;
       display: flex;
       justify-content: center;
+      align-items: center;
     }
-    .tv-cube {
-      width: 180px;
-      height: 100px;
+    .oled-panel {
+      width: 260px; height: 150px;
       position: relative;
       transform-style: preserve-3d;
-      transition: transform 0.8s;
+      transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
     .face {
-      position: absolute;
-      width: 100%; height: 100%;
+      position: absolute; width: 100%; height: 100%;
       backface-visibility: hidden;
-      border: 2px solid #555;
+      border: 2px solid #333;
+      border-radius: 4px;
       display: flex; align-items: center; justify-content: center;
-      font-weight: bold; font-size: 14px;
+      font-weight: bold; font-size: 18px;
+      background: #000;
+      box-shadow: 0 0 20px rgba(0,0,0,0.8);
     }
-    .face-front { background: #111; color: var(--primary); border-bottom: 5px solid #000; }
-    .face-back { background: #222; transform: rotateY(180deg); color: #888; }
-
-    /* BUTTONS */
-    .btn-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-bottom: 10px; }
-    .action-btn {
-      padding: 10px; background: #222; border: 1px solid #444; color: #fff;
-      cursor: pointer; border-radius: 4px; font-size: 11px;
+    .face-front {
+      background: linear-gradient(135deg, #050505, #151515);
+      border: 1px solid #444;
+      color: var(--neon-blue);
     }
-    .action-btn.done { border-color: var(--success); color: var(--success); background: rgba(0,255,100,0.1); }
+    /* Logo na ekranie 3D */
+    .face-front::after { content: "OLED DISPLAY"; font-size: 10px; position: absolute; bottom: 5px; opacity: 0.5; }
     
+    .face-back {
+      transform: rotateY(180deg);
+      background: #1a1a1a;
+      /* Symulacja elektroniki */
+      background-image: repeating-linear-gradient(45deg, #222 0px, #222 10px, #1a1a1a 10px, #1a1a1a 20px);
+      color: #fff;
+    }
+    .face-back::before {
+      content: "MAINBOARD"; position: absolute;
+      border: 1px solid yellow; color: yellow; font-size: 10px; padding: 2px;
+    }
+
+    /* PRZYCISKI AKCJI */
+    .actions-grid {
+      display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 20px;
+    }
+    .btn-step {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 12px;
+      color: #fff;
+      cursor: pointer;
+      display: flex; justify-content: space-between; align-items: center;
+      border-radius: 4px; transition: 0.2s;
+      font-family: 'Rajdhani', sans-serif; font-weight: 700; text-transform: uppercase;
+    }
+    .btn-step:hover { background: rgba(255,255,255,0.1); border-color: #fff; }
+    
+    .btn-step.done {
+      border-color: var(--neon-green);
+      background: rgba(10, 255, 0, 0.05);
+      color: var(--neon-green);
+      text-shadow: 0 0 5px var(--neon-green);
+    }
+    .icon { font-size: 18px; }
+
+    /* SAVE BUTTON */
     #finalizeBtn {
-      width: 100%; padding: 15px; background: #333; color: #777;
-      border: none; font-weight: bold; cursor: not-allowed; border-radius: 6px;
+      width: 100%; padding: 20px;
+      background: #111;
+      color: #555;
+      border: 2px solid #333;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 18px;
+      cursor: not-allowed;
+      transition: 0.3s;
+      text-transform: uppercase;
     }
-    #finalizeBtn.active { background: var(--success); color: #000; cursor: pointer; }
+    #finalizeBtn.ready {
+      background: var(--neon-green);
+      color: #000;
+      border-color: var(--neon-green);
+      box-shadow: 0 0 25px rgba(10, 255, 0, 0.4);
+      cursor: pointer;
+      animation: pulse 2s infinite;
+    }
 
-    /* TABELA HISTORII */
-    .history-section {
-      margin-top: auto; /* Pycha tabelę na dół */
-      flex: 1;
-      display: flex;
-      flex-direction: column;
+    /* PRAWY PANEL (KAMERA) */
+    .camera-panel {
+      position: relative;
+      background: #000;
+      border: 2px solid #333;
+      border-radius: 10px;
       overflow: hidden;
-      border-top: 1px solid #333;
-      padding-top: 10px;
+      box-shadow: 0 0 40px rgba(0,0,0,0.7);
     }
-    .table-scroll {
-      overflow-y: auto;
-      flex: 1;
-    }
-    table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    th { text-align: left; color: #888; padding: 5px; position: sticky; top: 0; background: var(--panel); }
-    td { padding: 8px 5px; border-bottom: 1px solid #222; vertical-align: middle; }
     
-    .folder-btn {
-      background: transparent; border: 1px solid #555; color: #aaa;
-      cursor: pointer; padding: 2px 6px; border-radius: 3px; font-size: 10px;
+    /* Wideo wypełnia cały panel */
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain; /* Zachowaj proporcje, nie rozciągaj brzydko */
     }
-    .folder-btn:hover { border-color: var(--primary); color: var(--primary); }
 
-    /* TOAST */
-    #toast {
-      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-      background: #333; padding: 10px 20px; border-radius: 30px;
-      opacity: 0; pointer-events: none; transition: 0.3s; z-index: 999;
+    /* Nakładki na kamerę */
+    .cam-overlay-top {
+      position: absolute; top: 20px; left: 20px;
+      display: flex; flex-direction: column; gap: 5px;
     }
-    #toast.show { opacity: 1; bottom: 40px; }
+    .overlay-tag {
+      background: rgba(0,0,0,0.7);
+      padding: 5px 15px;
+      border-left: 3px solid var(--neon-blue);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 16px; color: #fff;
+      backdrop-filter: blur(4px);
+    }
+    .rec-indicator {
+      position: absolute; top: 20px; right: 20px;
+      display: flex; align-items: center; gap: 10px;
+      color: var(--neon-red); font-weight: bold;
+    }
+    .rec-dot {
+      width: 12px; height: 12px; background: var(--neon-red);
+      border-radius: 50%;
+      animation: blink 1s infinite;
+    }
     
+    /* Efekt linii skanującej (ozdoba) */
+    .scanline {
+      position: absolute; top: 0; left: 0; width: 100%; height: 5px;
+      background: rgba(0, 243, 255, 0.3);
+      box-shadow: 0 0 10px var(--neon-blue);
+      animation: scanAnim 4s linear infinite;
+      opacity: 0.5; pointer-events: none;
+    }
+
+    /* DOLNA HISTORIA (ROZWIJANA) */
+    .history-panel {
+      height: 150px;
+      background: rgba(0,0,0,0.8);
+      border-top: 1px solid #333;
+      display: flex; flex-direction: column;
+    }
+    .history-header {
+      padding: 5px 20px;
+      background: #111;
+      font-size: 12px; color: #aaa;
+      display: flex; justify-content: space-between;
+    }
+    .history-content {
+      overflow-y: auto; flex: 1; padding: 0 20px;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; color: #ccc; }
+    td { padding: 8px; border-bottom: 1px solid #222; font-family: 'Share Tech Mono', monospace; }
+    tr:hover { background: rgba(255,255,255,0.05); }
+    .path-btn {
+      background: transparent; border: 1px solid #555; color: var(--neon-blue);
+      cursor: pointer; padding: 2px 8px; font-size: 10px; transition:0.2s;
+    }
+    .path-btn:hover { background: var(--neon-blue); color: #000; }
+
+    /* OKNA MODALNE I USTAWIENIA */
+    #settingsModal {
+      display: none; position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: #111; border: 1px solid var(--neon-blue);
+      padding: 30px; z-index: 1000; width: 400px;
+      box-shadow: 0 0 50px rgba(0, 243, 255, 0.2);
+    }
+    .modal-overlay {
+      display: none; position: fixed; top:0; left:0; width:100%; height:100%;
+      background: rgba(0,0,0,0.8); z-index: 999;
+    }
+
+    /* Animacje */
+    @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+    @keyframes scanAnim { 0% { top: 0%; } 100% { top: 100%; } }
+    @keyframes pulse { 0% { box-shadow: 0 0 15px rgba(10,255,0,0.4); } 50% { box-shadow: 0 0 30px rgba(10,255,0,0.8); } 100% { box-shadow: 0 0 15px rgba(10,255,0,0.4); } }
+
+    /* Ukryte */
     canvas { display: none; }
   </style>
 </head>
 <body>
 
+<div class="modal-overlay" id="overlay"></div>
+<div id="settingsModal">
+  <h3 style="color:var(--neon-blue); margin-top:0;">KONFIGURACJA ŚCIEŻKI</h3>
+  <label style="color:#aaa; font-size:12px;">Folder główny (np. D:\Serwis):</label>
+  <input type="text" id="rootPathInput" style="width:100%; padding:10px; margin-top:5px; background:#222; border:1px solid #555; color:#fff;" placeholder="C:\OLED_DATA">
+  <button onclick="saveSettings()" style="margin-top:20px; width:100%; padding:10px; background:var(--neon-blue); border:none; font-weight:bold; cursor:pointer;">ZAPISZ</button>
+</div>
+
 <header>
-  <h1>OLED REPAIR SYSTEM</h1>
-  <div>
-    <button class="settings-btn" onclick="toggleSettings()">⚙ ŚCIEŻKA ZAPISU</button>
-  </div>
+  <div class="brand">OLED REPAIR <span style="font-size:12px; opacity:0.7;">MASTER STATION v3.0</span></div>
+  <button class="settings-btn" onclick="openSettings()">⚙ ŚCIEŻKA ZAPISU</button>
 </header>
 
-<div id="settingsPanel">
-  <label style="font-size:12px; color:#aaa;">Główny folder na dysku (np. D:\Serwis):</label>
-  <input type="text" id="rootPathInput" placeholder="C:\OLED_DATA">
-  <div style="margin-top:10px; text-align:right;">
-    <button class="settings-btn" onclick="saveSettings()">ZAPISZ</button>
-  </div>
-  <p style="font-size:10px; color:#666; margin-top:5px;">
-    *To służy do generowania linków w historii. Przeglądarka nie otworzy folderu sama - będziesz mógł skopiować ścieżkę.
-  </p>
-</div>
-
-<div class="main-grid">
+<div class="dashboard">
   
-  <div class="panel">
-    <div class="camera-frame">
-      <video id="videoFeed" autoplay playsinline></video>
-      <div class="overlay-info">
-        <div id="overlaySN">OCZEKIWANIE...</div>
-      </div>
+  <aside class="control-panel">
+    
+    <div class="scan-box">
+      <span class="scan-label">ZESKANUJ SERIAL NUMBER</span>
+      <input type="text" id="scanInput" placeholder="OCZEKIWANIE..." autocomplete="off" autofocus>
     </div>
-  </div>
 
-  <div class="panel">
-    
-    <input type="text" id="scanInput" placeholder="ZESKANUJ TUTAJ" autofocus autocomplete="off">
-    
+    <h2>Wizualizacja 3D</h2>
     <div class="scene-3d">
-      <div class="tv-cube" id="tvModel">
-        <div class="face face-front">EKRAN</div>
-        <div class="face face-back">TYŁ</div>
+      <div class="oled-panel" id="tvModel">
+        <div class="face face-front"></div>
+        <div class="face face-back"></div>
       </div>
     </div>
 
-    <div style="font-size:12px; text-align:center; margin-bottom:5px; color:#888;">Postęp: <span id="progressText">0/3</span></div>
+    <h2>Status Zdjęć (0/3)</h2>
+    <div class="actions-grid">
+      <button class="btn-step" id="btnFront" onclick="capture('PRZOD')">
+        <span>1. PRZÓD</span> <span class="icon">📷</span>
+      </button>
+      <button class="btn-step" id="btnBack" onclick="capture('TYL')">
+        <span>2. TYŁ</span> <span class="icon">🔌</span>
+      </button>
+      <button class="btn-step" id="btnImage" onclick="capture('OBRAZ')">
+        <span>3. OBRAZ</span> <span class="icon">📺</span>
+      </button>
+    </div>
+
+    <button id="finalizeBtn" onclick="finalizeSession()">
+      🔒 BLOKADA (Zrób zdjęcia)
+    </button>
     
-    <div class="btn-grid">
-      <button class="action-btn" id="btnFront" onclick="captureStep('PRZOD')">1. PRZÓD 📸</button>
-      <button class="action-btn" id="btnBack" onclick="captureStep('TYL')">2. TYŁ 📸</button>
-      <button class="action-btn" id="btnImage" onclick="captureStep('OBRAZ')">3. OBRAZ 📸</button>
+    <div style="margin-top: 15px; font-size:11px; color:#555; text-align:center;">
+      System automatycznie generuje nazwy plików
+    </div>
+  </aside>
+
+  <main class="camera-panel">
+    <div class="scanline"></div>
+    
+    <div class="cam-overlay-top">
+      <div class="overlay-tag" id="displaySN">SN: BRAK DANYCH</div>
+      <div class="overlay-tag" id="displayMode">TRYB: GOTOWOŚĆ</div>
     </div>
 
-    <button id="finalizeBtn" onclick="finalizeProcess()">🔒 BRAK ZDJĘĆ</button>
-
-    <div class="history-section">
-      <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-        <span style="font-weight:bold; color:var(--primary);">HISTORIA</span>
-        <button onclick="clearDB()" style="background:none; border:none; color:#555; cursor:pointer; font-size:10px;">[WYCZYŚĆ]</button>
-      </div>
-      
-      <div class="table-scroll">
-        <table id="dbTable">
-          <thead>
-            <tr>
-              <th>Godzina</th>
-              <th>Serial Number</th>
-              <th>Folder</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
+    <div class="rec-indicator">
+      <div class="rec-dot"></div>
+      <span>LIVE 4K</span>
     </div>
-  </div>
+
+    <video id="videoFeed" autoplay playsinline></video>
+  </main>
 </div>
+
+<footer class="history-panel">
+  <div class="history-header">
+    <span>LOKALNA BAZA DANYCH (Ostatnie naprawy)</span>
+    <span style="cursor:pointer; color:var(--neon-red);" onclick="clearDB()">[WYCZYŚĆ]</span>
+  </div>
+  <div class="history-content">
+    <table id="historyTable">
+      <tbody></tbody>
+    </table>
+  </div>
+</footer>
 
 <canvas id="photoCanvas"></canvas>
-<div id="toast">Info</div>
 
 <script>
-  /* --- ZMIENNE GLOBALNE --- */
+  /* --- KONFIGURACJA SYSTEMU --- */
   let currentSN = "";
-  let sessionPhotos = { PRZOD: null, TYL: null, OBRAZ: null };
-  let rootPath = localStorage.getItem('oled_root_path') || "C:\\OLED_DATA"; // Domyślna ścieżka
+  let photos = { PRZOD: null, TYL: null, OBRAZ: null };
+  let rootPath = localStorage.getItem('oled_path') || "C:\\OLED_REPAIR";
 
   // Elementy DOM
   const video = document.getElementById('videoFeed');
   const canvas = document.getElementById('photoCanvas');
   const ctx = canvas.getContext('2d');
-  const tv3d = document.getElementById('tvModel');
+  const tvModel = document.getElementById('tvModel');
   const finalizeBtn = document.getElementById('finalizeBtn');
+  const scanInput = document.getElementById('scanInput');
 
   // Inicjalizacja
-  document.getElementById('rootPathInput').value = rootPath;
-  initCamera();
-  loadHistory();
+  initSystem();
 
-  /* --- 1. KAMERA --- */
-  async function initCamera() {
+  function initSystem() {
+    startHighResCamera();
+    loadHistory();
+    document.getElementById('rootPathInput').value = rootPath;
+    
+    // Focus na input po kliknięciu gdziekolwiek w tło
+    document.addEventListener('click', (e) => {
+      if(e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') {
+        scanInput.focus();
+      }
+    });
+  }
+
+  /* --- 1. KAMERA HIGH-RES (4K) --- */
+  async function startHighResCamera() {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { width: { ideal: 1920 }, height: { ideal: 1080 } } 
-      });
+      // Prosimy o 4K (3840x2160). Jeśli kamera nie ma, przeglądarka da max co może.
+      const constraints = {
+        video: { 
+          width: { ideal: 4096 }, // Celujemy w 4K
+          height: { ideal: 2160 },
+          aspectRatio: { ideal: 1.777 } // 16:9
+        }
+      };
+      
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       video.srcObject = stream;
-    } catch (e) {
-      showToast("Błąd kamery!", "red");
+      
+      // Sprawdźmy realną rozdzielczość po uruchomieniu
+      const track = stream.getVideoTracks()[0];
+      const settings = track.getSettings();
+      console.log(`Kamera uruchomiona: ${settings.width}x${settings.height}`);
+      
+    } catch (err) {
+      alert("Błąd kamery! Sprawdź czy jest podłączona.");
+      console.error(err);
     }
   }
 
-  /* --- 2. USTAWIENIA ŚCIEŻKI --- */
-  function toggleSettings() {
-    const p = document.getElementById('settingsPanel');
-    p.style.display = p.style.display === 'block' ? 'none' : 'block';
-  }
-  function saveSettings() {
-    let path = document.getElementById('rootPathInput').value.trim();
-    // Usuń slash na końcu jeśli user dodał, żeby nie było podwójnych
-    if(path.endsWith('\\') || path.endsWith('/')) path = path.slice(0, -1);
-    
-    localStorage.setItem('oled_root_path', path);
-    rootPath = path;
-    toggleSettings();
-    showToast("Ścieżka zapisana! Odświeżam tabelę...");
-    loadHistory(); // Przeładuj tabelę z nowymi ścieżkami
-  }
-
-  /* --- 3. LOGIKA SKANERA --- */
-  document.getElementById('scanInput').addEventListener('keydown', function(e) {
+  /* --- 2. LOGIKA SKANOWANIA --- */
+  scanInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
-      const val = this.value.trim().toUpperCase();
-      if (val.length > 3) {
-        newSession(val);
-        this.value = "";
-        this.blur();
+      const sn = scanInput.value.trim().toUpperCase();
+      if (sn.length > 3) {
+        startSession(sn);
+        scanInput.value = "";
+        scanInput.blur();
       } else {
-        showToast("Błędny kod SN!");
+        alert("Za krótki kod SN!");
       }
     }
   });
 
-  function newSession(sn) {
+  function startSession(sn) {
     currentSN = sn;
-    sessionPhotos = { PRZOD: null, TYL: null, OBRAZ: null };
-    document.getElementById('overlaySN').textContent = "SN: " + sn;
+    photos = { PRZOD: null, TYL: null, OBRAZ: null };
     
-    // Reset przycisków
+    // Reset GUI
+    document.getElementById('displaySN').innerText = "SN: " + sn;
+    document.getElementById('displaySN').style.borderColor = "var(--neon-green)";
+    
     ['btnFront', 'btnBack', 'btnImage'].forEach(id => {
-      document.getElementById(id).classList.remove('done');
+      document.getElementById(id).className = "btn-step";
     });
     
-    updateUI();
-    rotate3D('front');
-    showToast(`Rozpoczęto: ${sn}`);
+    updateStatus();
+    rotateTV('front');
   }
 
-  /* --- 4. ZDJĘCIA --- */
-  function captureStep(type) {
+  /* --- 3. ROBIENIE ZDJĘĆ I 3D --- */
+  function rotateTV(side) {
+    if (side === 'back') tvModel.style.transform = "rotateY(180deg)";
+    else tvModel.style.transform = "rotateY(0deg)";
+  }
+
+  function capture(type) {
     if (!currentSN) {
-      document.getElementById('scanInput').focus();
-      return showToast("ZESKANUJ KOD!");
+      scanInput.focus();
+      // Efekt trzęsienia inputem
+      scanInput.style.borderColor = "red";
+      setTimeout(()=> scanInput.style.borderColor = "#333", 500);
+      return;
     }
 
-    if (type === 'TYL') rotate3D('back');
-    else rotate3D('front');
+    // Animacja 3D
+    rotateTV(type === 'TYL' ? 'back' : 'front');
 
+    // Mignięcie ekranu (Flash)
+    const flash = document.createElement('div');
+    flash.style.position = "absolute"; flash.style.top=0; flash.style.left=0;
+    flash.style.width="100%"; flash.style.height="100%";
+    flash.style.background = "white"; flash.style.opacity = "0.8";
+    flash.style.zIndex = "100";
+    document.querySelector('.camera-panel').appendChild(flash);
+    setTimeout(() => flash.remove(), 100);
+
+    // Zrzut na canvas (w pełnej rozdzielczości wideo)
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     ctx.drawImage(video, 0, 0);
 
-    // Wypalanie napisów
-    ctx.font = "bold 40px Arial";
-    ctx.fillStyle = "#00ff66";
+    // WATERMARK (Dane na zdjęciu)
+    // Skalujemy czcionkę względem rozdzielczości
+    const fontSize = Math.floor(video.videoHeight / 25); 
+    ctx.font = `bold ${fontSize}px Consolas`;
+    ctx.fillStyle = "#0aff00"; // Neon Green
     ctx.strokeStyle = "black";
-    ctx.lineWidth = 4;
-    ctx.strokeText(`SN: ${currentSN}`, 40, 60);
-    ctx.fillText(`SN: ${currentSN}`, 40, 60);
+    ctx.lineWidth = 3;
     
-    ctx.fillStyle = "#00f3ff";
-    ctx.fillText(type, 40, 110);
+    const text1 = `SN: ${currentSN}`;
+    const text2 = `WIDOK: ${type}`;
+    const text3 = new Date().toLocaleString();
 
+    ctx.strokeText(text1, 50, fontSize + 20);
+    ctx.fillText(text1, 50, fontSize + 20);
+    
+    ctx.fillStyle = "#00f3ff"; // Neon Blue
+    ctx.strokeText(text2, 50, (fontSize * 2) + 30);
+    ctx.fillText(text2, 50, (fontSize * 2) + 30);
+
+    ctx.fillStyle = "white";
+    ctx.font = `${Math.floor(fontSize * 0.6)}px Consolas`;
+    ctx.strokeText(text3, 50, (fontSize * 3) + 40);
+    ctx.fillText(text3, 50, (fontSize * 3) + 40);
+
+    // Zapis do obiektu
     canvas.toBlob(blob => {
-      sessionPhotos[type] = blob;
-      let btnId = type === 'PRZOD' ? 'btnFront' : (type === 'TYL' ? 'btnBack' : 'btnImage');
-      document.getElementById(btnId).classList.add('done');
-      updateUI();
-    }, 'image/jpeg', 0.9);
+      photos[type] = blob;
+      
+      // Update przycisku
+      const btnMap = { 'PRZOD': 'btnFront', 'TYL': 'btnBack', 'OBRAZ': 'btnImage' };
+      const btn = document.getElementById(btnMap[type]);
+      btn.classList.add('done');
+      btn.querySelector('.icon').innerText = "✔";
+      
+      updateStatus();
+    }, 'image/jpeg', 0.95);
   }
 
-  function updateUI() {
-    const count = Object.values(sessionPhotos).filter(p => p).length;
-    document.getElementById('progressText').textContent = `${count}/3`;
-
-    if (count === 3) {
-      finalizeBtn.classList.add('active');
-      finalizeBtn.innerHTML = "💾 ZAPISZ I POBIERZ ZIP";
+  function updateStatus() {
+    const doneCount = Object.values(photos).filter(p => p).length;
+    document.querySelector('h2').innerText = `STATUS ZDJĘĆ (${doneCount}/3)`;
+    
+    if (doneCount === 3) {
+      finalizeBtn.className = "ready";
+      finalizeBtn.innerHTML = "💾 ZAPISZ PACZKĘ (ZIP)";
     } else {
-      finalizeBtn.classList.remove('active');
-      finalizeBtn.innerHTML = `🔒 Brakuje ${3-count} zdjęć`;
+      finalizeBtn.className = "";
+      finalizeBtn.innerHTML = `🔒 BLOKADA (Brakuje ${3 - doneCount})`;
     }
   }
 
-  /* --- 5. FINALIZACJA --- */
-  function finalizeProcess() {
-    if (!currentSN || !finalizeBtn.classList.contains('active')) return;
+  /* --- 4. ZAPIS I HISTORIA --- */
+  function finalizeSession() {
+    if (!finalizeBtn.classList.contains('ready')) return;
 
-    // 1. Zapis do Bazy
-    saveToDB(currentSN);
+    // 1. Dodaj do historii
+    addToHistory(currentSN);
 
-    // 2. Pobieranie ZIP
+    // 2. Pobierz ZIP
     const zip = new JSZip();
     const folder = zip.folder(currentSN);
-    folder.file(`${currentSN}_PRZOD.jpg`, sessionPhotos.PRZOD);
-    folder.file(`${currentSN}_TYL.jpg`, sessionPhotos.TYL);
-    folder.file(`${currentSN}_OBRAZ.jpg`, sessionPhotos.OBRAZ);
+    folder.file(`${currentSN}_PRZOD.jpg`, photos.PRZOD);
+    folder.file(`${currentSN}_TYL.jpg`, photos.TYL);
+    folder.file(`${currentSN}_OBRAZ.jpg`, photos.OBRAZ);
 
     zip.generateAsync({type:"blob"}).then(content => {
       saveAs(content, `${currentSN}.zip`);
-      showToast("Pobrano ZIP!");
       
-      // Reset po chwili
+      // Reset
       setTimeout(() => {
         currentSN = "";
-        document.getElementById('overlaySN').textContent = "OCZEKIWANIE";
-        document.getElementById('scanInput').focus();
-        updateUI(); // zresetuje przyciski
-      }, 1500);
+        document.getElementById('displaySN').innerText = "SN: BRAK";
+        document.getElementById('displaySN').style.borderColor = "transparent";
+        ['btnFront', 'btnBack', 'btnImage'].forEach(id => {
+          let b = document.getElementById(id);
+          b.classList.remove('done');
+          b.querySelector('.icon').innerText = id === 'btnBack' ? '🔌' : (id === 'btnImage' ? '📺' : '📷');
+        });
+        updateStatus();
+        scanInput.focus();
+      }, 1000);
     });
   }
 
-  /* --- 6. BAZA DANYCH I HISTORIA --- */
-  function saveToDB(sn) {
-    let db = JSON.parse(localStorage.getItem('oled_db') || "[]");
-    
-    // Zapisz pełną datę i czas (do sekundy)
-    const now = new Date();
-    // Format: 2023-10-25 14:30:05
-    const timestamp = now.toLocaleDateString() + " " + now.toLocaleTimeString();
-
-    db.unshift({ time: timestamp, sn: sn });
-    if(db.length > 50) db.pop();
-    
-    localStorage.setItem('oled_db', JSON.stringify(db));
+  function addToHistory(sn) {
+    let db = JSON.parse(localStorage.getItem('oled_history') || "[]");
+    const now = new Date().toLocaleTimeString();
+    db.unshift({ sn: sn, time: now });
+    if(db.length > 30) db.pop();
+    localStorage.setItem('oled_history', JSON.stringify(db));
     loadHistory();
   }
 
   function loadHistory() {
-    let db = JSON.parse(localStorage.getItem('oled_db') || "[]");
-    const tbody = document.querySelector("#dbTable tbody");
+    let db = JSON.parse(localStorage.getItem('oled_history') || "[]");
+    const tbody = document.querySelector("#historyTable tbody");
     tbody.innerHTML = "";
-
+    
     db.forEach(row => {
-      // Generujemy pełną ścieżkę do skopiowania
-      // Jeśli rootPath to C:\Data, a SN to 123, wynik: C:\Data\123
       const fullPath = `${rootPath}\\${row.sn}`;
-
-      let tr = document.createElement("tr");
+      const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td style="color:#aaa;">${row.time}</td>
-        <td style="font-weight:bold; color:#fff;">${row.sn}</td>
-        <td>
-          <button class="folder-btn" onclick="copyPath('${fullPath.replace(/\\/g, '\\\\')}')">
+        <td style="width:100px; color:#666;">${row.time}</td>
+        <td style="color:var(--neon-blue); font-weight:bold;">${row.sn}</td>
+        <td style="text-align:right;">
+          <button class="path-btn" onclick="copyToClip('${fullPath.replace(/\\/g, '\\\\')}')">
             📂 KOPIUJ ŚCIEŻKĘ
           </button>
         </td>
@@ -473,31 +631,42 @@
     });
   }
 
-  function copyPath(path) {
-    navigator.clipboard.writeText(path).then(() => {
-      showToast(`Skopiowano: ${path}`);
-    }).catch(err => {
-      showToast("Błąd kopiowania", "red");
-    });
+  function copyToClip(str) {
+    navigator.clipboard.writeText(str);
+    // Mały efekt na przycisku po kliknięciu
+    const activeElement = document.activeElement;
+    const originalText = activeElement.innerText;
+    activeElement.innerText = "SKOPIOWANO!";
+    activeElement.style.background = "var(--neon-green)";
+    activeElement.style.color = "black";
+    setTimeout(() => {
+      activeElement.innerText = originalText;
+      activeElement.style.background = "transparent";
+      activeElement.style.color = "var(--neon-blue)";
+    }, 1000);
   }
 
   function clearDB() {
-    if(confirm("Usunąć historię?")) {
-      localStorage.removeItem('oled_db');
+    if(confirm("Wyczyścić historię napraw?")) {
+      localStorage.removeItem('oled_history');
       loadHistory();
     }
   }
 
-  /* --- HELPERS --- */
-  function rotate3D(side) {
-    tv3d.style.transform = side === 'back' ? "rotateY(180deg)" : "rotateY(0deg)";
+  /* --- 5. USTAWIENIA (MODAL) --- */
+  function openSettings() {
+    document.getElementById('settingsModal').style.display = 'block';
+    document.getElementById('overlay').style.display = 'block';
   }
-  function showToast(msg, color) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.style.background = color === 'red' ? '#ff0055' : '#333';
-    t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2500);
+  function saveSettings() {
+    let p = document.getElementById('rootPathInput').value.trim();
+    if(p.endsWith('\\')) p = p.slice(0, -1);
+    rootPath = p;
+    localStorage.setItem('oled_path', p);
+    
+    document.getElementById('settingsModal').style.display = 'none';
+    document.getElementById('overlay').style.display = 'none';
+    loadHistory();
   }
 </script>
 
