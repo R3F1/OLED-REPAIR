@@ -2,24 +2,28 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR v1.0 Testowy</title>
+  <title>OLED REPAIR v9.2 PL-FIX</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  
+  <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;600;700&family=Roboto:wght@400;500;700&display=swap&subset=latin-ext" rel="stylesheet">
   
   <style>
     /* --- CORE VARIABLES --- */
     :root {
       --bg-deep: #050505;
       --panel-glass: rgba(20, 25, 35, 0.95);
-      --neon-cyan: #00f3ff;   /* Operator */
-      --neon-green: #0aff00;  /* Sukces */
-      --neon-red: #ff003c;    /* Błąd / Blokada */
-      --neon-gold: #ffd700;   /* Admin */
-      --neon-purple: #bc13fe; /* Koordynator */
-      --font-ui: 'Rajdhani', sans-serif;
-      --font-tech: 'Share Tech Mono', monospace;
+      --neon-cyan: #00f3ff;
+      --neon-green: #0aff00;
+      --neon-red: #ff003c;
+      --neon-gold: #ffd700;
+      --neon-purple: #bc13fe;
+      
+      /* NOWE CZCIONKI PL */
+      --font-ui: 'Roboto', sans-serif;       /* Do tekstów i guzików */
+      --font-tech: 'Oxanium', cursive;       /* Do nagłówków i kodów */
     }
+    
     * { box-sizing: border-box; user-select: none; }
     
     body {
@@ -43,6 +47,11 @@
       box-shadow: 0 0 60px rgba(0, 243, 255, 0.1);
       backdrop-filter: blur(10px);
     }
+    .login-box h2 {
+      font-family: var(--font-tech);
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
     .login-input {
       width: 100%; padding: 15px; margin: 10px 0; background: #080808; border: 1px solid #333; color: var(--neon-cyan);
       font-family: var(--font-tech); font-size: 18px; text-align: center; outline: none; transition: 0.3s;
@@ -54,7 +63,7 @@
       cursor: pointer; font-family: var(--font-tech); transition: 0.3s; font-size: 16px; letter-spacing: 2px;
     }
     .login-btn:hover { background: #fff; box-shadow: 0 0 30px var(--neon-cyan); }
-    .login-error { color: var(--neon-red); font-size: 12px; height: 20px; margin-top: 10px; font-weight: bold; font-family: var(--font-tech); }
+    .login-error { color: var(--neon-red); font-size: 12px; height: 20px; margin-top: 10px; font-weight: bold; font-family: var(--font-ui); }
 
     /* --- NETWORK GUARD --- */
     #networkGuard {
@@ -65,6 +74,11 @@
     .alert-box {
       width: 600px; padding: 40px; border: 2px solid var(--neon-red); background: #050505;
       text-align: center; border-radius: 12px; box-shadow: 0 0 100px rgba(255, 0, 60, 0.2);
+    }
+    .alert-box h1 { font-family: var(--font-tech); letter-spacing: 1px; }
+    .path-box {
+      background:#111; padding:15px; border:1px dashed #555; font-size:12px; color:#fff; 
+      font-family:var(--font-tech); margin-top: 5px; word-break: break-all;
     }
     .guard-btn {
       width: 100%; padding: 20px; background: var(--neon-red); color: #fff; font-weight: bold;
@@ -77,13 +91,11 @@
       height: 70px; display: flex; justify-content: space-between; align-items: center; padding: 0 30px;
       background: rgba(0,0,0,0.8); border-bottom: 1px solid #333;
     }
-    .brand { font-size: 26px; font-weight: 700; color: #fff; letter-spacing: 3px; }
+    .brand { font-family: var(--font-tech); font-size: 28px; font-weight: 700; color: #fff; letter-spacing: 2px; }
     .brand span { color: var(--neon-cyan); text-shadow: 0 0 10px var(--neon-cyan); }
     .operator-info { display: flex; align-items: center; gap: 20px; font-family: var(--font-tech); color: #aaa; font-size: 14px; }
     
-    .operator-badge { background: #1a1a1a; padding: 6px 15px; border-radius: 4px; border: 1px solid #444; color: var(--neon-cyan); transition:0.3s; }
-    
-    /* STYLE RÓL */
+    .operator-badge { background: #1a1a1a; padding: 6px 15px; border-radius: 4px; border: 1px solid #444; color: var(--neon-cyan); transition:0.3s; font-weight: bold; }
     .operator-badge.admin { border-color: var(--neon-gold); color: var(--neon-gold); box-shadow: 0 0 15px rgba(255, 215, 0, 0.1); }
     .operator-badge.coord { border-color: var(--neon-purple); color: var(--neon-purple); box-shadow: 0 0 15px rgba(188, 19, 254, 0.2); }
 
@@ -115,7 +127,7 @@
     .cam-btn:hover { background: var(--neon-cyan); color: #000; }
 
     /* UI ELEMENTS */
-    .input-label { font-size: 11px; color: var(--neon-cyan); letter-spacing: 1px; margin-bottom: 5px; display: block; font-weight: bold; }
+    .input-label { font-size: 11px; color: var(--neon-cyan); letter-spacing: 1px; margin-bottom: 5px; display: block; font-weight: bold; font-family: var(--font-tech); }
     #scanInput {
       width: 100%; background: #000; border: 1px solid #444; color: #fff; padding: 12px; font-size: 22px;
       text-align: center; font-family: var(--font-tech); outline: none; border-radius: 6px; margin-bottom: 15px;
@@ -126,9 +138,10 @@
       width: 100%; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); color: #888;
       padding: 12px; margin-bottom: 8px; cursor: pointer; text-align: left; font-family: var(--font-ui);
       display: flex; justify-content: space-between; transition: 0.2s; font-size: 14px; border-radius: 6px;
+      font-weight: 500;
     }
     .checklist-btn:hover { background: rgba(255,255,255,0.05); color: #fff; border-color: #fff; }
-    .checklist-btn.done { border-color: var(--neon-green); color: var(--neon-green); background: rgba(10,255,0,0.1); }
+    .checklist-btn.done { border-color: var(--neon-green); color: var(--neon-green); background: rgba(10,255,0,0.1); font-weight: 700; }
 
     /* DECISION PANEL */
     .decision-panel { border-top: 1px solid #333; margin-top: 10px; padding-top: 15px; }
@@ -138,7 +151,7 @@
       appearance: none; margin-bottom: 10px; transition: 0.3s;
     }
     .custom-textarea {
-      width: 100%; background: #080808; color: #aaa; border: 1px solid #444; padding: 10px;
+      width: 100%; background: #080808; color: #ccc; border: 1px solid #444; padding: 10px;
       font-family: var(--font-ui); font-size: 14px; border-radius: 5px; outline: none; resize: vertical;
       margin-bottom: 10px; transition: 0.3s;
     }
@@ -147,6 +160,7 @@
     #actionBtn {
       margin-top: auto; padding: 15px; width: 100%; background: #111; color: #444; font-weight: bold; border: none;
       font-size: 16px; cursor: not-allowed; border-radius: 6px; text-transform: uppercase; letter-spacing: 1px;
+      font-family: var(--font-tech);
     }
     #actionBtn.active {
       background: var(--neon-green); color: #000; cursor: pointer; animation: pulseBtn 2s infinite;
@@ -188,7 +202,7 @@
     .tv-pivot { position: relative; width: 160px; height: 90px; transform-style: preserve-3d; transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); }
     .tv-panel { position: absolute; width: 100%; height: 100%; background: #000; border: 2px solid #333; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; }
     .tv-front { background: linear-gradient(135deg, #050505, #1a1a1a); border: 1px solid #555; }
-    .tv-front::after { content: "OLED"; opacity: 0.3; font-weight: bold; }
+    .tv-front::after { content: "OLED"; opacity: 0.3; font-weight: bold; font-family: var(--font-tech); }
     .tv-back { transform: rotateY(180deg); background: #151515; border: 1px solid #444; }
     
     canvas { display: none; }
@@ -198,13 +212,13 @@
 
 <div id="loginScreen">
   <div class="login-box">
-    <h2 style="margin:0; color:#fff; font-family: 'Share Tech Mono'; letter-spacing: 2px;">OLED REPAIR SYSTEM</h2>
-    <div style="font-size:12px; color:#666; margin-bottom:30px;">V1.0 Testowy</div>
+    <h2 style="margin:0; color:#fff; letter-spacing: 2px;">OLED REPAIR SYSTEM</h2>
+    <div style="font-size:12px; color:#666; margin-bottom:30px; font-family: var(--font-tech);">V9.2 PL PERFECT</div>
     
-    <label style="color:var(--neon-cyan); font-size:10px; display:block; text-align:left; margin-left:5px;">UŻYTKOWNIK</label>
+    <label style="color:var(--neon-cyan); font-size:10px; display:block; text-align:left; margin-left:5px; font-family: var(--font-tech);">UŻYTKOWNIK</label>
     <input type="text" id="userInput" class="login-input" placeholder="LOGIN" autocomplete="off">
     
-    <label style="color:var(--neon-red); font-size:10px; display:block; text-align:left; margin-left:5px;">HASŁO</label>
+    <label style="color:var(--neon-red); font-size:10px; display:block; text-align:left; margin-left:5px; font-family: var(--font-tech);">HASŁO</label>
     <input type="password" id="passInput" class="login-input" placeholder="••••••••">
 
     <div id="loginError" class="login-error"></div>
@@ -214,10 +228,10 @@
 
 <div id="networkGuard">
   <div class="alert-box">
-    <h1 style="color:var(--neon-red); margin:0; font-family:'Share Tech Mono'">⚠️ SYSTEM ROZŁĄCZONY ⚠️</h1>
+    <h1 style="color:var(--neon-red); margin:0;">⚠️ SYSTEM ROZŁĄCZONY ⚠️</h1>
     <p style="font-size:16px; color:#ccc; margin:20px 0;">WYMAGANY DOSTĘP DO FOLDERU SIECIOWEGO</p>
-    <div style="font-size:11px; color:#aaa; margin-bottom:5px;">CEL:</div>
-    <div style="background:#111; padding:15px; border:1px dashed #555; font-size:11px; color:#fff; font-family:'Share Tech Mono'">\\plgorfs001\pub\SERVICE\LCDR\LCDR\OLED OBM Panels\Zdjęcia z napraw OLED</div>
+    <div style="font-size:11px; color:#aaa; margin-bottom:5px; font-family: var(--font-tech);">CEL:</div>
+    <div class="path-box">\\plgorfs001\pub\SERVICE\LCDR\LCDR\OLED OBM Panels\Zdjęcia z napraw OLED</div>
     <button class="guard-btn" onclick="connectNetwork()">📡 POŁĄCZ Z SERWEREM</button>
   </div>
 </div>
@@ -264,7 +278,7 @@
     </div>
 
     <button id="actionBtn" onclick="saveData()">OCZEKIWANIE</button>
-    <div id="saveStatus" style="text-align:center; color:#666; margin-top:10px; font-size:11px; height:15px;"></div>
+    <div id="saveStatus" style="text-align:center; color:#666; margin-top:10px; font-size:11px; height:15px; font-family: var(--font-tech);"></div>
   </aside>
 
   <main class="panel-right">
@@ -287,21 +301,21 @@
 
 <div id="userPanel" class="slide-panel">
   <div class="panel-header">
-    <div style="font-size:20px; color:var(--neon-gold);">ZARZĄDZANIE PERSONELEM</div>
+    <div style="font-size:20px; color:var(--neon-gold); font-family: var(--font-tech);">ZARZĄDZANIE PERSONELEM</div>
     <button class="bar-btn" onclick="toggleUserPanel()">ZAMKNIJ X</button>
   </div>
   <div class="panel-content">
     <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 100px; gap:10px; margin-bottom:20px; padding:20px; background:#111; border:1px solid #333;">
-      <input type="text" id="newLogin" placeholder="NOWY LOGIN" style="background:#000; border:1px solid #444; color:#fff; padding:10px;">
-      <input type="text" id="newPass" placeholder="HASŁO" style="background:#000; border:1px solid #444; color:#fff; padding:10px;">
+      <input type="text" id="newLogin" placeholder="NOWY LOGIN" style="background:#000; border:1px solid #444; color:#fff; padding:10px; font-family: var(--font-tech);">
+      <input type="text" id="newPass" placeholder="HASŁO" style="background:#000; border:1px solid #444; color:#fff; padding:10px; font-family: var(--font-tech);">
       
-      <select id="newRole" style="background:#000; border:1px solid #444; color:#fff; padding:10px;">
+      <select id="newRole" style="background:#000; border:1px solid #444; color:#fff; padding:10px; font-family: var(--font-tech);">
         <option value="OPERATOR">OPERATOR</option>
         <option value="KOORDYNATOR" style="color:var(--neon-purple)">KOORDYNATOR</option>
         <option value="ADMIN" style="color:var(--neon-gold)">ADMINISTRATOR</option>
       </select>
       
-      <button onclick="addUser()" style="background:var(--neon-gold); border:none; color:#000; font-weight:bold; cursor:pointer;">DODAJ</button>
+      <button onclick="addUser()" style="background:var(--neon-gold); border:none; color:#000; font-weight:bold; cursor:pointer; font-family: var(--font-tech);">DODAJ</button>
     </div>
     <table id="userTable"><thead><tr><th>LOGIN</th><th>HASŁO</th><th>ROLA</th><th>AKCJA</th></tr></thead><tbody></tbody></table>
   </div>
@@ -309,7 +323,7 @@
 
 <div id="reportPanel" class="slide-panel">
   <div class="panel-header">
-    <div style="font-size:20px; color:var(--neon-cyan);">HISTORIA NAPRAW</div>
+    <div style="font-size:20px; color:var(--neon-cyan); font-family: var(--font-tech);">HISTORIA NAPRAW</div>
     <div>
       <button class="bar-btn" onclick="scanNetwork()">🔄 SKANUJ SERWER</button>
       <button class="bar-btn" onclick="exportCSV()">💾 CSV</button>
@@ -330,7 +344,7 @@
     defaultUsers: [
       { login: "DAWID", pass: "OLED12345!", role: "OPERATOR" },
       { login: "LUKASZ", pass: "050699", role: "ADMIN" },
-      { login: "MICHAL", pass: "COORD2024", role: "KOORDYNATOR" } // Nowy domyślny
+      { login: "MICHAL", pass: "COORD2024", role: "KOORDYNATOR" }
     ]
   };
 
@@ -412,8 +426,7 @@
     badge.innerText = currentUser.login;
     document.getElementById('tagOp').innerText = "OP: " + currentUser.login;
     
-    // Logika stylów odznak
-    badge.className = "operator-badge"; // Reset
+    badge.className = "operator-badge"; 
     if(currentUser.role === 'ADMIN') {
       badge.classList.add('admin');
       document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'inline-block');
@@ -421,7 +434,6 @@
     }
     if(currentUser.role === 'KOORDYNATOR') {
       badge.classList.add('coord');
-      // Tutaj w przyszłości logika dla koordynatora
     }
   }
   function addUser() {
@@ -512,11 +524,11 @@
 
     // Watermark
     const fs = Math.floor(c.height/25);
-    x.font = `bold ${fs}px Consolas`; x.lineWidth=4; x.strokeStyle="black"; x.fillStyle="#0aff00";
+    x.font = `bold ${fs}px Roboto`; x.lineWidth=4; x.strokeStyle="black"; x.fillStyle="#0aff00";
     x.strokeText(`SN: ${currentSN}`, 50, fs+20); x.fillText(`SN: ${currentSN}`, 50, fs+20);
     x.fillStyle = "#00f3ff";
     x.strokeText(`TYP: ${type}`, 50, (fs*2)+40); x.fillText(`TYP: ${type}`, 50, (fs*2)+40);
-    x.fillStyle = "white"; x.font = `bold ${Math.floor(fs*0.8)}px Consolas`;
+    x.fillStyle = "white"; x.font = `bold ${Math.floor(fs*0.8)}px Roboto`;
     x.strokeText(`OP: ${currentUser.login}`, 50, (fs*3)+60); x.fillText(`OP: ${currentUser.login}`, 50, (fs*3)+60);
 
     c.toBlob(b => {
@@ -613,6 +625,7 @@ ZDJĘCIA: 3/3 OK
         if(r.dec === 'NG' || r.dec === 'SCRAP') color = "var(--neon-red)";
         if(r.dec === 'OK' || r.dec === 'OFFRS_OK') color = "var(--neon-green)";
         if(r.dec === 'RMA') color = "orange";
+        
         tb.innerHTML += `<tr><td>${r.date}</td><td>${r.sn}</td><td>${r.op}</td><td style="color:${color};font-weight:bold;">${r.dec}</td><td>${r.com}</td></tr>`;
       });
     } catch(e) { alert("Błąd skanowania"); }
