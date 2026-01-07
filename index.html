@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR v9.0 testowy</title>
+  <title>OLED REPAIR v9.1 PLATINUM</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
@@ -12,11 +12,11 @@
     :root {
       --bg-deep: #050505;
       --panel-glass: rgba(20, 25, 35, 0.95);
-      --neon-cyan: #00f3ff;
-      --neon-green: #0aff00;
-      --neon-red: #ff003c;
-      --neon-gold: #ffd700;
-      --neon-purple: #bc13fe;
+      --neon-cyan: #00f3ff;   /* Operator */
+      --neon-green: #0aff00;  /* Sukces */
+      --neon-red: #ff003c;    /* Błąd / Blokada */
+      --neon-gold: #ffd700;   /* Admin */
+      --neon-purple: #bc13fe; /* Koordynator */
       --font-ui: 'Rajdhani', sans-serif;
       --font-tech: 'Share Tech Mono', monospace;
     }
@@ -80,8 +80,12 @@
     .brand { font-size: 26px; font-weight: 700; color: #fff; letter-spacing: 3px; }
     .brand span { color: var(--neon-cyan); text-shadow: 0 0 10px var(--neon-cyan); }
     .operator-info { display: flex; align-items: center; gap: 20px; font-family: var(--font-tech); color: #aaa; font-size: 14px; }
+    
     .operator-badge { background: #1a1a1a; padding: 6px 15px; border-radius: 4px; border: 1px solid #444; color: var(--neon-cyan); transition:0.3s; }
+    
+    /* STYLE RÓL */
     .operator-badge.admin { border-color: var(--neon-gold); color: var(--neon-gold); box-shadow: 0 0 15px rgba(255, 215, 0, 0.1); }
+    .operator-badge.coord { border-color: var(--neon-purple); color: var(--neon-purple); box-shadow: 0 0 15px rgba(188, 19, 254, 0.2); }
 
     /* --- DASHBOARD --- */
     .dashboard {
@@ -126,21 +130,13 @@
     .checklist-btn:hover { background: rgba(255,255,255,0.05); color: #fff; border-color: #fff; }
     .checklist-btn.done { border-color: var(--neon-green); color: var(--neon-green); background: rgba(10,255,0,0.1); }
 
-    /* --- NOWE POLE DECYZJI I KOMENTARZA --- */
-    .decision-panel {
-      border-top: 1px solid #333; margin-top: 10px; padding-top: 15px;
-    }
-    
+    /* DECISION PANEL */
+    .decision-panel { border-top: 1px solid #333; margin-top: 10px; padding-top: 15px; }
     .custom-select {
       width: 100%; background: #080808; color: #fff; border: 1px solid var(--neon-purple); padding: 10px;
       font-family: var(--font-tech); font-size: 14px; border-radius: 5px; outline: none; cursor: pointer;
-      appearance: none; /* remove default arrow */
-      background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2300f3ff%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E');
-      background-repeat: no-repeat; background-position: right 10px top 50%; background-size: 12px auto;
-      margin-bottom: 10px; transition: 0.3s;
+      appearance: none; margin-bottom: 10px; transition: 0.3s;
     }
-    .custom-select:hover { box-shadow: 0 0 10px var(--neon-purple); }
-
     .custom-textarea {
       width: 100%; background: #080808; color: #aaa; border: 1px solid #444; padding: 10px;
       font-family: var(--font-ui); font-size: 14px; border-radius: 5px; outline: none; resize: vertical;
@@ -158,7 +154,7 @@
     }
     @keyframes pulseBtn { 0% { box-shadow: 0 0 10px var(--neon-green); } 50% { box-shadow: 0 0 30px var(--neon-green); } 100% { box-shadow: 0 0 10px var(--neon-green); } }
 
-    /* ADMIN & SLIDING PANELS (ZACHOWANE) */
+    /* PANELS */
     .bar-bottom {
       position: fixed; bottom: 0; left: 0; width: 100%; height: 40px; background: #080808; border-top: 1px solid #333;
       display: flex; justify-content: flex-end; align-items: center; padding: 0 20px; gap: 10px; z-index: 100;
@@ -184,7 +180,7 @@
     td { padding: 12px; border-bottom: 1px solid #222; }
     tr:hover { background: rgba(255,255,255,0.05); }
 
-    /* OVERLAYS & 3D */
+    /* VISUALS */
     .cam-overlay { position: absolute; top: 20px; left: 20px; display: flex; flex-direction: column; gap: 8px; }
     .tag { background: rgba(0,0,0,0.7); color: #fff; padding: 6px 12px; font-family: var(--font-tech); font-size: 14px; border-left: 3px solid var(--neon-cyan); backdrop-filter: blur(5px); }
     
@@ -203,11 +199,14 @@
 <div id="loginScreen">
   <div class="login-box">
     <h2 style="margin:0; color:#fff; font-family: 'Share Tech Mono'; letter-spacing: 2px;">OLED REPAIR SYSTEM</h2>
-    <div style="font-size:12px; color:#666; margin-bottom:30px;">V9.0 testowy</div>
+    <div style="font-size:12px; color:#666; margin-bottom:30px;">V9.1 PLATINUM</div>
+    
     <label style="color:var(--neon-cyan); font-size:10px; display:block; text-align:left; margin-left:5px;">UŻYTKOWNIK</label>
     <input type="text" id="userInput" class="login-input" placeholder="LOGIN" autocomplete="off">
+    
     <label style="color:var(--neon-red); font-size:10px; display:block; text-align:left; margin-left:5px;">HASŁO</label>
     <input type="password" id="passInput" class="login-input" placeholder="••••••••">
+
     <div id="loginError" class="login-error"></div>
     <button class="login-btn" onclick="attemptLogin()">ROZPOCZNIJ ZMIANĘ</button>
   </div>
@@ -224,7 +223,7 @@
 </div>
 
 <header>
-  <div class="brand">TPV <span>OLED</span> REPAIR STATION</div>
+  <div class="brand">LG <span>OLED</span> STUDIO</div>
   <div class="operator-info">
     <div class="operator-badge" id="operatorBadge">---</div>
     <div id="clockDisplay">00:00</div>
@@ -250,7 +249,7 @@
     </div>
 
     <div class="decision-panel">
-      <span class="input-label" style="color:var(--neon-purple)">DECYZJA SERWISOWA (WYMAGANA)</span>
+      <span class="input-label" style="color:var(--neon-purple)">DECYZJA SERWISOWA</span>
       <select id="statusSelect" class="custom-select">
         <option value="OK">🟢 OK (SPRAWNY)</option>
         <option value="NG">🔴 NG (USZKODZONY)</option>
@@ -261,7 +260,7 @@
       </select>
       
       <span class="input-label">KOMENTARZ / OPIS USTERKI</span>
-      <textarea id="commentInput" class="custom-textarea" rows="2" placeholder="Wpisz uwagi (np. martwy piksel, rysa)..."></textarea>
+      <textarea id="commentInput" class="custom-textarea" rows="2" placeholder="Wpisz uwagi..."></textarea>
     </div>
 
     <button id="actionBtn" onclick="saveData()">OCZEKIWANIE</button>
@@ -295,10 +294,13 @@
     <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 100px; gap:10px; margin-bottom:20px; padding:20px; background:#111; border:1px solid #333;">
       <input type="text" id="newLogin" placeholder="NOWY LOGIN" style="background:#000; border:1px solid #444; color:#fff; padding:10px;">
       <input type="text" id="newPass" placeholder="HASŁO" style="background:#000; border:1px solid #444; color:#fff; padding:10px;">
+      
       <select id="newRole" style="background:#000; border:1px solid #444; color:#fff; padding:10px;">
         <option value="OPERATOR">OPERATOR</option>
-        <option value="ADMIN">ADMINISTRATOR</option>
+        <option value="KOORDYNATOR" style="color:var(--neon-purple)">KOORDYNATOR</option>
+        <option value="ADMIN" style="color:var(--neon-gold)">ADMINISTRATOR</option>
       </select>
+      
       <button onclick="addUser()" style="background:var(--neon-gold); border:none; color:#000; font-weight:bold; cursor:pointer;">DODAJ</button>
     </div>
     <table id="userTable"><thead><tr><th>LOGIN</th><th>HASŁO</th><th>ROLA</th><th>AKCJA</th></tr></thead><tbody></tbody></table>
@@ -327,7 +329,8 @@
     networkPath: String.raw`\\plgorfs001\pub\SERVICE\LCDR\LCDR\OLED OBM Panels\Zdjęcia z napraw OLED`,
     defaultUsers: [
       { login: "DAWID", pass: "OLED12345!", role: "OPERATOR" },
-      { login: "LUKASZ", pass: "050699", role: "ADMIN" }
+      { login: "LUKASZ", pass: "050699", role: "ADMIN" },
+      { login: "MICHAL", pass: "COORD2024", role: "KOORDYNATOR" } // Nowy domyślny
     ]
   };
 
@@ -405,12 +408,20 @@
     }
   }
   function setupInterface() {
-    document.getElementById('operatorBadge').innerText = currentUser.login;
+    const badge = document.getElementById('operatorBadge');
+    badge.innerText = currentUser.login;
     document.getElementById('tagOp').innerText = "OP: " + currentUser.login;
+    
+    // Logika stylów odznak
+    badge.className = "operator-badge"; // Reset
     if(currentUser.role === 'ADMIN') {
-      document.getElementById('operatorBadge').classList.add('admin');
+      badge.classList.add('admin');
       document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'inline-block');
       renderUserTable();
+    }
+    if(currentUser.role === 'KOORDYNATOR') {
+      badge.classList.add('coord');
+      // Tutaj w przyszłości logika dla koordynatora
     }
   }
   function addUser() {
@@ -423,7 +434,11 @@
   function renderUserTable() {
     const tb = document.querySelector('#userTable tbody'); tb.innerHTML = "";
     users.forEach((u, i) => {
-      tb.innerHTML += `<tr><td>${u.login}</td><td>***</td><td style="color:${u.role==='ADMIN'?'var(--neon-gold)':'#fff'}">${u.role}</td><td><button onclick="removeUser(${i})" style="color:red;background:none;border:none;cursor:pointer;">USUŃ</button></td></tr>`;
+      let color = '#fff';
+      if(u.role === 'ADMIN') color = 'var(--neon-gold)';
+      if(u.role === 'KOORDYNATOR') color = 'var(--neon-purple)';
+      
+      tb.innerHTML += `<tr><td>${u.login}</td><td>***</td><td style="color:${color}">${u.role}</td><td><button onclick="removeUser(${i})" style="color:red;background:none;border:none;cursor:pointer;">USUŃ</button></td></tr>`;
     });
   }
 
@@ -472,7 +487,7 @@
     document.getElementById('actionBtn').innerText = "OCZEKIWANIE (0/3)";
     document.getElementById('actionBtn').classList.remove('active');
     document.getElementById('tv3d').style.transform = "rotateY(0deg)";
-    document.getElementById('commentInput').value = ""; // Reset komentarza
+    document.getElementById('commentInput').value = "";
   }
 
   function capture(type) {
@@ -598,7 +613,6 @@ ZDJĘCIA: 3/3 OK
         if(r.dec === 'NG' || r.dec === 'SCRAP') color = "var(--neon-red)";
         if(r.dec === 'OK' || r.dec === 'OFFRS_OK') color = "var(--neon-green)";
         if(r.dec === 'RMA') color = "orange";
-        
         tb.innerHTML += `<tr><td>${r.date}</td><td>${r.sn}</td><td>${r.op}</td><td style="color:${color};font-weight:bold;">${r.dec}</td><td>${r.com}</td></tr>`;
       });
     } catch(e) { alert("Błąd skanowania"); }
