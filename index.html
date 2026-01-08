@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR v3.4 (ADMIN TABLE FIX)</title>
+  <title>OLED REPAIR v3.5 (CAMERA FIX)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -322,7 +322,7 @@
 <div id="loginScreen">
   <div class="login-box">
     <h2 style="color:#fff;">OLED REPAIR SYSTEM</h2>
-    <div style="font-size:12px; color:#666; font-family: var(--font-tech);">v3.4 (ADMIN TABLE FIX)</div>
+    <div style="font-size:12px; color:#666; font-family: var(--font-tech);">v3.5 (CAMERA FIX)</div>
     <div id="syncStatus" class="sync-status">Ładowanie użytkowników...</div>
     
     <label class="input-label" style="text-align:left; margin-left:5px; margin-top:20px;">UŻYTKOWNIK</label>
@@ -456,7 +456,7 @@
     <div class="admin-container">
         <div class="admin-status-bar">
             <div class="status-item"><div class="status-dot ok"></div> SYSTEM: ONLINE</div>
-            <div class="status-item">VER: 3.4</div>
+            <div class="status-item">VER: 3.5</div>
             <div class="status-item">CPU: <span id="simCpu">12%</span></div>
             <div class="status-item">MEM: <span id="simMem">2.4GB</span></div>
         </div>
@@ -489,7 +489,7 @@
                 <div class="admin-panel-box">
                     <div class="admin-h" style="margin-bottom:5px;">TERMINAL SYSTEMOWY</div>
                     <div class="admin-terminal" id="sysLog">
-                        <div class="log-line"><span class="log-time">System:</span> Inicjalizacja v3.4...</div>
+                        <div class="log-line"><span class="log-time">System:</span> Inicjalizacja v3.5...</div>
                         <div class="log-line"><span class="log-time">System:</span> Gotowy do pracy.</div>
                     </div>
                 </div>
@@ -821,7 +821,7 @@
               const cols = row.split(',');
               if(cols.length >= 3) {
                    const l = cols[0].replace(/^"|"$/g, '').trim().toUpperCase();
-                   const p = cols[1].replace(/^"|"$/g, '').trim(); // Hasło bez uppercase!
+                   const p = cols[1].replace(/^"|"$/g, '').trim(); 
                    let r = cols[2].replace(/^"|"$/g, '').trim().toUpperCase();
                    
                    // --- Mapowanie nazw ról ---
@@ -843,7 +843,6 @@
               statusEl.className = "sync-status ok";
               setTimeout(()=>{ statusEl.innerText=""; }, 3000);
               
-              // --- FIX: Odśwież tabelę jeśli admin jest zalogowany ---
               if(currentUser && currentUser.role === 'ADMIN') {
                   renderAdminUserTable();
               }
@@ -1086,6 +1085,21 @@
       document.getElementById('opYield').innerText = yieldVal + "%";
   }
 
+  // --- KAMERA FIX ---
+  async function initCamera() {
+    if(currentUser.role === 'KIEROWNIK' || currentUser.role === 'KOORDYNATOR' || currentUser.role === 'ADMIN') return;
+    try {
+      // USUNIĘTO "ideal:3840" - to blokowało kamery, które nie mają 4K
+      const s = await navigator.mediaDevices.getUserMedia({ video: true });
+      const video = document.getElementById('videoFeed');
+      video.srcObject = s;
+      video.play(); // Wymuszamy start
+    } catch(e) { 
+        console.error("Cam error", e);
+        alert("BŁĄD KAMERY: Sprawdź uprawnienia przeglądarki lub podłączenie kamery.");
+    }
+  }
+
   // --- NOWE FUNKCJE --- 
   
   function updatePhotoProgress() {
@@ -1304,6 +1318,84 @@
   function nextPattern() { pIdx++; if(pIdx>=pats.length){document.getElementById('patternOverlay').style.display='none';pIdx=-1;} else document.getElementById('patternOverlay').style.background=pats[pIdx]; }
   function toggleFullScreen() { if(!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
   function toggleReportPanel() { document.getElementById('reportPanel').classList.toggle('open'); }
+  
+  // --- ADMIN FUNCTIONALITY ---
+  async function addUser() {
+    const l = document.getElementById('newLogin').value.trim().toUpperCase();
+    const p = document.getElementById('newPass').value.trim();
+    const r = document.getElementById('newRole').value;
+    
+    if(l && p) { 
+        // 1. Dodaj lokalnie (żebyś widział od razu)
+        users.push({login:l, pass:p, role:r}); 
+        saveUsers(); // Zapisuje do LocalStorage
+        
+        // 2. Wyślij do Google Sheets przez Cloudflare
+        logSystem(`Wysyłanie użytkownika ${l} do chmury...`);
+        
+        try {
+            const payload = {
+                type: "ADD_USER", // To mówi skryptowi Google, co robić
+                login: l,
+                pass: p,
+                role: r
+            };
+
+            const res = await fetch(CONFIG.sheetUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if(res.ok) {
+                logSystem("✅ Użytkownik dodany do bazy Google!");
+                alert("Użytkownik dodany do bazy online!");
+                renderAdminUserTable(); // Odśwież tabelę
+            } else {
+                alert("Błąd zapisu online! Użytkownik jest tylko lokalnie.");
+            }
+        } catch(e) {
+            console.error(e);
+            alert("Błąd połączenia z chmurą. Użytkownik dodany tylko lokalnie.");
+        }
+        
+        // Czyścimy pola
+        document.getElementById('newLogin').value = "";
+        document.getElementById('newPass').value = "";
+    } else {
+        alert("Podaj login i hasło!");
+    }
+  }
+  
+  function renderAdminUserTable() {
+      const tb = document.querySelector('#admUserTable tbody'); 
+      if(!tb) return;
+      tb.innerHTML = "";
+      users.forEach((u, i) => {
+        let color = '#fff';
+        if(u.role === 'ADMIN') color = 'var(--neon-gold)';
+        if(u.role === 'KOORDYNATOR') color = 'var(--neon-purple)';
+        if(u.role === 'KIEROWNIK') color = 'var(--neon-red)';
+        tb.innerHTML += `<tr><td>${u.login}</td><td style="color:${color}">${u.role}</td><td><div class="adm-btn-group"><button class="adm-act-btn" onclick="resetUserPass(${i})">RESET</button><button class="adm-act-btn" style="color:red" onclick="removeUser(${i})">X</button></div></td></tr>`;
+      });
+  }
+  
+  function backupUsers() {
+      const blob = new Blob([JSON.stringify(users, null, 2)], {type: "application/json"});
+      saveAs(blob, "users_backup.json");
+      logSystem("Wykonano backup użytkowników");
+  }
+  
+  function resetUserPass(idx) { if(confirm("Reset hasła na 1234?")) { users[idx].pass="1234"; saveUsers(); alert("OK"); logSystem(`Reset hasła dla: ${users[idx].login}`); } }
+  function removeUser(idx) { if(confirm("Usunąć?")) { logSystem(`Usunięto usera: ${users[idx].login}`); users.splice(idx, 1); saveUsers(); } }
+
+  async function startAdminCamera() {
+      try {
+          const s = await navigator.mediaDevices.getUserMedia({video:true});
+          document.getElementById('adminCamPreview').srcObject = s;
+      } catch(e) {}
+  }
+
 </script>
 </body>
 </html>
