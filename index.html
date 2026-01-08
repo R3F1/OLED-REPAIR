@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR v12.0 ONYX (ZOOM + RECOVERY)</title>
+  <title>OLED REPAIR v12.5 (PRINT LABEL PRO)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -105,7 +105,7 @@
     .panel-right {
       position: relative; background: #000; border: 2px solid #333; border-radius: 12px; overflow: hidden;
       box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
-      cursor: grab; /* Cursor pan */
+      cursor: grab;
     }
     .panel-right:active { cursor: grabbing; }
     
@@ -116,10 +116,9 @@
     }
     video { 
         width: 100%; height: 100%; object-fit: contain; 
-        transition: transform 0.1s linear; /* Smooth zoom */
+        transition: transform 0.1s linear; 
         transform-origin: center center;
     }
-    video.mirrored { transform: scaleX(-1); } /* Override by JS for zoom later */
 
     /* --- DRAWING & CONTROLS --- */
     #drawCanvas {
@@ -236,13 +235,50 @@
     .stat-val { font-size: 32px; font-weight: bold; color: #fff; font-family: var(--font-tech); }
     .stat-label { font-size: 12px; color: #888; letter-spacing: 1px; }
 
-    /* QR PASS POPUP */
+    /* QR PASS POPUP (Screen Version) */
     #qrPopup {
       position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
       background: #fff; color: #000; padding: 30px; border-radius: 10px; z-index: 500;
       text-align: center; display: none; box-shadow: 0 0 100px rgba(0,0,0,1); border: 5px solid var(--neon-cyan);
     }
     #qrCodeBox { margin: 20px auto; }
+
+    /* PRINT LABEL 15x15cm (Hidden on screen) */
+    #printLabel {
+      display: none; /* Hidden by default */
+    }
+
+    /* PRINT STYLES - KLUCZOWE DLA ETYKIETY */
+    @media print {
+        @page { size: auto; margin: 0mm; }
+        body * { visibility: hidden; } /* Hide everything */
+        #printLabel, #printLabel * { visibility: visible; } /* Show only label */
+        
+        #printLabel {
+            position: absolute; left: 0; top: 0;
+            width: 150mm; height: 150mm; /* 15x15 cm */
+            display: flex !important;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            border: 2px solid #000;
+            background: white;
+            color: black;
+            font-family: 'Roboto', sans-serif;
+            padding: 10mm;
+            box-sizing: border-box;
+            z-index: 9999;
+        }
+
+        /* Label Internal Styling */
+        .pl-header { font-size: 24pt; font-weight: bold; border-bottom: 2px solid #000; width: 100%; text-align: center; padding-bottom: 5mm; }
+        .pl-qr { margin: 5mm 0; }
+        .pl-info { width: 100%; text-align: left; font-size: 14pt; line-height: 1.5; }
+        .pl-footer { font-size: 10pt; width: 100%; text-align: center; border-top: 1px solid #000; padding-top: 2mm; margin-top: auto; }
+        
+        /* Hide popup UI */
+        #qrPopup { display: none !important; }
+    }
 
     /* 3D SCENE */
     .scene-container { height: 140px; perspective: 1000px; display: flex; justify-content: center; align-items: center; margin-bottom: 10px; }
@@ -269,10 +305,22 @@
 
 <div id="patternOverlay" onclick="nextPattern()"></div>
 
+<div id="printLabel">
+    <div class="pl-header">TPV OLED SERVICE</div>
+    <div id="printQrCode" class="pl-qr"></div>
+    <div class="pl-info">
+        <div><strong>SN:</strong> <span id="plSN">---</span></div>
+        <div><strong>DATA:</strong> <span id="plDate">---</span></div>
+        <div><strong>OPERATOR:</strong> <span id="plOp">---</span></div>
+        <div><strong>STATUS:</strong> <span id="plStatus" style="font-weight:bold; font-size:20pt;">---</span></div>
+    </div>
+    <div class="pl-footer">OLED REPAIR SYSTEM v12.5 - PASSPORT</div>
+</div>
+
 <div id="loginScreen">
   <div class="login-box">
     <h2 style="color:#fff;">OLED REPAIR SYSTEM</h2>
-    <div style="font-size:12px; color:#666; margin-bottom:30px; font-family: var(--font-tech);">V12.0 ONYX (ZOOM + RECOVERY)</div>
+    <div style="font-size:12px; color:#666; margin-bottom:30px; font-family: var(--font-tech);">V12.5 ONYX (PRINT PRO)</div>
     
     <label class="input-label" style="text-align:left; margin-left:5px;">UŻYTKOWNIK</label>
     <input type="text" id="userInput" class="login-input" placeholder="LOGIN" autocomplete="off">
@@ -439,7 +487,7 @@
   <div id="qrSnDisplay" style="font-weight:bold; font-family:var(--font-tech);">SN: ---</div>
   <div id="qrStatusDisplay" style="color:green; margin-bottom:10px;">STATUS: OK</div>
   <button onclick="closeQr()" style="padding:10px 20px; background:#000; color:#fff; border:none; cursor:pointer;">ZAMKNIJ</button>
-  <button onclick="window.print()" style="padding:10px 20px; background:var(--neon-cyan); color:#000; border:none; cursor:pointer;">DRUKUJ</button>
+  <button onclick="window.print()" style="padding:10px 20px; background:var(--neon-cyan); color:#000; border:none; cursor:pointer;">DRUKUJ ETYKIETĘ</button>
 </div>
 
 <canvas id="photoCanvas"></canvas>
@@ -508,10 +556,9 @@
   /* --- INIT --- */
   window.onload = () => {
     loadUsers();
-    checkRecovery(); // Auto Recovery check
+    checkRecovery();
     setInterval(() => document.getElementById('clockDisplay').innerText = new Date().toLocaleTimeString().slice(0,5), 1000);
     
-    // Canvas Listeners
     const c = document.getElementById('drawCanvas');
     c.addEventListener('mousedown', startDraw);
     c.addEventListener('mouseup', endDraw);
@@ -520,7 +567,6 @@
     c.addEventListener('touchend', (e)=>{e.preventDefault(); endDraw()});
     c.addEventListener('touchmove', (e)=>{e.preventDefault(); draw(e.touches[0])});
 
-    // Zoom & Pan Listeners
     const slider = document.getElementById('zoomSlider');
     slider.addEventListener('input', (e) => {
         zoomLevel = parseFloat(e.target.value);
@@ -553,11 +599,9 @@
   function applyTransform() {
     const v = document.getElementById('videoFeed');
     const mirrorFactor = isMirrored ? -1 : 1;
-    // Limit pan to keep image somewhat in view
     const limit = (zoomLevel - 1) * 500;
     if(panX > limit) panX = limit; if(panX < -limit) panX = -limit;
     if(panY > limit) panY = limit; if(panY < -limit) panY = -limit;
-
     v.style.transform = `scale(${zoomLevel * mirrorFactor}, ${zoomLevel}) translate(${panX / zoomLevel}px, ${panY / zoomLevel}px)`;
   }
 
@@ -640,7 +684,6 @@
     else if(document.exitFullscreen) document.exitFullscreen();
   }
 
-  // --- RECOVERY LOGIC (FEATURE 2) ---
   function saveRecoveryState() {
       if(!currentSN) return;
       const state = {
@@ -667,7 +710,7 @@
       localStorage.removeItem('oled_recovery');
   }
 
-  // --- DRAWING LOGIC ---
+  /* --- DRAWING --- */
   function startDraw(e) { isDrawing = true; draw(e); }
   function endDraw() { isDrawing = false; const c = document.getElementById('drawCanvas'); c.getContext('2d').beginPath(); }
   function draw(e) {
@@ -718,11 +761,9 @@
     document.getElementById('commentInput').value = "";
   }
 
-  // --- SMART CAPTURE + CROP (FEATURE 1) ---
   function capture(type) {
     if(!currentSN) return document.getElementById('scanInput').focus();
     tempPhotoType = type;
-    
     document.getElementById('tv3d').style.transform = type === 'TYL' ? "rotateY(180deg)" : "rotateY(0deg)";
     const decision = document.getElementById('statusSelect').value;
     const requiresAnnotation = ['NG', 'SCRAP', 'RMA'].includes(decision);
@@ -755,49 +796,26 @@
     const v = document.getElementById('videoFeed');
     const drawC = document.getElementById('drawCanvas');
     const finalC = document.getElementById('photoCanvas');
-    
-    // Set output size to match video resolution
     finalC.width = v.videoWidth;
     finalC.height = v.videoHeight;
     const ctx = finalC.getContext('2d');
 
-    // --- CROP CALCULATION ---
-    // We map the visible area (zoomed/panned) back to the source video coordinates
     const sourceW = v.videoWidth / zoomLevel;
     const sourceH = v.videoHeight / zoomLevel;
-    
-    // Pan is stored in screen CSS pixels. Need to convert to video source pixels.
-    // NOTE: This approximation aligns center pan. 
-    // Usually panX=0 means center.
     const containerW = v.offsetWidth;
     const containerH = v.offsetHeight;
-    
-    // Calculate relative offsets (0.5 is center)
-    // Complex mapping: CSS translate moves element, we need to move crop window opposite direction
     const panXFactor = panX / (containerW * zoomLevel); 
     const panYFactor = panY / (containerH * zoomLevel);
 
     let sourceX = (v.videoWidth - sourceW) / 2 - (panXFactor * v.videoWidth);
     let sourceY = (v.videoHeight - sourceH) / 2 - (panYFactor * v.videoHeight);
     
-    // Draw Cropped Video
     ctx.save();
-    if(isMirrored) { 
-        ctx.translate(finalC.width, 0); 
-        ctx.scale(-1, 1); 
-        // Mirroring flips X coordinates for source too
-        // Simplified: Just flip canvas, logic holds if we capture what's on screen
-    }
-    
+    if(isMirrored) { ctx.translate(finalC.width, 0); ctx.scale(-1, 1); }
     ctx.drawImage(v, sourceX, sourceY, sourceW, sourceH, 0, 0, finalC.width, finalC.height);
     ctx.restore();
 
-    // Overlay Drawing (Scaled)
-    if(hasDrawing) {
-        ctx.drawImage(drawC, 0, 0, finalC.width, finalC.height);
-    }
-
-    // Watermark
+    if(hasDrawing) { ctx.drawImage(drawC, 0, 0, finalC.width, finalC.height); }
     addWatermark(ctx, finalC.width, finalC.height);
 
     finalC.toBlob(b => {
@@ -856,7 +874,7 @@ ZDJĘCIA: 3/3 OK
         await write(d, `RAPORT_${currentSN}.txt`, new Blob([txt],{type:'text/plain'}));
         
         SoundFX.play('success');
-        clearRecovery(); // Success - clear recovery
+        clearRecovery();
         document.getElementById('saveStatus').innerText = "ZAPISANO!";
         document.getElementById('saveStatus').style.color = "#0aff00";
         showQr(currentSN, decision);
@@ -892,15 +910,29 @@ ZDJĘCIA: 3/3 OK
 
   /* --- QR & MANAGER --- */
   function showQr(sn, status) {
+    const dateStr = new Date().toLocaleDateString();
+    
+    // 1. Popup QR (Screen)
     const box = document.getElementById('qrCodeBox'); box.innerHTML = "";
-    new QRCode(box, { text: `${sn}|${status}|${new Date().toLocaleDateString()}`, width: 128, height: 128 });
+    new QRCode(box, { text: `${sn}|${status}|${dateStr}`, width: 128, height: 128 });
     document.getElementById('qrSnDisplay').innerText = "SN: " + sn;
     document.getElementById('qrStatusDisplay').innerText = "STATUS: " + status;
     document.getElementById('qrPopup').style.display = "block";
+
+    // 2. Print Label QR & Data (Label 15x15)
+    const printBox = document.getElementById('printQrCode'); printBox.innerHTML = "";
+    new QRCode(printBox, { text: `${sn}|${status}|${dateStr}`, width: 300, height: 300 }); // Larger for print
+    
+    document.getElementById('plSN').innerText = sn;
+    document.getElementById('plDate').innerText = new Date().toLocaleString();
+    document.getElementById('plOp').innerText = currentUser.login;
+    document.getElementById('plStatus').innerText = status;
   }
+  
   function closeQr() { document.getElementById('qrPopup').style.display = "none"; document.getElementById('scanInput').focus(); }
   function toggleUserPanel() { document.getElementById('userPanel').classList.toggle('open'); document.getElementById('reportPanel').classList.remove('open'); }
   function toggleReportPanel() { document.getElementById('reportPanel').classList.toggle('open'); document.getElementById('userPanel').classList.remove('open'); }
+  
   async function scanNetwork() {
     if(!dirHandle) return alert("Brak sieci");
     const tb = document.querySelector('#reportTable tbody'); tb.innerHTML = "<tr><td colspan='5'>SKANOWANIE...</td></tr>";
