@@ -321,7 +321,9 @@
     <button id="confirmIdentityBtn" class="confirm-identity-btn" onclick="confirmScanData()">✅ ZATWIERDŹ DANE (OK)</button>
 
     <div id="checklist">
-        <button class="checklist-btn" style="border-color:var(--neon-purple); color:var(--neon-purple);" onclick="togglePatterns()"><span>🖥️ TEST EKRANU (PATTERNS)</span> <span>⏯</span></button>
+        <a href="https://docs.google.com/spreadsheets/d/10W03bvKlVFlIUcxsHkzP_v_13gtnYRBmnrrO0ujB1bU/edit?gid=661466938#gid=661466938" target="_blank" class="checklist-btn" style="border-color:var(--neon-purple); color:var(--neon-purple); text-decoration:none; display:flex; align-items:center;">
+            <span>📊 GOOGLE SHEET</span> <span>🔗</span>
+        </a>
         <div style="height:10px;"></div>
         <div id="btnFront" class="checklist-btn locked" onclick="capture('PRZOD')"><span>1. PRZÓD EKRANU</span> <span>📷</span></div>
         <div id="btnBack" class="checklist-btn locked" onclick="capture('TYL')"><span>2. TYŁ (TABLICZKA)</span> <span>📷</span></div>
@@ -1010,11 +1012,25 @@
   async function initCamera() {
     if(currentUser.role !== 'OPERATOR') return;
     try {
-      const s = await navigator.mediaDevices.getUserMedia({ video: true }); 
+      // ZMIANA: WYMUSZENIE WYSOKIEJ ROZDZIELCZOŚCI (4K / 1080p)
+      const s = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+              width: { ideal: 3840 }, 
+              height: { ideal: 2160 } 
+          } 
+      }); 
       const video = document.getElementById('videoFeed');
       video.srcObject = s;
       video.play();
-    } catch(e) {}
+    } catch(e) {
+        console.log("Kamera 4K niedostępna, próba standardowa...");
+        try {
+             const s2 = await navigator.mediaDevices.getUserMedia({ video: true });
+             const video = document.getElementById('videoFeed');
+             video.srcObject = s2;
+             video.play();
+        } catch(err) {}
+    }
   }
 
   function updatePhotoProgress() {
@@ -1052,14 +1068,63 @@
 
   function processPhoto() {
       const v = document.getElementById('videoFeed');
-      const finalC = document.getElementById('photoCanvas'); finalC.width=v.videoWidth; finalC.height=v.videoHeight;
+      const finalC = document.getElementById('photoCanvas'); 
+      finalC.width = v.videoWidth; 
+      finalC.height = v.videoHeight;
       const ctx = finalC.getContext('2d');
-      if(isMirrored) { ctx.translate(finalC.width,0); ctx.scale(-1,1); }
-      ctx.drawImage(v,0,0);
-      ctx.drawImage(document.getElementById('drawCanvas'),0,0,finalC.width,finalC.height);
-      const fs=Math.floor(finalC.height/25); ctx.font=`bold ${fs}px Roboto`; ctx.fillStyle="#0aff00";
-      ctx.fillText(`SN: ${currentSN}`,50,fs+20);
-      finalC.toBlob(b => { photos[tempPhotoType] = b; updatePhotoProgress(); cancelPhoto(); },'image/jpeg',0.9);
+      
+      // Obsługa lustra
+      if(isMirrored) { 
+          ctx.translate(finalC.width, 0); 
+          ctx.scale(-1, 1); 
+      }
+      
+      // Rysowanie wideo
+      ctx.drawImage(v, 0, 0);
+
+      // Reset transformacji dla rysunków i tekstu, jeśli było lustro
+      if(isMirrored) {
+          ctx.setTransform(1, 0, 0, 1, 0, 0); 
+      }
+      
+      // Rysowanie overlay (rysunków użytkownika)
+      ctx.drawImage(document.getElementById('drawCanvas'), 0, 0, finalC.width, finalC.height);
+
+      // ZMIANA: WYPALANIE PEŁNYCH DANYCH RAPORTU NA ZDJĘCIU
+      const now = new Date();
+      const dateStr = now.toLocaleDateString() + " " + now.toLocaleTimeString();
+      const op = currentUser ? currentUser.login : "---";
+      const dec = document.getElementById('statusSelect').value;
+      
+      const lines = [
+          `SN: ${currentSN}`,
+          `OC: ${currentOC || "---"}`,
+          `OP: ${op}`,
+          `DEC: ${dec}`,
+          `DATA: ${dateStr}`
+      ];
+      
+      const fs = Math.floor(finalC.height / 35); // Dopasowanie czcionki
+      ctx.font = `bold ${fs}px Roboto`;
+      ctx.fillStyle = "#0aff00";
+      ctx.shadowColor = "black";
+      ctx.shadowBlur = 4;
+      ctx.shadowOffsetX = 2;
+      ctx.shadowOffsetY = 2;
+      
+      let y = fs + 20;
+      const x = 30;
+      
+      lines.forEach(line => {
+          ctx.fillText(line, x, y);
+          y += fs + 10;
+      });
+
+      finalC.toBlob(b => { 
+          photos[tempPhotoType] = b; 
+          updatePhotoProgress(); 
+          cancelPhoto(); 
+      }, 'image/jpeg', 0.9);
   }
 
   function checkOcRequirement() {
