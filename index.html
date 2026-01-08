@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR v1.2 (By Łukasz Gruszczyński)</title>
+  <title>OLED REPAIR v13.3 (ADMIN DATA ACCESS)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -152,7 +152,8 @@
     .admin-h { font-family: var(--font-tech); color: var(--neon-gold); font-size: 18px; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; display:flex; justify-content:space-between; align-items:center; }
     
     .cfg-input { width: 100%; background: #111; color: #fff; border: 1px solid #444; padding: 10px; margin-bottom: 10px; font-family: monospace; }
-    .cfg-btn { background: var(--neon-cyan); color: #000; border:none; padding:8px 15px; font-weight:bold; cursor:pointer; }
+    .cfg-btn { background: var(--neon-cyan); color: #000; border:none; padding:8px 15px; font-weight:bold; cursor:pointer; font-family: var(--font-tech); transition:0.3s; }
+    .cfg-btn:hover { background: #fff; box-shadow: 0 0 15px var(--neon-cyan); }
     
     .adm-table { width: 100%; border-collapse: collapse; }
     .adm-table th { text-align: left; border-bottom: 1px solid #444; color: #888; padding: 5px; font-size: 12px; }
@@ -224,7 +225,7 @@
     .panel-header { padding: 20px; background: #000; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
     .panel-content { flex: 1; overflow: auto; padding: 30px; }
 
-    /* LEADER ANALYTICS ENHANCEMENTS */
+    /* LEADER ANALYTICS */
     .filter-bar { display: flex; gap: 10px; margin-bottom: 20px; }
     .filter-btn { background: #111; border: 1px solid #444; color: #888; padding: 8px 20px; cursor: pointer; font-family: var(--font-tech); }
     .filter-btn.active { background: var(--neon-cyan); color: #000; border-color: var(--neon-cyan); font-weight: bold; }
@@ -296,13 +297,13 @@
         <div><strong>OPERATOR:</strong> <span id="plOp">---</span></div>
         <div><strong>STATUS:</strong> <span id="plStatus" style="font-weight:bold; font-size:20pt;">---</span></div>
     </div>
-    <div class="pl-footer">OLED REPAIR SYSTEM v1.2 (By Łukasz Gruszczyński)</div>
+    <div class="pl-footer">OLED REPAIR SYSTEM v13.3 - PASSPORT</div>
 </div>
 
 <div id="loginScreen">
   <div class="login-box">
     <h2 style="color:#fff;">OLED REPAIR SYSTEM</h2>
-    <div style="font-size:12px; color:#666; margin-bottom:30px; font-family: var(--font-tech);">v1.2 (By Łukasz Gruszczyński)</div>
+    <div style="font-size:12px; color:#666; margin-bottom:30px; font-family: var(--font-tech);">V13.3 (ADMIN DATA ACCESS)</div>
     
     <label class="input-label" style="text-align:left; margin-left:5px;">UŻYTKOWNIK</label>
     <input type="text" id="userInput" class="login-input" placeholder="LOGIN" autocomplete="off">
@@ -445,6 +446,18 @@
         </div>
 
         <div style="display:flex; flex-direction:column; gap:20px;">
+            
+            <div class="admin-panel-box" style="border-color:var(--neon-cyan);">
+                <div class="admin-h" style="color:var(--neon-cyan)">BAZA DANYCH I ANALITYKA</div>
+                <div style="font-size:12px; color:#aaa; margin-bottom:15px;">
+                    Połącz się z serwerem, aby przeglądać raporty, statystyki i exportować dane.
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <button class="cfg-btn" style="flex:1; border-color:var(--neon-cyan);" onclick="connectNetwork()">📡 POŁĄCZ Z SERWEREM</button>
+                    <button class="cfg-btn" style="flex:1; background:var(--neon-cyan); color:#000;" onclick="toggleReportPanel()">📊 OTWÓRZ RAPORTY</button>
+                </div>
+            </div>
+
             <div class="admin-panel-box">
                 <div class="admin-h">KONFIGURACJA SYSTEMU</div>
                 <div class="input-label">ŚCIEŻKA SIECIOWA (ZAPIS)</div>
@@ -782,6 +795,7 @@
 
     if(currentUser.role === 'KIEROWNIK') {
         b.classList.add('manager');
+        // Kierownik uses main dashboard primarily
     } else if(currentUser.role === 'ADMIN') {
         b.classList.add('admin');
         document.body.classList.add('mode-admin');
@@ -853,7 +867,6 @@
           initCamera();
           document.getElementById('scanInput').focus();
           
-          // LEADER AUTO-SCAN
           if(currentUser.role === 'KIEROWNIK' || currentUser.role === 'KOORDYNATOR') {
               setTimeout(scanNetwork, 500);
           }
