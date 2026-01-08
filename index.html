@@ -652,9 +652,13 @@
 
   /* --- FUNKCJA SZYBKIEGO LOGOWANIA --- */
   function quickAdminLogin() {
+      // Wpisujemy login
       document.getElementById('userInput').value = "ADMIN";
+      // Czyścimy pole hasła na wypadek zapisanych danych
+      document.getElementById('passInput').value = "";
+      // Ustawiamy kursor w polu hasła
       document.getElementById('passInput').focus();
-      logSystem("Użyto szybkiego logowania dla ADMIN.");
+      logSystem("Użyto szybkiego logowania ADMIN (Hasło wyczyszczone).");
   }
 
   function confirmScanData() {
@@ -763,7 +767,7 @@
               saveUsers();
               statusEl.innerText = "Zsynchronizowano!";
               statusEl.className = "sync-status ok";
-              setTimeout(()=>{ statusEl.innerText=""; }, 3000);
+              setTimeout(()=>{ if(statusEl) statusEl.innerText=""; }, 3000);
               if(currentUser && currentUser.role === 'ADMIN') renderAdminUserTable();
               logSystem("Baza użytkowników zaktualizowana.");
           }
