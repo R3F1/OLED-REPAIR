@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR v4.0 (DUAL CLOUDFLARE)</title>
+  <title>OLED REPAIR v4.1 (TARGET SYSTEM)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -83,6 +83,16 @@
     .panel-left { background: var(--panel-glass); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
     .panel-right { position: relative; background: #000; border: 2px solid #333; border-radius: 12px; overflow: hidden; box-shadow: inset 0 0 50px rgba(0,0,0,0.8); cursor: grab; }
     .panel-right:active { cursor: grabbing; }
+
+    /* TARGET SYSTEM STYLES */
+    .target-box { background: #0a0a0a; border: 1px solid #333; padding: 12px; border-radius: 8px; margin-bottom: 15px; box-shadow: inset 0 0 20px rgba(0,0,0,0.5); }
+    .target-header { display: flex; justify-content: space-between; font-size: 11px; color: #888; margin-bottom: 6px; font-family: var(--font-tech); letter-spacing: 1px; }
+    .progress-track { width: 100%; height: 10px; background: #151515; border-radius: 5px; overflow: hidden; border: 1px solid #333; position: relative; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, var(--neon-cyan), var(--neon-green)); width: 0%; transition: width 0.8s cubic-bezier(0.25, 1, 0.5, 1); box-shadow: 0 0 10px var(--neon-green); }
+    .target-val { color: var(--neon-green); font-weight: bold; font-size: 14px; }
+    
+    .mini-target-track { width: 100%; height: 6px; background: #222; margin-top: 5px; border-radius: 3px; overflow: hidden; }
+    .mini-target-fill { height: 100%; background: var(--neon-green); width: 0%; transition: width 0.5s; }
 
     /* FLOW CONTROL STYLES */
     .checklist-btn.locked { opacity: 0.2; cursor: not-allowed; border-color: #333 !important; color: #444 !important; filter: grayscale(1); }
@@ -270,6 +280,16 @@
 <div class="dashboard" id="mainDashboard">
   <aside class="panel-left">
     <button id="opConnectBtn" class="op-connect-btn" onclick="connectNetwork()">📡 POŁĄCZ Z SERWEREM</button>
+    
+    <div class="target-box">
+        <div class="target-header">
+            <span>CEL DZIENNY (OK+NDF+OFFRS)</span>
+            <span id="targetText">0 / 15</span>
+        </div>
+        <div class="progress-track">
+            <div id="targetFill" class="progress-fill"></div>
+        </div>
+    </div>
 
     <div class="scene-container">
       <div class="tv-pivot" id="tv3d">
@@ -468,8 +488,8 @@
             <h4>RANKING OPERATORÓW</h4>
             <div style="overflow:auto;">
                 <table class="data-table">
-                    <thead><tr><th>OP</th><th>ILOŚĆ</th><th>YIELD</th></tr></thead>
-                    <tbody id="mgrRankBody"><tr><td colspan="3" style="text-align:center">Brak danych</td></tr></tbody>
+                    <thead><tr><th>OP</th><th>ILOŚĆ</th><th>CEL (15)</th><th>YIELD</th></tr></thead>
+                    <tbody id="mgrRankBody"><tr><td colspan="4" style="text-align:center">Brak danych</td></tr></tbody>
                 </table>
             </div>
         </div>
@@ -837,7 +857,6 @@
 
     if(currentUser.role === 'KIEROWNIK' || currentUser.role === 'KOORDYNATOR') {
         const mgrTitle = document.querySelector('.mgr-title');
-        // ZMODYFIKOWANO: Używamy fetchCloudflareData zamiast connectNetwork dla managera
         const btnHtml = '<button class="mgr-connect-btn" onclick="fetchCloudflareData()">📡 POŁĄCZ Z BAZĄ (CLOUD)</button>';
         if (currentUser.role === 'KOORDYNATOR') {
             b.classList.add('coord');
@@ -943,6 +962,23 @@
       document.getElementById('opOK').innerText = ok;
       document.getElementById('opNG').innerText = ng;
       document.getElementById('opYield').innerText = yieldVal + "%";
+
+      // TARGET SYSTEM LOGIC FOR OPERATOR
+      const DAILY_TARGET = 15;
+      let progressPct = (ok / DAILY_TARGET) * 100;
+      if(progressPct > 100) progressPct = 100;
+      
+      const targetFill = document.getElementById('targetFill');
+      const targetText = document.getElementById('targetText');
+      if(targetFill && targetText) {
+          targetFill.style.width = progressPct + "%";
+          targetText.innerText = `${ok} / ${DAILY_TARGET}`;
+          if(ok >= DAILY_TARGET) {
+              targetText.style.color = "var(--neon-gold)";
+              targetFill.style.boxShadow = "0 0 20px var(--neon-gold)";
+              targetFill.style.background = "var(--neon-gold)";
+          }
+      }
   }
 
   async function initCamera() {
@@ -1210,6 +1246,19 @@
   }
   async function startAdminCamera() { try { const s = await navigator.mediaDevices.getUserMedia({video:true}); document.getElementById('adminCamPreview').srcObject = s; } catch(e) {} }
 
+  /* --- MGR FILTER LOGIC --- */
+  function updateLeaderStats(mode) {
+      leaderMode = mode;
+      const btns = document.querySelectorAll('.mgr-btn');
+      btns.forEach(b => b.classList.remove('active'));
+      
+      if(mode==='TODAY') document.getElementById('fToday').classList.add('active');
+      else if(mode==='YESTERDAY') document.getElementById('fYesterday').classList.add('active');
+      else document.getElementById('fAll').classList.add('active');
+
+      updateManagerView();
+  }
+
   /* --- NOWE FUNKCJE OBSŁUGUJĄCE CLOUDFLARE --- */
   
   async function fetchCloudflareData() {
@@ -1324,6 +1373,7 @@
           const op = r.op || "Nieznany";
           if(!counts[op]) counts[op] = {total:0, ok:0};
           counts[op].total++;
+          // Tutaj ok oznacza wszystkie "dobre" statusy wliczane do targetu
           if(['OK', 'OFFRS_OK', 'NDF'].includes(r.dec)) counts[op].ok++;
       });
 
@@ -1333,7 +1383,7 @@
       tbody.innerHTML = "";
 
       if(sortedOps.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="3" style="text-align:center">Brak danych</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center">Brak danych</td></tr>';
           return;
       }
 
@@ -1341,14 +1391,23 @@
           const stats = counts[op];
           const y = stats.total > 0 ? ((stats.ok / stats.total) * 100).toFixed(0) : 0;
           
+          // Logic for Manager Target (0-15) based on filtered data (Today/Yesterday)
+          const TARGET = 15;
+          let tPct = (stats.ok / TARGET) * 100;
+          if(tPct > 100) tPct = 100;
+
           // Kolorowanie Yield
           let yColor = "#fff";
           if(y >= 90) yColor = "var(--neon-green)";
           else if(y < 80) yColor = "var(--neon-red)";
 
           tbody.innerHTML += `<tr>
-            <td>${op}</td>
+            <td>
+                ${op}
+                <div class="mini-target-track"><div class="mini-target-fill" style="width:${tPct}%"></div></div>
+            </td>
             <td style="font-weight:bold;">${stats.total}</td>
+            <td style="color:${tPct === 100 ? 'var(--neon-gold)' : '#ccc'}">${stats.ok} / ${TARGET}</td>
             <td style="color:${yColor}">${y}%</td>
           </tr>`;
       });
