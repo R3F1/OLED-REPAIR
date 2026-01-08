@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR v3.5 (CAMERA FIX)</title>
+  <title>OLED REPAIR v3.6 (DEBUG MODE)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -322,7 +322,7 @@
 <div id="loginScreen">
   <div class="login-box">
     <h2 style="color:#fff;">OLED REPAIR SYSTEM</h2>
-    <div style="font-size:12px; color:#666; font-family: var(--font-tech);">v3.5 (CAMERA FIX)</div>
+    <div style="font-size:12px; color:#666; font-family: var(--font-tech);">v3.6 (DEBUG MODE)</div>
     <div id="syncStatus" class="sync-status">Ładowanie użytkowników...</div>
     
     <label class="input-label" style="text-align:left; margin-left:5px; margin-top:20px;">UŻYTKOWNIK</label>
@@ -456,7 +456,7 @@
     <div class="admin-container">
         <div class="admin-status-bar">
             <div class="status-item"><div class="status-dot ok"></div> SYSTEM: ONLINE</div>
-            <div class="status-item">VER: 3.5</div>
+            <div class="status-item">VER: 3.6</div>
             <div class="status-item">CPU: <span id="simCpu">12%</span></div>
             <div class="status-item">MEM: <span id="simMem">2.4GB</span></div>
         </div>
@@ -489,7 +489,7 @@
                 <div class="admin-panel-box">
                     <div class="admin-h" style="margin-bottom:5px;">TERMINAL SYSTEMOWY</div>
                     <div class="admin-terminal" id="sysLog">
-                        <div class="log-line"><span class="log-time">System:</span> Inicjalizacja v3.5...</div>
+                        <div class="log-line"><span class="log-time">System:</span> Inicjalizacja v3.6...</div>
                         <div class="log-line"><span class="log-time">System:</span> Gotowy do pracy.</div>
                     </div>
                 </div>
@@ -1089,14 +1089,13 @@
   async function initCamera() {
     if(currentUser.role === 'KIEROWNIK' || currentUser.role === 'KOORDYNATOR' || currentUser.role === 'ADMIN') return;
     try {
-      // USUNIĘTO "ideal:3840" - to blokowało kamery, które nie mają 4K
-      const s = await navigator.mediaDevices.getUserMedia({ video: true });
+      const s = await navigator.mediaDevices.getUserMedia({ video: true }); // Bez ograniczeń 4K
       const video = document.getElementById('videoFeed');
       video.srcObject = s;
-      video.play(); // Wymuszamy start
+      video.play();
     } catch(e) { 
         console.error("Cam error", e);
-        alert("BŁĄD KAMERY: Sprawdź uprawnienia przeglądarki lub podłączenie kamery.");
+        alert("BŁĄD KAMERY: " + e.name + " - " + e.message);
     }
   }
 
@@ -1265,7 +1264,10 @@
                   logSystem("Dane wysłane do Google Sheets");
               } else {
                   console.error("Google Script Error:", respJson);
-                  alert("Błąd Google Script: " + respJson.msg);
+                  
+                  // --- DEBUG: POKAŻ CO ODPOWIEDZIAŁO GOOGLE ---
+                  const errorMsg = respJson.google || respJson.msg || "Brak szczegółów";
+                  alert("Błąd Google Script:\n" + errorMsg); 
               }
           } else {
               alert("Błąd wysyłania do Google Sheets (Network Error)!");
@@ -1326,16 +1328,16 @@
     const r = document.getElementById('newRole').value;
     
     if(l && p) { 
-        // 1. Dodaj lokalnie (żebyś widział od razu)
+        // 1. Dodaj lokalnie
         users.push({login:l, pass:p, role:r}); 
-        saveUsers(); // Zapisuje do LocalStorage
+        saveUsers(); 
         
-        // 2. Wyślij do Google Sheets przez Cloudflare
+        // 2. Wyślij do Google Sheets
         logSystem(`Wysyłanie użytkownika ${l} do chmury...`);
         
         try {
             const payload = {
-                type: "ADD_USER", // To mówi skryptowi Google, co robić
+                type: "ADD_USER", 
                 login: l,
                 pass: p,
                 role: r
@@ -1350,7 +1352,7 @@
             if(res.ok) {
                 logSystem("✅ Użytkownik dodany do bazy Google!");
                 alert("Użytkownik dodany do bazy online!");
-                renderAdminUserTable(); // Odśwież tabelę
+                renderAdminUserTable(); 
             } else {
                 alert("Błąd zapisu online! Użytkownik jest tylko lokalnie.");
             }
@@ -1359,7 +1361,6 @@
             alert("Błąd połączenia z chmurą. Użytkownik dodany tylko lokalnie.");
         }
         
-        // Czyścimy pola
         document.getElementById('newLogin').value = "";
         document.getElementById('newPass').value = "";
     } else {
