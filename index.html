@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR v2.1 (STABLE REFRESH)</title>
+  <title>OLED REPAIR v2.2 (SAFE MODE)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -65,6 +65,36 @@
         display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px; font-size: 14px; color: #aaa;
     }
     .remember-me input { transform: scale(1.5); accent-color: var(--neon-cyan); cursor: pointer; }
+    
+    .emergency-reset {
+        position: absolute; bottom: 20px; left: 20px; color: #333; font-size: 10px; cursor: pointer;
+        border: 1px solid #222; padding: 5px; font-family: var(--font-tech); transition: 0.3s;
+    }
+    .emergency-reset:hover { color: var(--neon-red); border-color: var(--neon-red); }
+
+    /* --- NETWORK GUARD --- */
+    #networkGuard {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.95); z-index: 8000; backdrop-filter: blur(15px);
+      display: none; align-items: center; justify-content: center; flex-direction: column;
+    }
+    .alert-box {
+      width: 600px; padding: 40px; border: 2px solid var(--neon-red); background: #050505;
+      text-align: center; border-radius: 12px; box-shadow: 0 0 100px rgba(255, 0, 60, 0.2);
+    }
+    .path-box {
+      background:#111; padding:15px; border:1px dashed #555; font-size:12px; color:#fff; 
+      font-family:var(--font-tech); margin-top: 5px; word-break: break-all;
+    }
+    .guard-btn {
+      width: 100%; padding: 20px; background: var(--neon-red); color: #fff; font-weight: bold;
+      border: none; cursor: pointer; font-family: var(--font-tech); font-size: 18px; margin-top: 20px;
+    }
+    .offline-btn {
+        width: 100%; padding: 15px; background: transparent; color: var(--neon-orange); border: 1px solid var(--neon-orange);
+        font-family: var(--font-tech); cursor: pointer; margin-top: 10px; font-weight: bold; transition: 0.3s;
+    }
+    .offline-btn:hover { background: var(--neon-orange); color: #000; }
 
     /* --- HEADER --- */
     header {
@@ -100,19 +130,14 @@
       opacity: 0; transition: opacity 1s;
     }
     
-    /* MODES & VISIBILITY */
+    /* MODES */
     body.mode-admin .dashboard { display: none !important; }
     body.mode-admin #adminDash { display: flex !important; }
-    
     body.mode-manager .dashboard { display: none !important; }
     body.mode-manager #managerDash { display: flex !important; }
-    /* Hide bottom bar for Manager & Coordinator (they use main dashboard) */
+    
+    /* Hide bottom bar for Manager */
     body.mode-manager .bar-bottom { display: none !important; } 
-
-    /* COORDINATOR SPECIFIC: Hide stats, show only table */
-    body.mode-coord .mgr-stats-row { display: none !important; }
-    body.mode-coord .mgr-content-grid { grid-template-columns: 1fr !important; } /* Full width table */
-    body.mode-coord .mgr-ranking-panel { display: none !important; } /* Hide ranking */
 
     .panel-left {
       background: var(--panel-glass); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px;
@@ -124,14 +149,6 @@
       cursor: grab;
     }
     .panel-right:active { cursor: grabbing; }
-
-    /* CONNECT BUTTON (OPERATOR) */
-    .op-connect-btn {
-        width: 100%; padding: 12px; background: var(--neon-cyan); color: #000; font-weight: bold; border: none;
-        font-family: var(--font-tech); cursor: pointer; border-radius: 6px; margin-bottom: 15px; 
-        box-shadow: 0 0 15px rgba(0, 243, 255, 0.3); transition: 0.3s;
-    }
-    .op-connect-btn:hover { background: #fff; box-shadow: 0 0 25px rgba(0, 243, 255, 0.6); }
 
     /* --- ADMIN DASHBOARD --- */
     #adminDash {
@@ -245,6 +262,8 @@
     .recent-list { margin-top: 15px; border-top: 1px solid #333; padding-top: 10px; max-height: 100px; overflow-y: auto; }
     .recent-item { display: flex; justify-content: space-between; font-size: 12px; color: #666; padding: 4px 0; border-bottom: 1px dashed #222; }
     .recent-item span:last-child { font-weight: bold; }
+    .op-connect-btn { width: 100%; padding: 12px; background: var(--neon-cyan); color: #000; font-weight: bold; border: none; font-family: var(--font-tech); cursor: pointer; border-radius: 6px; margin-bottom: 15px; box-shadow: 0 0 15px rgba(0, 243, 255, 0.3); transition: 0.3s; }
+    .op-connect-btn:hover { background: #fff; box-shadow: 0 0 25px rgba(0, 243, 255, 0.6); }
 
     /* SLIDE PANEL */
     .slide-panel { position: fixed; bottom: 0; left: 0; width: 100%; height: 0; background: rgba(10, 12, 16, 0.98); z-index: 200; transition: height 0.5s cubic-bezier(0.25, 1, 0.5, 1); overflow: hidden; border-top: 2px solid var(--neon-cyan); display: flex; flex-direction: column; }
@@ -291,13 +310,13 @@
         <div><strong>OPERATOR:</strong> <span id="plOp">---</span></div>
         <div><strong>STATUS:</strong> <span id="plStatus" style="font-weight:bold; font-size:20pt;">---</span></div>
     </div>
-    <div class="pl-footer">OLED REPAIR SYSTEM v2.1 - By Łukasz Gruszczyński</div>
+    <div class="pl-footer">OLED REPAIR SYSTEM v2.2 - By Łukasz Gruszczyński</div>
 </div>
 
 <div id="loginScreen">
   <div class="login-box">
     <h2 style="color:#fff;">OLED REPAIR SYSTEM</h2>
-    <div style="font-size:12px; color:#666; margin-bottom:30px; font-family: var(--font-tech);">v2.1 (by Łukasz Gruszczyński)</div>
+    <div style="font-size:12px; color:#666; margin-bottom:30px; font-family: var(--font-tech);">v2.2 (SAFE MODE)</div>
     
     <label class="input-label" style="text-align:left; margin-left:5px;">UŻYTKOWNIK</label>
     <input type="text" id="userInput" class="login-input" placeholder="LOGIN" autocomplete="off">
@@ -310,6 +329,19 @@
 
     <div id="loginError" class="login-error"></div>
     <button class="login-btn" onclick="attemptLogin()">ROZPOCZNIJ ZMIANĘ</button>
+  </div>
+  
+  <div class="emergency-reset" onclick="emergencyReset()">⚠ RESET BAZY</div>
+</div>
+
+<div id="networkGuard">
+  <div class="alert-box">
+    <h1 style="color:var(--neon-red); margin:0;">⚠️ SYSTEM ROZŁĄCZONY ⚠️</h1>
+    <p style="font-size:16px; color:#ccc; margin:20px 0;">WYMAGANY DOSTĘP DO FOLDERU SIECIOWEGO</p>
+    <div class="input-label" style="color:#aaa;">CEL:</div>
+    <div class="path-box" id="displayPath">...</div>
+    <button class="guard-btn" onclick="connectNetwork()">📡 POŁĄCZ Z SERWEREM</button>
+    <button class="offline-btn" onclick="startOfflineMode()">📂 PRACA OFFLINE (ZIP)</button>
   </div>
 </div>
 
@@ -378,8 +410,7 @@
       <textarea id="commentInput" class="custom-textarea" rows="2" placeholder="Wpisz uwagi..." onkeyup="saveRecoveryState()"></textarea>
     </div>
 
-    <div class="recent-list" id="recentList">
-        </div>
+    <div class="recent-list" id="recentList"></div>
 
     <button id="actionBtn" onclick="saveData()">OCZEKIWANIE</button>
     <div id="saveStatus" style="text-align:center; color:#666; margin-top:10px; font-size:11px; height:15px; font-family: var(--font-tech);"></div>
@@ -390,7 +421,6 @@
       <div class="tag" id="tagSN">SN: ---</div>
       <div class="tag" id="tagOp">OP: ---</div>
     </div>
-    
     <div class="draw-toolbar" id="drawToolbar">
       <span style="color:#fff; font-size:12px; margin-right:10px;">ZAZNACZ WADĘ:</span>
       <div class="color-btn" style="background:red;" onclick="setDrawColor('red')"></div>
@@ -399,7 +429,6 @@
       <button class="tool-btn confirm" onclick="confirmPhoto()">ZAPISZ</button>
       <button class="tool-btn" onclick="cancelPhoto()">ANULUJ</button>
     </div>
-
     <div class="cam-controls">
       <div class="zoom-group">
         <span>ZOOM</span>
@@ -409,7 +438,6 @@
       <div style="width:1px; height:20px; background:#444; margin:0 5px;"></div>
       <div class="cam-btn" onclick="toggleMirror()" title="Odbicie lustrzane">↔</div>
     </div>
-    
     <div class="video-container">
         <video id="videoFeed" autoplay playsinline></video>
         <canvas id="drawCanvas"></canvas>
@@ -421,11 +449,10 @@
     <div class="admin-container">
         <div class="admin-status-bar">
             <div class="status-item"><div class="status-dot ok"></div> SYSTEM: ONLINE</div>
-            <div class="status-item">VER: 2.1</div>
+            <div class="status-item">VER: 2.2</div>
             <div class="status-item">CPU: <span id="simCpu">12%</span></div>
             <div class="status-item">MEM: <span id="simMem">2.4GB</span></div>
         </div>
-
         <div class="admin-grid">
             <div style="display:flex; flex-direction:column; gap:20px;">
                 <div class="admin-panel-box highlight">
@@ -433,7 +460,6 @@
                         <span>ZARZĄDZANIE UŻYTKOWNIKAMI</span>
                         <span style="font-size:12px; color:#666;">EDYCJA / RESET HASEŁ</span>
                     </div>
-                    
                     <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 100px; gap:10px; margin-bottom:15px;">
                       <input type="text" id="newLogin" placeholder="LOGIN" class="cfg-input" style="margin:0;">
                       <input type="text" id="newPass" placeholder="HASŁO" class="cfg-input" style="margin:0;">
@@ -445,7 +471,6 @@
                       </select>
                       <button onclick="addUser()" class="cfg-btn">DODAJ</button>
                     </div>
-                    
                     <div style="overflow-y:auto; max-height:250px; border:1px solid #333;">
                         <table class="adm-table" id="admUserTable">
                             <thead><tr><th>LOGIN</th><th>ROLA</th><th>AKCJE</th></tr></thead>
@@ -454,18 +479,15 @@
                     </div>
                     <button class="cfg-btn" style="margin-top:10px; width:100%; border-style:dashed;" onclick="backupUsers()">💾 BACKUP UŻYTKOWNIKÓW (JSON)</button>
                 </div>
-
                 <div class="admin-panel-box">
                     <div class="admin-h" style="margin-bottom:5px;">TERMINAL SYSTEMOWY</div>
                     <div class="admin-terminal" id="sysLog">
-                        <div class="log-line"><span class="log-time">System:</span> Inicjalizacja v2.1...</div>
+                        <div class="log-line"><span class="log-time">System:</span> Inicjalizacja v2.2...</div>
                         <div class="log-line"><span class="log-time">System:</span> Gotowy do pracy.</div>
                     </div>
                 </div>
             </div>
-
             <div style="display:flex; flex-direction:column; gap:20px;">
-                
                 <div class="admin-panel-box" style="border-color:var(--neon-cyan);">
                     <div class="admin-h" style="color:var(--neon-cyan)">BAZA DANYCH</div>
                     <div style="font-size:12px; color:#aaa; margin-bottom:15px;">Połącz, aby zarządzać plikami.</div>
@@ -474,19 +496,16 @@
                         <button class="cfg-btn cyan" style="flex:1;" onclick="toggleReportPanel()">📊 RAPORTY</button>
                     </div>
                 </div>
-
                 <div class="admin-panel-box">
                     <div class="admin-h">KONFIGURACJA</div>
                     <div class="input-label">ŚCIEŻKA SIECIOWA</div>
                     <input type="text" id="cfgPath" class="cfg-input" value="\\plgorfs001...">
                     <button class="cfg-btn" onclick="saveConfigPath()">ZAPISZ</button>
-                    
                     <div style="margin-top:15px;"></div>
                     <div class="input-label">WIADOMOŚĆ DNIA</div>
                     <input type="text" id="cfgMotd" class="cfg-input" placeholder="Komunikat...">
                     <button class="cfg-btn" onclick="saveMotd()">WYŚLIJ</button>
                 </div>
-
                 <div class="admin-panel-box">
                     <div class="admin-h" style="margin-bottom:5px;">PODGLĄD KAMERY</div>
                     <video id="adminCamPreview" autoplay playsinline muted></video>
@@ -511,7 +530,6 @@
             <button class="mgr-btn" onclick="exportCSV()">💾 CSV</button>
         </div>
     </div>
-
     <div class="mgr-stats-row">
         <div class="mgr-card" style="border-color:var(--neon-cyan)">
             <h3>ILOŚĆ CAŁKOWITA</h3>
@@ -530,7 +548,6 @@
             <div class="val" id="mgrYield">0%</div>
         </div>
     </div>
-
     <div class="mgr-content-grid">
         <div class="mgr-panel mgr-ranking-panel">
             <h4>RANKING OPERATORÓW</h4>
@@ -541,7 +558,6 @@
                 </table>
             </div>
         </div>
-
         <div class="mgr-panel">
             <h4>DZIENNIK ZDARZEŃ</h4>
             <div style="overflow:auto;">
@@ -574,7 +590,6 @@
     <div style="color:#888; text-align:center; font-size:14px; margin-bottom:20px;">
         Poniżej znajdują się Twoje statystyki z bieżącej zmiany. (Wymaga połączenia z bazą)
     </div>
-    
     <div class="op-stats-row">
         <div class="op-stat-box" style="border-color:var(--neon-cyan)">
             <div class="op-stat-num" id="opTotal">0</div>
@@ -679,7 +694,7 @@
     checkRecovery();
     checkOcRequirement();
     
-    // Initial UI Reset
+    // UI Reset
     document.getElementById('mainDashboard').style.display = 'none';
     document.getElementById('adminDash').style.display = 'none';
     document.getElementById('managerDash').style.display = 'none';
@@ -773,7 +788,13 @@
 
   function loadUsers() {
     const stored = localStorage.getItem('oled_users');
-    users = stored ? JSON.parse(stored) : CONFIG.defaultUsers;
+    // SAFE MODE: Jeśli pusta tablica, załaduj default
+    if(stored) {
+        users = JSON.parse(stored);
+        if(users.length === 0) users = CONFIG.defaultUsers;
+    } else {
+        users = CONFIG.defaultUsers;
+    }
   }
   function saveUsers() { localStorage.setItem('oled_users', JSON.stringify(users)); renderAdminUserTable(); }
   function checkSavedLogin() {
@@ -804,22 +825,16 @@
       document.getElementById('loginScreen').style.opacity = '0';
       setTimeout(() => {
         document.getElementById('loginScreen').style.display = 'none';
-        
-        setupInterface(); // Configure specific view
-
+        setupInterface(); // Go straight to interface
         if(currentUser.role === 'ADMIN') {
             startAdminCamera();
             document.getElementById('cfgPath').value = CONFIG.networkPath;
             document.getElementById('cfgMotd').value = CONFIG.motd;
             renderAdminUserTable();
-        } 
-        else if (currentUser.role === 'OPERATOR') {
-             // OPERATOR -> Main Dashboard
+        } else if (currentUser.role === 'OPERATOR') {
+            initCamera();
         }
-        else {
-             // MANAGER/COORD -> Manager Dashboard
-        }
-        
+        document.getElementById('mainDashboard').style.opacity = '1';
       }, 800);
     } else { 
       SoundFX.play('error');
@@ -829,7 +844,14 @@
 
   function logout() {
       if(confirm("Wylogować?")) {
-          // Hard Reset to clear memory/ghosts
+          location.reload(); // HARD RESET
+      }
+  }
+  
+  function emergencyReset() {
+      if(confirm("To usunie wszystkich użytkowników i przywróci ustawienia domyślne. Kontynuować?")) {
+          localStorage.removeItem('oled_users');
+          localStorage.removeItem('oled_saved_creds');
           location.reload();
       }
   }
@@ -857,8 +879,8 @@
         document.getElementById('adminDash').style.display = 'flex';
     } else if (currentUser.role === 'KOORDYNATOR') {
         b.classList.add('coord');
-        document.body.classList.add('mode-coord'); 
-        document.getElementById('managerDash').style.display = 'flex'; // Uses filtered manager dash
+        document.body.classList.add('mode-manager', 'mode-coord'); 
+        document.getElementById('managerDash').style.display = 'flex'; 
     } else {
         // OPERATOR
         document.getElementById('mainDashboard').style.display = 'grid';
@@ -879,6 +901,8 @@
       
       logSystem("Połączono z folderem sieciowym");
       
+      document.getElementById('networkGuard').style.display = 'none';
+      
       // AUTO SCAN FOR MANAGER/COORD
       if(currentUser.role === 'KIEROWNIK' || currentUser.role === 'KOORDYNATOR') {
           setTimeout(scanNetwork, 500); 
@@ -895,7 +919,6 @@
 
   function startOfflineMode() {
       dirHandle = null; 
-      // Just UI update if needed, but default is offline
   }
 
   /* --- MANAGER LOGIC (DATA) --- */
@@ -905,7 +928,6 @@
         return;
     }
     
-    // Operator specific logic
     if(currentUser.role === 'OPERATOR') {
         scanNetworkForOperator();
         return;
@@ -1104,7 +1126,6 @@
   }
 
   async function initCamera() {
-    // FIX: Camera ONLY for Operator (and small one for Admin)
     if(currentUser.role === 'KIEROWNIK' || currentUser.role === 'KOORDYNATOR' || currentUser.role === 'ADMIN') return;
     try {
       const s = await navigator.mediaDevices.getUserMedia({video:{width:{ideal:3840}}});
@@ -1122,7 +1143,6 @@
     document.getElementById('actionBtn').classList.remove('active');
     document.getElementById('statusSelect').value = "OK";
     
-    // START TIMER
     sessionStartTime = new Date();
     document.getElementById('sessionTimer').innerText = "⏱️ 00:00";
   }
@@ -1199,7 +1219,7 @@
       
       finalC.toBlob(b => {
           photos[tempPhotoType] = b;
-          document.getElementById('actionBtn').innerText = `GOTOWE (ZAPISZ)`; // Simplified
+          document.getElementById('actionBtn').innerText = `GOTOWE (ZAPISZ)`; 
           document.getElementById('actionBtn').classList.add('active'); 
           cancelPhoto();
       },'image/jpeg',0.9);
@@ -1227,7 +1247,6 @@
   function finishSave(dec) {
       clearRecovery(); document.getElementById('saveStatus').innerText = "ZAPISANO";
       
-      // Update Recent List
       recentScans.unshift({sn: currentSN, dec: dec});
       if(recentScans.length > 5) recentScans.pop();
       const list = document.getElementById('recentList');
@@ -1237,13 +1256,12 @@
           list.innerHTML += `<div class="recent-item"><span>${r.sn}</span><span style="color:${c}">${r.dec}</span></div>`;
       });
 
-      // Update Operator Stats (if network connected)
       if(dirHandle) scanNetworkForOperator();
 
       new QRCode(document.getElementById('qrCodeBox'), `${currentSN}|${dec}`);
       document.getElementById('qrPopup').style.display='block';
       
-      sessionStartTime = null; // Stop timer
+      sessionStartTime = null; 
       setTimeout(()=>{ currentSN=""; startSession(""); },1000);
   }
   function closeQr() { document.getElementById('qrPopup').style.display='none'; }
