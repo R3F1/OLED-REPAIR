@@ -985,7 +985,7 @@
       ctx.drawImage(v,0,0);
       ctx.drawImage(document.getElementById('drawCanvas'),0,0,finalC.width,finalC.height);
       const fs=Math.floor(finalC.height/25); ctx.font=`bold ${fs}px Roboto`; ctx.fillStyle="#0aff00";
-      ctx.fillText(`SN: ${currentSN}`,50,fs+20);
+      ctx.fillText(`SN: ${currentSN}`, 50, fs + 20);
       finalC.toBlob(b => { photos[tempPhotoType] = b; updatePhotoProgress(); cancelPhoto(); },'image/jpeg',0.9);
   }
 
@@ -1023,10 +1023,10 @@
       document.getElementById('drawCanvas').style.display='none';
   }
 
+  // SN MODUŁU: WYMAGA TBV LUB TOV
   document.getElementById('scanInput').addEventListener('keydown', e => {
     if(e.key==='Enter') {
       const v = e.target.value.trim().toUpperCase();
-      // Walidacja prefiksów tylko dla SN Modułu
       if(v.length > 3 && (v.startsWith("TBV") || v.startsWith("TOV"))) { 
           SoundFX.play('beep'); startSession(v); saveRecoveryState();
           document.getElementById('snCheck').style.display = 'inline';
@@ -1039,15 +1039,14 @@
     }
   });
 
+  // OC SN: ORYGINALNA LOGIKA
   document.getElementById('scanInputOC').addEventListener('keydown', e => {
     if(e.key==='Enter') {
         const v = e.target.value.trim().toUpperCase();
-        // Dla OC SN przywrócono Twoją oryginalną logikę (dowolny kod > 3 znaki)
         if(v.length > 3) { 
             currentOC = v; SoundFX.play('beep'); 
             document.getElementById('ocCheck').style.display = 'inline';
             
-            // POKAZANIE PRZYCISKU ZATWIERDZENIA
             document.getElementById('scanStatusInfo').style.display = 'block';
             document.getElementById('confirmIdentityBtn').style.display = 'block';
             
@@ -1077,12 +1076,17 @@
       }
   }
 
+  // ZAPIS DANYCH: DODANO SEKUNDY
   async function saveData() {
       if(!photos.PRZOD || !photos.TYL || !photos.OBRAZ) { alert("BRAK ZDJĘĆ!"); return; }
       const dec = document.getElementById('statusSelect').value;
       if(['OK','RMA'].includes(dec) && !currentOC) return alert("BRAK OC!");
       document.getElementById('saveStatus').innerText = "ZAPISYWANIE...";
-      const txt = `RAPORT\nSN: ${currentSN}\nOC: ${currentOC}\nOP: ${currentUser.login}\nDEC: ${dec}`;
+
+      const now = new Date();
+      const timestamp = now.toLocaleDateString() + " " + now.toLocaleTimeString(); // SEKUNDY
+
+      const txt = `RAPORT\nDATA: ${timestamp}\nSN: ${currentSN}\nOC: ${currentOC}\nOP: ${currentUser.login}\nDEC: ${dec}`;
       if(dirHandle) {
           try {
               const d = await dirHandle.getDirectoryHandle(currentSN, {create:true});
@@ -1098,7 +1102,14 @@
       try {
           await fetch(CONFIG.reportUrl, {
               method: "POST", headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({sn: currentSN, oc: currentOC || "---", op: currentUser.login, dec: dec, com: document.getElementById('commentInput').value})
+              body: JSON.stringify({
+                  timestamp: timestamp, // DODANO DO RAPORTU
+                  sn: currentSN, 
+                  oc: currentOC || "---", 
+                  op: currentUser.login, 
+                  dec: dec, 
+                  com: document.getElementById('commentInput').value
+              })
           });
       } catch(e) {}
       finishSave(dec);
@@ -1122,8 +1133,8 @@
       const x = e.clientX - rect.left, y = e.clientY - rect.top;
       ctx.lineWidth=5; ctx.strokeStyle=drawColor; ctx.lineTo(x,y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x,y);
   }
-  function setDrawColor(c) { drawColor=c; }
-  function clearDraw() { const c=document.getElementById('drawCanvas'); c.getContext('2d').clearRect(0,0,c.width,c.height); }
+  function setDrawColor(c) { drawColor = c; }
+  function clearDraw() { const c = document.getElementById('drawCanvas'); c.getContext('2d').clearRect(0, 0, c.width, c.height); }
   function togglePatterns() { document.getElementById('patternOverlay').style.display='block'; nextPattern(); }
   let pIdx=-1; const pats=['#fff','#f00','#0f0','#00f','#000'];
   function nextPattern() { pIdx++; if(pIdx>=pats.length){document.getElementById('patternOverlay').style.display='none';pIdx=-1;} else document.getElementById('patternOverlay').style.background=pats[pIdx]; }
