@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR v1.3 (by Łukasz Gruszczyński)</title>
+  <title>OLED REPAIR v1.4 (ADMIN OVERHAUL) by Łukasz Gruszczyński</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -32,8 +32,8 @@
       font-family: var(--font-ui); height: 100vh; overflow: hidden;
       display: flex; flex-direction: column;
       background-image: 
-        linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+        linear-gradient(rgba(255, 215, 0, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 215, 0, 0.03) 1px, transparent 1px);
       background-size: 50px 50px;
     }
 
@@ -43,28 +43,28 @@
       display: flex; align-items: center; justify-content: center; flex-direction: column; transition: opacity 0.8s;
     }
     .login-box {
-      width: 450px; padding: 40px; background: rgba(10, 10, 10, 0.95); border: 1px solid var(--neon-cyan);
+      width: 450px; padding: 40px; background: rgba(10, 10, 10, 0.95); border: 1px solid var(--neon-gold);
       text-align: center; border-radius: 12px; position: relative; overflow: hidden;
-      box-shadow: 0 0 60px rgba(0, 243, 255, 0.1); backdrop-filter: blur(10px);
+      box-shadow: 0 0 60px rgba(255, 215, 0, 0.1); backdrop-filter: blur(10px);
     }
-    .login-box h2 { font-family: var(--font-tech); font-weight: 700; letter-spacing: 1px; margin-bottom: 5px; }
+    .login-box h2 { font-family: var(--font-tech); font-weight: 700; letter-spacing: 1px; margin-bottom: 5px; color: var(--neon-gold); }
     .login-input {
-      width: 100%; padding: 15px; margin: 10px 0; background: #080808; border: 1px solid #333; color: var(--neon-cyan);
+      width: 100%; padding: 15px; margin: 10px 0; background: #080808; border: 1px solid #333; color: var(--neon-gold);
       font-family: var(--font-tech); font-size: 18px; text-align: center; outline: none; transition: 0.3s;
     }
-    .login-input:focus { border-color: var(--neon-cyan); background: #111; }
+    .login-input:focus { border-color: var(--neon-gold); background: #111; }
     input[type="password"] { letter-spacing: 5px; color: var(--neon-red); }
     .login-btn {
-      width: 100%; padding: 15px; margin-top: 20px; background: var(--neon-cyan); color: #000; font-weight: bold; border: none;
+      width: 100%; padding: 15px; margin-top: 20px; background: var(--neon-gold); color: #000; font-weight: bold; border: none;
       cursor: pointer; font-family: var(--font-tech); transition: 0.3s; font-size: 16px; letter-spacing: 2px;
     }
-    .login-btn:hover { background: #fff; box-shadow: 0 0 30px var(--neon-cyan); }
+    .login-btn:hover { background: #fff; box-shadow: 0 0 30px var(--neon-gold); }
     .login-error { color: var(--neon-red); font-size: 12px; height: 20px; margin-top: 10px; font-weight: bold; font-family: var(--font-ui); }
 
     .remember-me {
         display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px; font-size: 14px; color: #aaa;
     }
-    .remember-me input { transform: scale(1.5); accent-color: var(--neon-cyan); cursor: pointer; }
+    .remember-me input { transform: scale(1.5); accent-color: var(--neon-gold); cursor: pointer; }
 
     /* --- NETWORK GUARD --- */
     #networkGuard {
@@ -96,7 +96,7 @@
       background: rgba(0,0,0,0.8); border-bottom: 1px solid #333;
     }
     .brand { font-family: var(--font-tech); font-size: 28px; font-weight: 700; color: #fff; letter-spacing: 2px; }
-    .brand span { color: var(--neon-cyan); text-shadow: 0 0 10px var(--neon-cyan); }
+    .brand span { color: var(--neon-gold); text-shadow: 0 0 10px var(--neon-gold); }
     .operator-info { display: flex; align-items: center; gap: 20px; font-family: var(--font-tech); color: #aaa; font-size: 14px; }
     
     .operator-badge { background: #1a1a1a; padding: 6px 15px; border-radius: 4px; border: 1px solid #444; color: var(--neon-cyan); transition:0.3s; font-weight: bold; }
@@ -118,25 +118,16 @@
     }
     @keyframes pulseRed { 0% {opacity:0.8;} 50% {opacity:1;} 100% {opacity:0.8;} }
 
-    /* --- VIEW MODES --- */
-    /* Domyślnie Dashboard (Operator) jest widoczny, inne ukryte */
-    .dashboard { display: grid; flex: 1; grid-template-columns: 420px 1fr; gap: 20px; padding: 20px; overflow: hidden; opacity: 0; transition: opacity 1s; }
-    #adminDash { display: none; }
-    #managerDash { display: none; }
-
-    /* TRYB MANAGERA (KIEROWNIK) - Ukrywamy wszystko co operacyjne */
-    body.mode-manager .dashboard { display: none !important; }
-    body.mode-manager #adminDash { display: none !important; }
-    body.mode-manager #managerDash { display: flex !important; }
-    body.mode-manager .bar-bottom { display: none !important; } /* Kierownik nie ma paska na dole */
-    body.mode-manager .cam-controls { display: none !important; }
-
-    /* TRYB ADMINA */
+    /* --- DASHBOARDS --- */
+    .dashboard {
+      flex: 1; display: grid; grid-template-columns: 420px 1fr; gap: 20px; padding: 20px; overflow: hidden;
+      opacity: 0; transition: opacity 1s;
+    }
+    
+    /* MODES */
     body.mode-admin .dashboard { display: none !important; }
-    body.mode-admin #managerDash { display: none !important; }
     body.mode-admin #adminDash { display: flex !important; }
-
-    /* --- OPERATOR PANELS --- */
+    
     .panel-left {
       background: var(--panel-glass); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px;
       display: flex; flex-direction: column; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
@@ -148,7 +139,77 @@
     }
     .panel-right:active { cursor: grabbing; }
 
-    /* --- MANAGER DASHBOARD (ZAAWANSOWANE) --- */
+    /* --- ADMIN DASHBOARD (NEW LAYOUT) --- */
+    #adminDash {
+        display: none; flex: 1; padding: 40px; flex-direction: column; overflow-y: auto; gap: 20px;
+        background: radial-gradient(circle at center, #111, #000);
+        align-items: center; /* Center horizontally */
+    }
+    
+    .admin-container {
+        width: 100%; max-width: 1600px; /* Limit width */
+        display: flex; flex-direction: column; gap: 20px;
+    }
+
+    /* Admin Status Bar */
+    .admin-status-bar {
+        display: flex; justify-content: space-between; background: #0a0a0a; border: 1px solid #333; padding: 15px; border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    .status-item { display: flex; align-items: center; gap: 10px; font-family: var(--font-tech); font-size: 14px; color: #888; }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #333; }
+    .status-dot.ok { background: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); }
+
+    .admin-grid {
+        display: grid; grid-template-columns: 1fr 380px; gap: 25px; /* Bigger gap, distinct sidebar */
+        width: 100%;
+    }
+    
+    .admin-panel-box {
+        background: rgba(10, 10, 10, 0.9); border: 1px solid #333; padding: 25px; border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5); backdrop-filter: blur(5px); display: flex; flex-direction: column;
+    }
+    .admin-panel-box.highlight { border-color: var(--neon-gold); box-shadow: 0 0 20px rgba(255, 215, 0, 0.1); }
+
+    .admin-h { 
+        font-family: var(--font-tech); color: var(--neon-gold); font-size: 20px; margin-bottom: 20px; 
+        border-bottom: 1px solid #333; padding-bottom: 15px; display:flex; justify-content:space-between; align-items:center; letter-spacing: 1px;
+    }
+    
+    .cfg-input { width: 100%; background: #000; color: #fff; border: 1px solid #444; padding: 12px; margin-bottom: 10px; font-family: monospace; font-size: 14px; }
+    .cfg-input:focus { border-color: var(--neon-cyan); }
+    
+    .cfg-btn { 
+        background: #222; color: #fff; border: 1px solid #555; padding: 10px 20px; font-weight:bold; cursor:pointer; 
+        font-family: var(--font-tech); transition:0.3s; font-size: 13px; text-transform: uppercase;
+    }
+    .cfg-btn:hover { background: var(--neon-gold); color: #000; border-color: var(--neon-gold); box-shadow: 0 0 15px var(--neon-gold); }
+    .cfg-btn.cyan:hover { background: var(--neon-cyan); color: #000; border-color: var(--neon-cyan); box-shadow: 0 0 15px var(--neon-cyan); }
+    
+    .adm-table { width: 100%; border-collapse: collapse; }
+    .adm-table th { text-align: left; border-bottom: 2px solid #444; color: var(--neon-cyan); padding: 10px; font-size: 12px; }
+    .adm-table td { border-bottom: 1px solid #222; padding: 12px 10px; font-size: 14px; }
+    .adm-table tr:hover { background: rgba(255,255,255,0.05); }
+    
+    .adm-btn-group { display: flex; gap: 8px; }
+    .adm-act-btn { padding: 5px 10px; font-size: 11px; cursor: pointer; border: 1px solid #444; background: #000; color: #aaa; transition: 0.2s; }
+    .adm-act-btn:hover { border-color: #fff; color: #fff; }
+    
+    /* SYSTEM TERMINAL */
+    .admin-terminal {
+        background: #000; border: 1px solid #333; height: 200px; overflow-y: auto; padding: 10px; 
+        font-family: monospace; font-size: 12px; color: #0f0; margin-top: 20px;
+    }
+    .log-line { margin-bottom: 4px; border-bottom: 1px dashed #222; padding-bottom: 2px; }
+    .log-time { color: #666; margin-right: 10px; }
+
+    #adminCamPreview { 
+        width: 100%; height: 200px; background: #000; border: 1px solid var(--neon-cyan); 
+        object-fit: cover; margin-top: 10px; border-radius: 4px;
+        box-shadow: 0 0 15px rgba(0,243,255,0.1);
+    }
+
+    /* --- MANAGER DASHBOARD --- */
     #managerDash {
         flex: 1; padding: 30px; flex-direction: column; overflow-y: auto; gap: 20px;
         background: radial-gradient(circle at top, #111, #000);
@@ -178,20 +239,10 @@
     .mgr-panel { background: #0a0a0a; border: 1px solid #333; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; }
     .mgr-panel h4 { margin: 0 0 20px 0; color: var(--neon-gold); font-family: var(--font-tech); border-bottom: 1px solid #222; padding-bottom: 10px; }
 
-    /* Tables in Manager */
     .data-table { width: 100%; border-collapse: collapse; font-size: 13px; color: #ccc; font-family: var(--font-tech); }
     .data-table th { text-align: left; padding: 10px; background: #151515; color: #888; border-bottom: 1px solid #444; position: sticky; top: 0; }
     .data-table td { padding: 10px; border-bottom: 1px solid #222; }
     .data-table tr:hover { background: rgba(255,255,255,0.05); }
-
-    /* --- ADMIN DASHBOARD --- */
-    .admin-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
-    .admin-panel-box { background: #0a0a0a; border: 1px solid #333; padding: 20px; border-radius: 10px; }
-    .admin-h { font-family: var(--font-tech); color: var(--neon-gold); font-size: 18px; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; display:flex; justify-content:space-between; align-items:center; }
-    .cfg-input { width: 100%; background: #111; color: #fff; border: 1px solid #444; padding: 10px; margin-bottom: 10px; font-family: monospace; }
-    .cfg-btn { background: var(--neon-cyan); color: #000; border:none; padding:8px 15px; font-weight:bold; cursor:pointer; font-family: var(--font-tech); transition:0.3s; }
-    .cfg-btn:hover { background: #fff; box-shadow: 0 0 15px var(--neon-cyan); }
-    #adminCamPreview { width: 100%; height: 150px; background: #000; border: 1px solid #444; object-fit: contain; margin-top: 10px; }
 
     /* VIDEO & ZOOM LOGIC (Operator only) */
     .video-container { width: 100%; height: 100%; overflow: hidden; position: relative; display: flex; justify-content: center; align-items: center; }
@@ -270,13 +321,13 @@
         <div><strong>OPERATOR:</strong> <span id="plOp">---</span></div>
         <div><strong>STATUS:</strong> <span id="plStatus" style="font-weight:bold; font-size:20pt;">---</span></div>
     </div>
-    <div class="pl-footer">OLED REPAIR SYSTEM v1.3 - By Łukasz Gruszczyński</div>
+    <div class="pl-footer">OLED REPAIR SYSTEM v1.4 - By Łukasz Gruszczyński</div>
 </div>
 
 <div id="loginScreen">
   <div class="login-box">
     <h2 style="color:#fff;">OLED REPAIR SYSTEM</h2>
-    <div style="font-size:12px; color:#666; margin-bottom:30px; font-family: var(--font-tech);">v1.3 (by Łukasz Gruszczyński)</div>
+    <div style="font-size:12px; color:#666; margin-bottom:30px; font-family: var(--font-tech);">v1.4 (by Łukasz Gruszczyński)</div>
     
     <label class="input-label" style="text-align:left; margin-left:5px;">UŻYTKOWNIK</label>
     <input type="text" id="userInput" class="login-input" placeholder="LOGIN" autocomplete="off">
@@ -390,61 +441,79 @@
 </div>
 
 <div id="adminDash">
-    <div class="admin-grid">
-        <div class="admin-panel-box">
-            <div class="admin-h">
-                <span>ZARZĄDZANIE UŻYTKOWNIKAMI</span>
-                <span style="font-size:12px; color:#666;">EDYCJA / RESET HASEŁ</span>
-            </div>
-            
-            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 100px; gap:10px; margin-bottom:15px;">
-              <input type="text" id="newLogin" placeholder="NOWY LOGIN" class="cfg-input" style="margin:0;">
-              <input type="text" id="newPass" placeholder="HASŁO" class="cfg-input" style="margin:0;">
-              <select id="newRole" class="cfg-input" style="margin:0; padding:10px;">
-                <option value="OPERATOR">OPERATOR</option>
-                <option value="KOORDYNATOR">KOORDYNATOR</option>
-                <option value="KIEROWNIK">KIEROWNIK</option>
-                <option value="ADMIN">ADMINISTRATOR</option>
-              </select>
-              <button onclick="addUser()" class="cfg-btn">DODAJ</button>
-            </div>
-            
-            <div style="overflow-y:auto; max-height:400px;">
-                <table class="adm-table" id="admUserTable">
-                    <thead><tr><th>LOGIN</th><th>ROLA</th><th>AKCJE</th></tr></thead>
-                    <tbody></tbody>
-                </table>
-            </div>
+    <div class="admin-container">
+        <div class="admin-status-bar">
+            <div class="status-item"><div class="status-dot ok"></div> SYSTEM: ONLINE</div>
+            <div class="status-item">VER: 1.4</div>
+            <div class="status-item">CPU: <span id="simCpu">12%</span></div>
+            <div class="status-item">MEM: <span id="simMem">2.4GB</span></div>
         </div>
 
-        <div style="display:flex; flex-direction:column; gap:20px;">
-            <div class="admin-panel-box" style="border-color:var(--neon-cyan);">
-                <div class="admin-h" style="color:var(--neon-cyan)">BAZA DANYCH I ANALITYKA</div>
-                <div style="font-size:12px; color:#aaa; margin-bottom:15px;">
-                    Połącz się z serwerem, aby przeglądać raporty, statystyki i exportować dane.
+        <div class="admin-grid">
+            <div style="display:flex; flex-direction:column; gap:20px;">
+                <div class="admin-panel-box highlight">
+                    <div class="admin-h">
+                        <span>ZARZĄDZANIE UŻYTKOWNIKAMI</span>
+                        <span style="font-size:12px; color:#666;">EDYCJA / RESET HASEŁ</span>
+                    </div>
+                    
+                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 100px; gap:10px; margin-bottom:15px;">
+                      <input type="text" id="newLogin" placeholder="LOGIN" class="cfg-input" style="margin:0;">
+                      <input type="text" id="newPass" placeholder="HASŁO" class="cfg-input" style="margin:0;">
+                      <select id="newRole" class="cfg-input" style="margin:0; padding:10px; cursor:pointer;">
+                        <option value="OPERATOR">OPERATOR</option>
+                        <option value="KOORDYNATOR">KOORDYNATOR</option>
+                        <option value="KIEROWNIK">KIEROWNIK</option>
+                        <option value="ADMIN">ADMINISTRATOR</option>
+                      </select>
+                      <button onclick="addUser()" class="cfg-btn">DODAJ</button>
+                    </div>
+                    
+                    <div style="overflow-y:auto; max-height:250px; border:1px solid #333;">
+                        <table class="adm-table" id="admUserTable">
+                            <thead><tr><th>LOGIN</th><th>ROLA</th><th>AKCJE</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <button class="cfg-btn" style="margin-top:10px; width:100%; border-style:dashed;" onclick="backupUsers()">💾 BACKUP UŻYTKOWNIKÓW (JSON)</button>
                 </div>
-                <div style="display:flex; gap:10px;">
-                    <button class="cfg-btn" style="flex:1; border-color:var(--neon-cyan);" onclick="connectNetwork()">📡 POŁĄCZ Z SERWEREM</button>
-                    <button class="cfg-btn" style="flex:1; background:var(--neon-cyan); color:#000;" onclick="toggleReportPanel()">📊 OTWÓRZ RAPORTY</button>
+
+                <div class="admin-panel-box">
+                    <div class="admin-h" style="margin-bottom:5px;">TERMINAL SYSTEMOWY</div>
+                    <div class="admin-terminal" id="sysLog">
+                        <div class="log-line"><span class="log-time">System:</span> Inicjalizacja v1.4...</div>
+                        <div class="log-line"><span class="log-time">System:</span> Gotowy do pracy.</div>
+                    </div>
                 </div>
             </div>
 
-            <div class="admin-panel-box">
-                <div class="admin-h">KONFIGURACJA SYSTEMU</div>
-                <div class="input-label">ŚCIEŻKA SIECIOWA (ZAPIS)</div>
-                <input type="text" id="cfgPath" class="cfg-input" value="\\plgorfs001...">
-                <button class="cfg-btn" onclick="saveConfigPath()">ZAPISZ ŚCIEŻKĘ</button>
+            <div style="display:flex; flex-direction:column; gap:20px;">
                 
-                <div style="margin-top:20px;"></div>
-                <div class="input-label">WIADOMOŚĆ DNIA (BROADCAST)</div>
-                <input type="text" id="cfgMotd" class="cfg-input" placeholder="Wpisz komunikat...">
-                <button class="cfg-btn" onclick="saveMotd()">WYŚLIJ KOMUNIKAT</button>
-            </div>
+                <div class="admin-panel-box" style="border-color:var(--neon-cyan);">
+                    <div class="admin-h" style="color:var(--neon-cyan)">BAZA DANYCH</div>
+                    <div style="font-size:12px; color:#aaa; margin-bottom:15px;">Połącz, aby zarządzać plikami.</div>
+                    <div style="display:flex; gap:10px;">
+                        <button class="cfg-btn cyan" style="flex:1;" onclick="connectNetwork()">📡 POŁĄCZ</button>
+                        <button class="cfg-btn cyan" style="flex:1;" onclick="toggleReportPanel()">📊 RAPORTY</button>
+                    </div>
+                </div>
 
-            <div class="admin-panel-box">
-                <div class="admin-h">PODGLĄD STANOWISKA</div>
-                <video id="adminCamPreview" autoplay playsinline muted></video>
-                <div style="text-align:center; font-size:10px; color:#666; margin-top:5px;">PODGLĄD NA ŻYWO (BEZ ZAPISU)</div>
+                <div class="admin-panel-box">
+                    <div class="admin-h">KONFIGURACJA</div>
+                    <div class="input-label">ŚCIEŻKA SIECIOWA</div>
+                    <input type="text" id="cfgPath" class="cfg-input" value="\\plgorfs001...">
+                    <button class="cfg-btn" onclick="saveConfigPath()">ZAPISZ</button>
+                    
+                    <div style="margin-top:15px;"></div>
+                    <div class="input-label">WIADOMOŚĆ DNIA</div>
+                    <input type="text" id="cfgMotd" class="cfg-input" placeholder="Komunikat...">
+                    <button class="cfg-btn" onclick="saveMotd()">WYŚLIJ</button>
+                </div>
+
+                <div class="admin-panel-box">
+                    <div class="admin-h" style="margin-bottom:5px;">PODGLĄD KAMERY</div>
+                    <video id="adminCamPreview" autoplay playsinline muted></video>
+                </div>
             </div>
         </div>
     </div>
@@ -549,18 +618,7 @@
     ]
   };
 
-  /* --- STATE --- */
-  let users = [];
-  let currentUser = null;
-  let dirHandle = null;
-  let currentSN = "";
-  let currentOC = ""; 
-  let photos = { PRZOD: null, TYL: null, OBRAZ: null };
-  let isMirrored = false;
-  let reportsCache = [];
-  let leaderMode = 'TODAY'; // TODAY, YESTERDAY, ALL
-  
-  /* --- AUDIO --- */
+  /* --- AUDIO SYSTEM --- */
   const SoundFX = {
     ctx: null,
     init: function() { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
@@ -578,6 +636,10 @@
         osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now); osc.frequency.linearRampToValueAtTime(100, now+0.3);
         gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0.01, now+0.3);
         osc.start(now); osc.stop(now+0.3);
+      } else if(type === 'shutter') {
+        osc.type = 'square'; osc.frequency.setValueAtTime(800, now);
+        gain.gain.setValueAtTime(0.05, now); gain.gain.exponentialRampToValueAtTime(0.001, now+0.05);
+        osc.start(now); osc.stop(now+0.05);
       } else if(type === 'success') {
         osc.type = 'triangle'; osc.frequency.setValueAtTime(440, now); osc.frequency.setValueAtTime(554, now+0.1); osc.frequency.setValueAtTime(659, now+0.2); 
         gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now+0.4);
@@ -586,7 +648,17 @@
     }
   };
 
-  // Drawing State
+  /* --- STATE --- */
+  let users = [];
+  let currentUser = null;
+  let dirHandle = null;
+  let currentSN = "";
+  let currentOC = ""; 
+  let photos = { PRZOD: null, TYL: null, OBRAZ: null };
+  let isMirrored = false;
+  let reportsCache = [];
+  let leaderMode = 'TODAY'; 
+  
   let isDrawing = false;
   let drawColor = "red";
   let tempPhotoType = "";
@@ -607,7 +679,14 @@
         document.getElementById('motdBar').innerText = "KOMUNIKAT: " + CONFIG.motd;
     }
 
-    setInterval(() => document.getElementById('clockDisplay').innerText = new Date().toLocaleTimeString().slice(0,5), 1000);
+    setInterval(() => {
+        document.getElementById('clockDisplay').innerText = new Date().toLocaleTimeString().slice(0,5);
+        // Simulate Stats for Admin
+        if(currentUser && currentUser.role === 'ADMIN') {
+            document.getElementById('simCpu').innerText = Math.floor(Math.random() * 15 + 5) + "%";
+            document.getElementById('simMem').innerText = (Math.random() * 0.5 + 2.1).toFixed(1) + "GB";
+        }
+    }, 1000);
     
     // Canvas Listeners
     const c = document.getElementById('drawCanvas');
@@ -616,11 +695,9 @@
     c.addEventListener('touchend', (e)=>{e.preventDefault(); endDraw()});
     c.addEventListener('touchmove', (e)=>{e.preventDefault(); draw(e.touches[0])});
 
-    // Zoom
     const slider = document.getElementById('zoomSlider');
     slider.addEventListener('input', (e) => { zoomLevel = parseFloat(e.target.value); applyTransform(); });
 
-    // Pan
     const camContainer = document.getElementById('camContainer');
     camContainer.addEventListener('mousedown', (e) => {
         if(zoomLevel > 1 && !isDrawing && document.getElementById('drawCanvas').style.display === 'none') {
@@ -635,6 +712,16 @@
         applyTransform();
     });
   };
+
+  function logSystem(msg) {
+      const term = document.getElementById('sysLog');
+      const time = new Date().toLocaleTimeString();
+      const div = document.createElement('div');
+      div.className = "log-line";
+      div.innerHTML = `<span class="log-time">[${time}]</span> ${msg}`;
+      term.appendChild(div);
+      term.scrollTop = term.scrollHeight;
+  }
 
   function applyTransform() {
     const v = document.getElementById('videoFeed');
@@ -652,11 +739,11 @@
   }
   function saveConfigPath() {
       const v = document.getElementById('cfgPath').value.trim();
-      if(v) { CONFIG.networkPath = v; localStorage.setItem('oled_cfg_path', v); alert("Zapisano!"); }
+      if(v) { CONFIG.networkPath = v; localStorage.setItem('oled_cfg_path', v); alert("Zapisano!"); logSystem("Zmiana ścieżki sieciowej"); }
   }
   function saveMotd() {
       const v = document.getElementById('cfgMotd').value.trim();
-      CONFIG.motd = v; localStorage.setItem('oled_cfg_motd', v); alert("Komunikat zapisany!");
+      CONFIG.motd = v; localStorage.setItem('oled_cfg_motd', v); alert("Komunikat zapisany!"); logSystem("Aktualizacja MOTD");
   }
 
   function loadUsers() {
@@ -687,11 +774,22 @@
       if(remember) localStorage.setItem('oled_saved_creds', JSON.stringify({login:l, pass:p}));
       else localStorage.removeItem('oled_saved_creds');
 
+      logSystem(`Zalogowano użytkownika: ${u.login} (${u.role})`);
+
       document.getElementById('loginScreen').style.opacity = '0';
       setTimeout(() => {
         document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('networkGuard').style.display = 'flex'; // ZAWSZE NAJPIERW POŁĄCZENIE
-        setupInterface(); // Ustawia klasy (ukrywa dashboardy)
+        
+        if(currentUser.role === 'ADMIN') {
+            document.body.classList.add('mode-admin');
+            setupInterface();
+            startAdminCamera();
+            document.getElementById('cfgPath').value = CONFIG.networkPath;
+            document.getElementById('cfgMotd').value = CONFIG.motd;
+            renderAdminUserTable();
+        } else {
+            document.getElementById('networkGuard').style.display = 'flex'; // ZAWSZE NAJPIERW POŁĄCZENIE
+        }
         document.getElementById('mainDashboard').style.opacity = '1';
       }, 800);
     } else { 
@@ -702,6 +800,7 @@
 
   function logout() {
       if(confirm("Wylogować?")) {
+          logSystem("Wylogowanie...");
           currentUser = null; dirHandle = null; currentSN = "";
           document.body.className = "";
           document.getElementById('loginScreen').style.display = 'flex';
@@ -709,7 +808,7 @@
           document.getElementById('mainDashboard').style.opacity = '0';
           document.getElementById('networkGuard').style.display = 'none';
           document.getElementById('adminDash').style.display = 'none';
-          document.getElementById('managerDash').style.display = 'none'; // Hide Manager
+          document.getElementById('managerDash').style.display = 'none';
           document.getElementById('connStatus').innerHTML = "🔴 OFFLINE";
           document.getElementById('connStatus').style.color = "#444";
       }
@@ -726,7 +825,6 @@
     if(currentUser.role === 'KIEROWNIK') {
         b.classList.add('manager');
         document.body.classList.add('mode-manager');
-        // KIEROWNIK NIE MA DOSTĘPU DO KAMERY ANI OPERACJI
     } else if(currentUser.role === 'ADMIN') {
         b.classList.add('admin');
         document.body.classList.add('mode-admin');
@@ -734,10 +832,10 @@
         document.getElementById('cfgPath').value = CONFIG.networkPath;
         document.getElementById('cfgMotd').value = CONFIG.motd;
         renderAdminUserTable();
-        startAdminCamera(); // Tylko podgląd
+        startAdminCamera(); 
     } else {
         if(currentUser.role === 'KOORDYNATOR') b.classList.add('coord');
-        initCamera(); // Operator ma kamerę
+        initCamera(); 
     }
   }
 
@@ -748,18 +846,17 @@
       alert("Ścieżka skopiowana! Wybierz folder.");
       dirHandle = await window.showDirectoryPicker();
       
-      // STATUS UPDATE (Naprawione)
       const statusEl = document.getElementById('connStatus');
       statusEl.innerHTML = "🟢 ONLINE";
       statusEl.style.color = "var(--neon-green)";
       
+      logSystem("Połączono z folderem sieciowym");
+      
       document.getElementById('networkGuard').style.display = 'none';
       
-      // AUTO SCAN FOR MANAGER
       if(currentUser.role === 'KIEROWNIK') {
           setTimeout(scanNetwork, 500); 
       }
-      // FOCUS FOR OPERATOR
       if(currentUser.role !== 'KIEROWNIK' && currentUser.role !== 'ADMIN') {
           document.getElementById('scanInput').focus();
       }
@@ -773,7 +870,10 @@
       statusEl.innerHTML = "🟡 OFFLINE (ZIP)";
       statusEl.style.color = "var(--neon-orange)";
       
+      logSystem("Uruchomiono tryb OFFLINE");
+      
       document.getElementById('networkGuard').style.display = 'none';
+      setupInterface(); // Re-trigger to ensure correct view
       
       if(currentUser.role !== 'KIEROWNIK' && currentUser.role !== 'ADMIN') {
           document.getElementById('scanInput').focus();
@@ -788,6 +888,7 @@
     }
     
     document.getElementById('mgrLogBody').innerHTML = "<tr><td colspan='6' style='text-align:center;'>POBIERANIE DANYCH...</td></tr>";
+    logSystem("Rozpoczęto skanowanie danych...");
     
     reportsCache = [];
     try {
@@ -817,7 +918,8 @@
         }
       }
       updateLeaderStats(leaderMode);
-    } catch(e) { console.error(e); }
+      logSystem("Dane załadowane pomyślnie.");
+    } catch(e) { console.error(e); logSystem("Błąd skanowania!"); }
   }
 
   function updateLeaderStats(mode) {
@@ -843,7 +945,6 @@
       
       filtered.sort((a,b) => (b.rawDate || 0) - (a.rawDate || 0));
 
-      // 1. Log Table
       const tb = document.getElementById('mgrLogBody'); tb.innerHTML = "";
       if(filtered.length===0) tb.innerHTML = "<tr><td colspan='6' style='text-align:center'>BRAK DANYCH</td></tr>";
       
@@ -856,14 +957,12 @@
           tb.innerHTML += `<tr><td>${r.date}</td><td>${r.sn}</td><td>${r.oc||'---'}</td><td>${r.op}</td><td style="color:${color};font-weight:bold">${r.dec}</td><td>${r.com}</td></tr>`;
       });
 
-      // 2. Stats Cards
       const total = filtered.length;
       let ok=0, ng=0;
       const opStats = {};
 
       filtered.forEach(r => {
           if(['OK','OFFRS_OK','NDF'].includes(r.dec)) ok++; else ng++;
-          
           if(!opStats[r.op]) opStats[r.op] = { total:0, ok:0 };
           opStats[r.op].total++;
           if(['OK','OFFRS_OK','NDF'].includes(r.dec)) opStats[r.op].ok++;
@@ -875,7 +974,6 @@
       document.getElementById('mgrNG').innerText = ng;
       document.getElementById('mgrYield').innerText = yieldVal + "%";
 
-      // 3. Ranking
       const rankBody = document.getElementById('mgrRankBody'); rankBody.innerHTML = "";
       const sortedOps = Object.keys(opStats).sort((a,b) => opStats[b].total - opStats[a].total);
       
@@ -886,7 +984,6 @@
           const y = ((s.ok/s.total)*100).toFixed(0);
           let c = "#fff";
           if(y<80) c="var(--neon-red)"; else if(y>95) c="var(--neon-green)"; else c="orange";
-          
           rankBody.innerHTML += `<tr><td>${op}</td><td>${s.total}</td><td style="color:${c}">${y}%</td></tr>`;
       });
   }
@@ -896,9 +993,10 @@
     let c = "DATA,SN_MODULU,SN_SZKLA_OC,OPERATOR,DECYZJA,UWAGI\n";
     reportsCache.forEach(r => c+=`${r.date},${r.sn},${r.oc},${r.op},${r.dec},${r.com}\n`);
     saveAs(new Blob([c],{type:'text/csv'}), "raport_serwisowy.csv");
+    logSystem("Wyeksportowano CSV");
   }
 
-  /* --- ADMIN & OPERATOR FUNCTIONS --- */
+  /* --- ADMIN FUNCTIONS --- */
   function renderAdminUserTable() {
       const tb = document.querySelector('#admUserTable tbody'); tb.innerHTML = "";
       users.forEach((u, i) => {
@@ -913,11 +1011,17 @@
     const l = document.getElementById('newLogin').value.trim().toUpperCase();
     const p = document.getElementById('newPass').value.trim();
     const r = document.getElementById('newRole').value;
-    if(l && p) { users.push({login:l, pass:p, role:r}); saveUsers(); }
+    if(l && p) { users.push({login:l, pass:p, role:r}); saveUsers(); logSystem(`Dodano usera: ${l}`); }
   }
-  function removeUser(idx) { if(confirm("Usunąć?")) { users.splice(idx, 1); saveUsers(); } }
-  function resetUserPass(idx) { if(confirm("Reset hasła na 1234?")) { users[idx].pass="1234"; saveUsers(); alert("OK"); } }
+  function removeUser(idx) { if(confirm("Usunąć?")) { logSystem(`Usunięto usera: ${users[idx].login}`); users.splice(idx, 1); saveUsers(); } }
+  function resetUserPass(idx) { if(confirm("Reset hasła na 1234?")) { users[idx].pass="1234"; saveUsers(); alert("OK"); logSystem(`Reset hasła dla: ${users[idx].login}`); } }
   
+  function backupUsers() {
+      const blob = new Blob([JSON.stringify(users, null, 2)], {type: "application/json"});
+      saveAs(blob, "users_backup.json");
+      logSystem("Wykonano backup użytkowników");
+  }
+
   async function startAdminCamera() {
       try {
           const s = await navigator.mediaDevices.getUserMedia({video:true});
@@ -1010,13 +1114,12 @@
       ctx.drawImage(v,0,0);
       ctx.drawImage(document.getElementById('drawCanvas'),0,0,finalC.width,finalC.height);
       
-      // Watermark
       const fs=Math.floor(finalC.height/25); ctx.font=`bold ${fs}px Roboto`; ctx.fillStyle="#0aff00";
       ctx.fillText(`SN: ${currentSN}`,50,fs+20);
       
       finalC.toBlob(b => {
           photos[tempPhotoType] = b;
-          document.getElementById('actionBtn').classList.add('active'); // Uproszczone dla demo
+          document.getElementById('actionBtn').classList.add('active'); // Simplified
           cancelPhoto();
       },'image/jpeg',0.9);
   }
@@ -1036,7 +1139,6 @@
               finishSave(dec);
           } catch(e) { alert("BŁĄD ZAPISU"); }
       } else {
-          // Offline ZIP logic here (simplified)
           finishSave(dec);
       }
   }
@@ -1049,7 +1151,6 @@
   }
   function closeQr() { document.getElementById('qrPopup').style.display='none'; }
 
-  /* --- UTILS --- */
   function startDraw(e) { isDrawing=true; draw(e); }
   function endDraw() { isDrawing=false; document.getElementById('drawCanvas').getContext('2d').beginPath(); }
   function draw(e) {
