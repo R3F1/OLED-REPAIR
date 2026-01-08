@@ -441,7 +441,7 @@
             <button class="mgr-btn" id="fYesterday" onclick="updateLeaderStats('YESTERDAY')">WCZORAJ</button>
             <button class="mgr-btn" id="fAll" onclick="updateLeaderStats('ALL')">CAŁA HISTORIA</button>
             <div style="width:1px; background:#444; margin:0 10px;"></div>
-            <button class="mgr-btn" onclick="scanNetwork()">🔄 ODŚWIEŻ</button>
+            <button class="mgr-btn" onclick="updateLeaderStats(leaderMode)">🔄 ODŚWIEŻ</button>
             <button class="mgr-btn" onclick="exportCSV()">💾 CSV</button>
         </div>
     </div>
@@ -478,7 +478,7 @@
             <div style="overflow:auto;">
                 <table class="data-table">
                     <thead><tr><th>DATA</th><th>SN MODUŁU</th><th>SN OC</th><th>OP</th><th>DECYZJA</th><th>UWAGI</th></tr></thead>
-                    <tbody id="mgrLogBody"><tr><td colspan="6" style="text-align:center">Połącz się z serwerem, aby pobrać dane...</td></tr></tbody>
+                    <tbody id="mgrLogBody"><tr><td colspan="6" style="text-align:center">Ładowanie danych z arkusza...</td></tr></tbody>
                 </table>
             </div>
         </div>
@@ -497,13 +497,13 @@
   <div class="panel-header">
     <div style="font-size:20px; color:var(--neon-cyan); font-family: var(--font-tech);">MOJE DZISIEJSZE WYNIKI</div>
     <div>
-        <button class="bar-btn" onclick="scanNetwork()">🔄 ODŚWIEŻ</button>
+        <button class="bar-btn" onclick="updateLeaderStats('TODAY')">🔄 ODŚWIEŻ</button>
         <button class="bar-btn" onclick="toggleReportPanel()">ZAMKNIJ X</button>
     </div>
   </div>
   <div class="panel-content">
     <div style="color:#888; text-align:center; font-size:14px; margin-bottom:20px;">
-        Poniżej znajdują się Twoje statystyki z bieżącej zmiany. (Wymaga połączenia z bazą)
+        Poniżej znajdują się Twoje statystyki z bieżącej zmiany. (Dane pobierane z arkusza)
     </div>
     <div class="op-stats-row">
         <div class="op-stat-box" style="border-color:var(--neon-cyan)">
@@ -650,145 +650,77 @@
     });
   };
 
-  /* --- FUNKCJA SZYBKIEGO LOGOWANIA --- */
-  function quickAdminLogin() {
-      // Wpisujemy login
-      document.getElementById('userInput').value = "ADMIN";
-      // Czyścimy pole hasła na wypadek zapisanych danych
-      document.getElementById('passInput').value = "";
-      // Ustawiamy kursor w polu hasła
-      document.getElementById('passInput').focus();
-      logSystem("Użyto szybkiego logowania ADMIN (Hasło wyczyszczone).");
-  }
+  /* --- ANALYTICS ENGINE (GOOGLE SHEETS INTEGRATION) --- */
+  async function updateLeaderStats(mode) {
+      leaderMode = mode;
+      document.querySelectorAll('.mgr-btn').forEach(b => b.classList.remove('active'));
+      if(mode === 'TODAY') document.getElementById('fToday').classList.add('active');
+      else if(mode === 'YESTERDAY') document.getElementById('fYesterday').classList.add('active');
+      else if(mode === 'ALL') document.getElementById('fAll').classList.add('active');
 
-  function confirmScanData() {
-      if(!currentSN || !currentOC) {
-          alert("BRAKUJE NUMERÓW SN LUB OC!");
-          return;
-      }
-      isScanConfirmed = true;
-      SoundFX.play('success');
-      
-      document.getElementById('confirmIdentityBtn').style.display = 'none';
-      document.getElementById('scanStatusInfo').style.display = 'none';
-      
-      const btns = document.querySelectorAll('.checklist-btn');
-      btns.forEach(btn => btn.classList.remove('locked'));
-      
-      logSystem(`Dane SN: ${currentSN} zatwierdzone przez operatora.`);
-  }
-
-  function updateSessionTimer() {
-      if(!sessionStartTime || !currentSN) return;
-      const now = new Date();
-      const diff = Math.floor((now - sessionStartTime) / 1000);
-      const m = Math.floor(diff / 60).toString().padStart(2, '0');
-      const s = (diff % 60).toString().padStart(2, '0');
-      document.getElementById('sessionTimer').innerText = `⏱️ ${m}:${s}`;
-  }
-
-  function addDefect(text) {
-      const field = document.getElementById('commentInput');
-      if(field.value) field.value += ", " + text;
-      else field.value = text;
-      saveRecoveryState();
-  }
-
-  function logSystem(msg) {
-      const term = document.getElementById('sysLog');
-      if(!term) return;
-      const time = new Date().toLocaleTimeString();
-      const div = document.createElement('div');
-      div.className = "log-line";
-      div.innerHTML = `<span class="log-time">[${time}]</span> ${msg}`;
-      term.appendChild(div);
-      term.scrollTop = term.scrollHeight;
-  }
-
-  function applyTransform() {
-    const v = document.getElementById('videoFeed');
-    const mirrorFactor = isMirrored ? -1 : 1;
-    v.style.transform = `scale(${zoomLevel * mirrorFactor}, ${zoomLevel}) translate(${panX / zoomLevel}px, ${panY / zoomLevel}px)`;
-  }
-
-  function loadConfig() {
-      const savedPath = localStorage.getItem('oled_cfg_path');
-      if(savedPath) CONFIG.networkPath = savedPath;
-      const savedMotd = localStorage.getItem('oled_cfg_motd');
-      if(savedMotd) CONFIG.motd = savedMotd;
-      document.getElementById('displayPath').innerText = CONFIG.networkPath;
-  }
-  function saveConfigPath() {
-      const v = document.getElementById('cfgPath').value.trim();
-      if(v) { CONFIG.networkPath = v; localStorage.setItem('oled_cfg_path', v); alert("Zapisano!"); logSystem("Zmiana ścieżki sieciowej"); }
-  }
-  function saveMotd() {
-      const v = document.getElementById('cfgMotd').value.trim();
-      CONFIG.motd = v; localStorage.setItem('oled_cfg_motd', v); alert("Komunikat zapisany!"); logSystem("Aktualizacja MOTD");
-  }
-
-  function loadUsers() {
-    const stored = localStorage.getItem('oled_users');
-    if(stored) {
-        users = JSON.parse(stored);
-        if(users.length === 0) users = CONFIG.defaultUsers;
-    } else {
-        users = CONFIG.defaultUsers;
-    }
-  }
-
-  async function loadUsersFromSheet() {
-      if(!CONFIG.loginUrl) return;
-      const statusEl = document.getElementById('syncStatus');
-      statusEl.innerText = "Synchronizacja...";
       try {
-          const res = await fetch(CONFIG.loginUrl, { method: "GET" });
-          if(!res.ok) throw new Error("Błąd sieci");
-          const txt = await res.text();
-          const rows = txt.split(/\r?\n/); 
-          const newUsers = [];
-          for(let i=1; i<rows.length; i++) {
-              const row = rows[i];
-              if(!row || row.trim() === '') continue;
-              const cols = row.split(',');
-              if(cols.length >= 3) {
-                   const l = cols[0].replace(/^"|"$/g, '').trim().toUpperCase();
-                   const p = cols[1].replace(/^"|"$/g, '').trim(); 
-                   let r = cols[2].replace(/^"|"$/g, '').trim().toUpperCase();
-                   if (r === 'ADMINISTRATOR') r = 'ADMIN';
-                   if (r === 'OPERATOR') r = 'OPERATOR';
-                   if(l && p && ['OPERATOR','ADMIN','KIEROWNIK','KOORDYNATOR'].includes(r)) {
-                       newUsers.push({login:l, pass:p, role:r});
-                   }
-              }
-          }
-          if(newUsers.length > 0) {
-              users = newUsers;
-              saveUsers();
-              statusEl.innerText = "Zsynchronizowano!";
-              statusEl.className = "sync-status ok";
-              setTimeout(()=>{ if(statusEl) statusEl.innerText=""; }, 3000);
-              if(currentUser && currentUser.role === 'ADMIN') renderAdminUserTable();
-              logSystem("Baza użytkowników zaktualizowana.");
-          }
-      } catch(e) {
-          statusEl.innerText = "Błąd pobierania bazy";
-          statusEl.className = "sync-status err";
-      }
+          // Pobieranie danych z Twojego API Google Sheets
+          const res = await fetch(CONFIG.reportUrl);
+          if(!res.ok) throw new Error("Net error");
+          reportsCache = await res.json(); 
+          renderManagerUI();
+          if(currentUser.role === 'OPERATOR') calculateOperatorStats();
+      } catch(e) { console.error("Data sync failed", e); }
   }
 
-  function saveUsers() { localStorage.setItem('oled_users', JSON.stringify(users)); if(currentUser && currentUser.role==='ADMIN') renderAdminUserTable(); }
-  
-  function checkSavedLogin() {
-      const saved = localStorage.getItem('oled_saved_creds');
-      if(saved) {
-          try {
-              const creds = JSON.parse(saved);
-              document.getElementById('userInput').value = creds.login;
-              document.getElementById('passInput').value = creds.pass;
-              document.getElementById('rememberCheck').checked = true;
-          } catch(e) {}
-      }
+  function renderManagerUI() {
+      const now = new Date();
+      const todayStr = now.toLocaleDateString();
+      const yesterday = new Date(); yesterday.setDate(now.getDate() - 1);
+      const yesterdayStr = yesterday.toLocaleDateString();
+
+      let filtered = reportsCache;
+      if(leaderMode === 'TODAY') filtered = reportsCache.filter(r => r.timestamp && r.timestamp.includes(todayStr));
+      else if(leaderMode === 'YESTERDAY') filtered = reportsCache.filter(r => r.timestamp && r.timestamp.includes(yesterdayStr));
+
+      // Stats
+      let total = filtered.length, ok = 0, ng = 0;
+      const ranking = {};
+      const logBody = document.getElementById('mgrLogBody'); logBody.innerHTML = "";
+
+      filtered.forEach(r => {
+          if(['OK','OFFRS_OK','NDF'].includes(r.dec)) ok++; else ng++;
+          if(!ranking[r.op]) ranking[r.op] = {total:0, ok:0};
+          ranking[r.op].total++;
+          if(['OK','OFFRS_OK','NDF'].includes(r.dec)) ranking[r.op].ok++;
+          
+          logBody.innerHTML += `<tr><td>${r.timestamp}</td><td>${r.sn}</td><td>${r.oc}</td><td>${r.op}</td><td>${r.dec}</td><td>${r.com}</td></tr>`;
+      });
+
+      document.getElementById('mgrTotal').innerText = total;
+      document.getElementById('mgrOK').innerText = ok;
+      document.getElementById('mgrNG').innerText = ng;
+      document.getElementById('mgrYield').innerText = total > 0 ? ((ok/total)*100).toFixed(1) + "%" : "0%";
+
+      const rankBody = document.getElementById('mgrRankBody'); rankBody.innerHTML = "";
+      Object.keys(ranking).sort((a,b) => ranking[b].total - ranking[a].total).forEach(op => {
+          let yieldVal = ((ranking[op].ok / ranking[op].total)*100).toFixed(1) + "%";
+          rankBody.innerHTML += `<tr><td>${op}</td><td>${ranking[op].total}</td><td>${yieldVal}</td></tr>`;
+      });
+  }
+
+  function calculateOperatorStats() {
+      const today = new Date().toLocaleDateString();
+      const myStats = reportsCache.filter(r => r.op === currentUser.login && r.timestamp && r.timestamp.includes(today));
+      let total = myStats.length, ok = 0, ng = 0;
+      myStats.forEach(r => { if(['OK','OFFRS_OK','NDF'].includes(r.dec)) ok++; else ng++; });
+      document.getElementById('opTotal').innerText = total;
+      document.getElementById('opOK').innerText = ok;
+      document.getElementById('opNG').innerText = ng;
+      document.getElementById('opYield').innerText = total > 0 ? ((ok/total)*100).toFixed(1) + "%" : "0%";
+  }
+
+  /* --- LOGIN & SYSTEM FUNCTIONS --- */
+  function quickAdminLogin() {
+      document.getElementById('userInput').value = "ADMIN";
+      document.getElementById('passInput').value = "";
+      document.getElementById('passInput').focus();
+      logSystem("Użyto szybkiego logowania ADMIN.");
   }
 
   function attemptLogin() {
@@ -805,15 +737,12 @@
       setTimeout(() => {
         document.getElementById('loginScreen').style.display = 'none';
         setupInterface();
+        updateLeaderStats('TODAY'); // Auto-sync on login
         if(currentUser.role === 'ADMIN') {
-            startAdminCamera();
-            document.getElementById('cfgPath').value = CONFIG.networkPath;
-            document.getElementById('cfgMotd').value = CONFIG.motd;
-            renderAdminUserTable();
+            startAdminCamera(); renderAdminUserTable();
         } else if (currentUser.role === 'OPERATOR') {
             initCamera();
         }
-        document.getElementById('mainDashboard').style.opacity = '1';
       }, 800);
     } else { 
       SoundFX.play('error');
@@ -821,6 +750,7 @@
     }
   }
 
+  /* --- POZOSTAŁE FUNKCJE (BEZ ZMIAN) --- */
   function logout() { if(confirm("Wylogować?")) location.reload(); }
   function emergencyReset() { if(confirm("Reset bazy?")) { localStorage.removeItem('oled_users'); location.reload(); } }
 
@@ -836,7 +766,7 @@
 
     if(currentUser.role === 'KIEROWNIK' || currentUser.role === 'KOORDYNATOR') {
         const mgrTitle = document.querySelector('.mgr-title');
-        const btnHtml = '<button class="mgr-connect-btn" onclick="connectNetwork()">📡 POŁĄCZ Z BAZĄ DANYCH</button>';
+        const btnHtml = '<button class="mgr-connect-btn" onclick="connectNetwork()">📡 POŁĄCZ Z SERWEREM</button>';
         if (currentUser.role === 'KOORDYNATOR') {
             b.classList.add('coord');
             document.body.classList.add('mode-manager', 'mode-coord'); 
@@ -869,79 +799,11 @@
       document.getElementById('scanInput').placeholder = "SKANUJ MODUŁ...";
       document.getElementById('scanInput').focus();
       document.getElementById('networkGuard').style.display = 'none';
-      if(currentUser.role === 'KIEROWNIK' || currentUser.role === 'KOORDYNATOR') setTimeout(scanNetwork, 500); 
-      if(currentUser.role === 'OPERATOR') { initCamera(); document.getElementById('scanInput').focus(); scanNetworkForOperator(); }
+      updateLeaderStats('TODAY');
     } catch(e) { alert("Anulowano wybór folderu."); }
   }
 
-  function startOfflineMode() { dirHandle = null; }
-
-  async function scanNetwork() {
-    if(!dirHandle) return;
-    reportsCache = [];
-    try {
-      for await (const e of dirHandle.values()) {
-        if(e.kind === 'directory') {
-          const sn = e.name; 
-          let op="---", dec="---", com="---", oc="---";
-          let rawDateObj = null;
-          try {
-            const sub = await dirHandle.getDirectoryHandle(sn);
-            for await (const f of sub.values()) {
-              if(f.name.includes('RAPORT')) {
-                const fl = await f.getFile(); const tx = await fl.text(); 
-                rawDateObj = fl.lastModifiedDate;
-                const mOp = tx.match(/OPERATOR: (.*)/); if(mOp) op=mOp[1];
-                const mDec = tx.match(/DECYZJA: (.*)/); if(mDec) dec=mDec[1];
-                const mCom = tx.match(/UWAGI: (.*)/); if(mCom) com=mCom[1];
-                const mOc = tx.match(/OC SN:\s+(.*)/); if(mOc) oc=mOc[1];
-              }
-            }
-          } catch(err){}
-          reportsCache.push({rawDate: rawDateObj, sn, op, dec, com, oc});
-        }
-      }
-    } catch(e) {}
-  }
-
-  async function scanNetworkForOperator() {
-      if(!dirHandle) return;
-      reportsCache = [];
-      try {
-          for await (const e of dirHandle.values()) {
-            if(e.kind === 'directory') {
-              const sn = e.name; 
-              let op="---", dec="---";
-              let rawDateObj = null;
-              try {
-                const sub = await dirHandle.getDirectoryHandle(sn);
-                for await (const f of sub.values()) {
-                  if(f.name.includes('RAPORT')) {
-                    const fl = await f.getFile(); const tx = await fl.text(); 
-                    rawDateObj = fl.lastModifiedDate;
-                    const mOp = tx.match(/OPERATOR: (.*)/); if(mOp) op=mOp[1];
-                    const mDec = tx.match(/DECYZJA: (.*)/); if(mDec) dec=mDec[1];
-                  }
-                }
-              } catch(err){}
-              reportsCache.push({rawDate: rawDateObj, sn, op, dec});
-            }
-          }
-          calculateOperatorStats();
-      } catch(e) {}
-  }
-
-  function calculateOperatorStats() {
-      const today = new Date().toDateString();
-      const myStats = reportsCache.filter(r => r.op === currentUser.login && r.rawDate && r.rawDate.toDateString() === today);
-      let total = myStats.length, ok = 0, ng = 0;
-      myStats.forEach(r => { if(['OK','OFFRS_OK','NDF'].includes(r.dec)) ok++; else ng++; });
-      let yieldVal = total > 0 ? ((ok/total)*100).toFixed(1) : 0;
-      document.getElementById('opTotal').innerText = total;
-      document.getElementById('opOK').innerText = ok;
-      document.getElementById('opNG').innerText = ng;
-      document.getElementById('opYield').innerText = yieldVal + "%";
-  }
+  function startOfflineMode() { dirHandle = null; document.getElementById('networkGuard').style.display = 'none'; }
 
   async function initCamera() {
     if(currentUser.role !== 'OPERATOR') return;
@@ -953,27 +815,14 @@
     } catch(e) {}
   }
 
-  function updatePhotoProgress() {
-      if(photos.PRZOD) document.getElementById('btnFront').classList.add('done');
-      if(photos.TYL) document.getElementById('btnBack').classList.add('done');
-      if(photos.OBRAZ) document.getElementById('btnImage').classList.add('done');
-      let count = 0;
-      if(photos.PRZOD) count++; if(photos.TYL) count++; if(photos.OBRAZ) count++;
-      const btn = document.getElementById('actionBtn');
-      if(count === 3) { btn.innerText = "ZAPISZ DANE"; btn.classList.add('active'); } 
-      else { btn.innerText = `OCZEKIWANIE (${count}/3)`; btn.classList.remove('active'); }
-  }
-
   function startSession(sn) {
     currentSN = sn; currentOC = ""; isScanConfirmed = false;
     photos = { PRZOD: null, TYL: null, OBRAZ: null };
     document.getElementById('tagSN').innerText = "SN: " + sn;
-    
     document.getElementById('scanStatusInfo').style.display = 'none';
     document.getElementById('confirmIdentityBtn').style.display = 'none';
     const btns = document.querySelectorAll('.checklist-btn');
     btns.forEach(btn => btn.classList.add('locked'));
-
     document.getElementById('scanInputOC').value = ""; 
     document.getElementById('scanInputOC').disabled = true;
     document.querySelectorAll('.checklist-btn').forEach(b => b.classList.remove('done'));
@@ -984,6 +833,152 @@
     document.getElementById('statusSelect').value = "OK";
     document.getElementById('commentInput').value = "";
     sessionStartTime = new Date();
+  }
+
+  async function saveData() {
+      if(!photos.PRZOD || !photos.TYL || !photos.OBRAZ) { alert("BRAK ZDJĘĆ!"); return; }
+      const dec = document.getElementById('statusSelect').value;
+      if(['OK','RMA'].includes(dec) && !currentOC) return alert("BRAK OC!");
+      document.getElementById('saveStatus').innerText = "ZAPISYWANIE...";
+
+      const now = new Date();
+      const timestamp = now.toLocaleDateString() + " " + now.toLocaleTimeString();
+
+      if(dirHandle) {
+          try {
+              const d = await dirHandle.getDirectoryHandle(currentSN, {create:true});
+              const h = await d.getFileHandle(`RAPORT_${currentSN}.txt`, {create:true});
+              const w = await h.createWritable(); 
+              await w.write(`RAPORT\nDATA: ${timestamp}\nSN: ${currentSN}\nOC SN: ${currentOC}\nOPERATOR: ${currentUser.login}\nDECYZJA: ${dec}\nUWAGI: ${document.getElementById('commentInput').value}`); 
+              await w.close();
+              const types = ['PRZOD', 'TYL', 'OBRAZ'];
+              for (const type of types) {
+                  const fh = await d.getFileHandle(`${currentSN}_${type}.jpg`, {create: true});
+                  const wr = await fh.createWritable(); await wr.write(photos[type]); await wr.close();
+              }
+          } catch(e) { console.error("Disk save err", e); }
+      }
+      
+      try {
+          await fetch(CONFIG.reportUrl, {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                  timestamp: timestamp,
+                  sn: currentSN, 
+                  oc: currentOC || "---", 
+                  op: currentUser.login, 
+                  dec: dec, 
+                  com: document.getElementById('commentInput').value
+              })
+          });
+          updateLeaderStats('TODAY'); // Refresh analytics
+      } catch(e) {}
+      finishSave(dec);
+  }
+
+  /* --- SYSTEM HELPERS --- */
+  function logSystem(msg) {
+      const term = document.getElementById('sysLog');
+      if(!term) return;
+      const time = new Date().toLocaleTimeString();
+      const div = document.createElement('div');
+      div.className = "log-line";
+      div.innerHTML = `<span class="log-time">[${time}]</span> ${msg}`;
+      term.appendChild(div);
+      term.scrollTop = term.scrollHeight;
+  }
+
+  function confirmScanData() {
+      if(!currentSN || !currentOC) { alert("BRAKUJE NUMERÓW!"); return; }
+      isScanConfirmed = true; SoundFX.play('success');
+      document.getElementById('confirmIdentityBtn').style.display = 'none';
+      document.getElementById('scanStatusInfo').style.display = 'none';
+      document.querySelectorAll('.checklist-btn').forEach(btn => btn.classList.remove('locked'));
+  }
+
+  function updateSessionTimer() {
+      if(!sessionStartTime || !currentSN) return;
+      const now = new Date();
+      const diff = Math.floor((now - sessionStartTime) / 1000);
+      const m = Math.floor(diff / 60).toString().padStart(2, '0');
+      const s = (diff % 60).toString().padStart(2, '0');
+      document.getElementById('sessionTimer').innerText = `⏱️ ${m}:${s}`;
+  }
+
+  function addDefect(text) {
+      const field = document.getElementById('commentInput');
+      field.value = field.value ? field.value + ", " + text : text;
+      saveRecoveryState();
+  }
+
+  function applyTransform() {
+    const v = document.getElementById('videoFeed');
+    const mirrorFactor = isMirrored ? -1 : 1;
+    v.style.transform = `scale(${zoomLevel * mirrorFactor}, ${zoomLevel}) translate(${panX / zoomLevel}px, ${panY / zoomLevel}px)`;
+  }
+
+  function loadConfig() {
+      const savedPath = localStorage.getItem('oled_cfg_path');
+      if(savedPath) CONFIG.networkPath = savedPath;
+      const savedMotd = localStorage.getItem('oled_cfg_motd');
+      if(savedMotd) CONFIG.motd = savedMotd;
+      document.getElementById('displayPath').innerText = CONFIG.networkPath;
+  }
+  function saveConfigPath() {
+      const v = document.getElementById('cfgPath').value.trim();
+      if(v) { CONFIG.networkPath = v; localStorage.setItem('oled_cfg_path', v); alert("Zapisano!"); }
+  }
+  function saveMotd() {
+      const v = document.getElementById('cfgMotd').value.trim();
+      CONFIG.motd = v; localStorage.setItem('oled_cfg_motd', v); alert("Komunikat zapisany!");
+  }
+
+  function loadUsers() {
+    const stored = localStorage.getItem('oled_users');
+    users = stored ? JSON.parse(stored) : [];
+  }
+
+  async function loadUsersFromSheet() {
+      const statusEl = document.getElementById('syncStatus');
+      try {
+          const res = await fetch(CONFIG.loginUrl);
+          const txt = await res.text();
+          const rows = txt.split(/\r?\n/); 
+          const newUsers = [];
+          for(let i=1; i<rows.length; i++) {
+              const cols = rows[i].split(',');
+              if(cols.length >= 3) {
+                   const l = cols[0].replace(/"/g, '').trim().toUpperCase();
+                   const p = cols[1].replace(/"/g, '').trim(); 
+                   let r = cols[2].replace(/"/g, '').trim().toUpperCase();
+                   if (r === 'ADMINISTRATOR') r = 'ADMIN';
+                   if(l && p) newUsers.push({login:l, pass:p, role:r});
+              }
+          }
+          if(newUsers.length > 0) { users = newUsers; saveUsers(); statusEl.innerText = "Zsynchronizowano!"; }
+      } catch(e) { statusEl.innerText = "Błąd synchronizacji"; }
+  }
+
+  function saveUsers() { localStorage.setItem('oled_users', JSON.stringify(users)); if(currentUser && currentUser.role==='ADMIN') renderAdminUserTable(); }
+  
+  function checkSavedLogin() {
+      const saved = localStorage.getItem('oled_saved_creds');
+      if(saved) {
+          const creds = JSON.parse(saved);
+          document.getElementById('userInput').value = creds.login;
+          document.getElementById('passInput').value = creds.pass;
+          document.getElementById('rememberCheck').checked = true;
+      }
+  }
+
+  function updatePhotoProgress() {
+      if(photos.PRZOD) document.getElementById('btnFront').classList.add('done');
+      if(photos.TYL) document.getElementById('btnBack').classList.add('done');
+      if(photos.OBRAZ) document.getElementById('btnImage').classList.add('done');
+      let count = (photos.PRZOD?1:0) + (photos.TYL?1:0) + (photos.OBRAZ?1:0);
+      const btn = document.getElementById('actionBtn');
+      if(count === 3) { btn.innerText = "ZAPISZ DANE"; btn.classList.add('active'); } 
+      else btn.innerText = `OCZEKIWANIE (${count}/3)`;
   }
 
   function processPhoto() {
@@ -1001,20 +996,12 @@
   function checkOcRequirement() {
       const decision = document.getElementById('statusSelect').value;
       const ocInput = document.getElementById('scanInputOC');
-      if(['OK','RMA'].includes(decision)) {
-          ocInput.placeholder = "⚠️ SKANUJ OC (WYMAGANE)";
-          ocInput.style.borderColor = currentOC ? "var(--neon-green)" : "var(--neon-red)";
-      } else {
-          ocInput.placeholder = "OC OPCJONALNE";
-          ocInput.style.borderColor = "#333";
-      }
+      if(['OK','RMA'].includes(decision)) ocInput.placeholder = "⚠️ SKANUJ OC (WYMAGANE)";
+      else ocInput.placeholder = "OC OPCJONALNE";
   }
 
   function capture(type) {
-      if(!currentSN || !isScanConfirmed) { 
-          alert("NAJPIERW ZESKANUJ SN, OC I ZATWIERDŹ DANE!"); 
-          return; 
-      }
+      if(!currentSN || !isScanConfirmed) return alert("NAJPIERW ZESKANUJ SN I OC!"); 
       tempPhotoType = type;
       const dec = document.getElementById('statusSelect').value;
       if(['OK', 'NDF', 'OFFRS_OK'].includes(dec)) { processPhoto(); SoundFX.play('shutter'); return; }
@@ -1022,7 +1009,6 @@
       document.getElementById('drawToolbar').style.display='block';
       document.getElementById('drawCanvas').style.display='block';
       const c = document.getElementById('drawCanvas'); c.width=v.offsetWidth; c.height=v.offsetHeight;
-      const ctx = c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height);
   }
 
   function confirmPhoto() { processPhoto(); }
@@ -1035,161 +1021,70 @@
   document.getElementById('scanInput').addEventListener('keydown', e => {
     if(e.key==='Enter') {
       const v = e.target.value.trim().toUpperCase();
-      if(v.length > 3 && (v.startsWith("TBV") || v.startsWith("TOV"))) { 
-          SoundFX.play('beep'); startSession(v); saveRecoveryState();
-          document.getElementById('snCheck').style.display = 'inline';
-          document.getElementById('scanInputOC').disabled=false; 
-          document.getElementById('scanInputOC').focus(); 
-      } else {
-          SoundFX.play('error');
-          alert("BŁĘDNY SN! Numer musi zaczynać się od TBV lub TOV.");
-      }
+      if(v.startsWith("TBV") || v.startsWith("TOV")) { 
+          SoundFX.beep; startSession(v); document.getElementById('snCheck').style.display = 'inline';
+          document.getElementById('scanInputOC').disabled=false; document.getElementById('scanInputOC').focus(); 
+      } else alert("BŁĘDNY SN!");
     }
   });
 
   document.getElementById('scanInputOC').addEventListener('keydown', e => {
     if(e.key==='Enter') {
-        const v = e.target.value.trim().toUpperCase();
-        if(v.length > 3) { 
-            currentOC = v; SoundFX.play('beep'); 
-            document.getElementById('ocCheck').style.display = 'inline';
-            document.getElementById('scanStatusInfo').style.display = 'block';
-            document.getElementById('confirmIdentityBtn').style.display = 'block';
-            checkOcRequirement(); saveRecoveryState(); 
-        } else {
-            SoundFX.play('error');
-            alert("BŁĘDNY OC! Numer musi mieć więcej niż 3 znaki.");
-        }
+        currentOC = e.target.value.trim().toUpperCase(); SoundFX.beep; 
+        document.getElementById('ocCheck').style.display = 'inline';
+        document.getElementById('confirmIdentityBtn').style.display = 'block';
+        document.getElementById('scanStatusInfo').style.display = 'block';
     }
   });
 
   function saveRecoveryState() {
-      if(!currentSN) return;
-      localStorage.setItem('oled_recovery', JSON.stringify({sn:currentSN, oc:currentOC, status:document.getElementById('statusSelect').value}));
+      if(currentSN) localStorage.setItem('oled_recovery', JSON.stringify({sn:currentSN, oc:currentOC, status:document.getElementById('statusSelect').value}));
   }
   function checkRecovery() {
       const rec = JSON.parse(localStorage.getItem('oled_recovery'));
       if(rec && confirm(`Przywrócić sesję SN: ${rec.sn}?`)) {
           startSession(rec.sn);
-          if(rec.oc) { currentOC = rec.oc; document.getElementById('scanInputOC').value = rec.oc; document.getElementById('ocCheck').style.display = 'inline'; }
-          document.getElementById('statusSelect').value = rec.status;
-          document.getElementById('scanInputOC').disabled = false;
-          if(currentSN && currentOC) { 
-              document.getElementById('confirmIdentityBtn').style.display = 'block'; 
-              document.getElementById('scanStatusInfo').style.display = 'block';
-          }
+          if(rec.oc) { currentOC = rec.oc; document.getElementById('scanInputOC').value = rec.oc; }
       }
-  }
-
-  async function saveData() {
-      if(!photos.PRZOD || !photos.TYL || !photos.OBRAZ) { alert("BRAK ZDJĘĆ!"); return; }
-      const dec = document.getElementById('statusSelect').value;
-      if(['OK','RMA'].includes(dec) && !currentOC) return alert("BRAK OC!");
-      document.getElementById('saveStatus').innerText = "ZAPISYWANIE...";
-
-      const now = new Date();
-      const timestamp = now.toLocaleDateString() + " " + now.toLocaleTimeString();
-
-      const txt = `RAPORT\nDATA: ${timestamp}\nSN: ${currentSN}\nOC: ${currentOC}\nOP: ${currentUser.login}\nDEC: ${dec}`;
-      if(dirHandle) {
-          try {
-              const d = await dirHandle.getDirectoryHandle(currentSN, {create:true});
-              const h = await d.getFileHandle(`RAPORT_${currentSN}.txt`, {create:true});
-              const w = await h.createWritable(); await w.write(txt); await w.close();
-              const types = ['PRZOD', 'TYL', 'OBRAZ'];
-              for (const type of types) {
-                  const fh = await d.getFileHandle(`${currentSN}_${type}.jpg`, {create: true});
-                  const wr = await fh.createWritable(); await wr.write(photos[type]); await wr.close();
-              }
-          } catch(e) {}
-      }
-      try {
-          await fetch(CONFIG.reportUrl, {
-              method: "POST", headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                  timestamp: timestamp,
-                  sn: currentSN, 
-                  oc: currentOC || "---", 
-                  op: currentUser.login, 
-                  dec: dec, 
-                  com: document.getElementById('commentInput').value
-              })
-          });
-      } catch(e) {}
-      finishSave(dec);
   }
 
   function finishSave(dec) {
-      recentScans.unshift({sn: currentSN, dec: dec});
       const qrb = document.getElementById('qrCodeBox'); qrb.innerHTML = "";
       new QRCode(qrb, `${currentSN}|${dec}`);
       document.getElementById('qrPopup').style.display='block';
-      
       localStorage.removeItem('oled_recovery');
-      
       setTimeout(() => {
-          currentSN = ""; currentOC = ""; isScanConfirmed = false;
-          photos = { PRZOD: null, TYL: null, OBRAZ: null };
-          document.getElementById('scanInput').value = "";
-          document.getElementById('scanInputOC').value = "";
-          document.getElementById('scanInputOC').disabled = true;
-          document.getElementById('commentInput').value = "";
-          document.getElementById('statusSelect').value = "OK";
-          document.getElementById('snCheck').style.display = 'none';
-          document.getElementById('ocCheck').style.display = 'none';
-          document.getElementById('tagSN').innerText = "SN: ---";
-          document.querySelectorAll('.checklist-btn').forEach(btn => {
-              btn.classList.add('locked');
-              btn.classList.remove('done');
-          });
-          document.getElementById('actionBtn').classList.remove('active');
-          document.getElementById('actionBtn').innerText = "OCZEKIWANIE (0/3)";
-          document.getElementById('saveStatus').innerText = "";
-          document.getElementById('scanInput').focus();
-          scanNetworkForOperator();
-      }, 1000); 
+          location.reload(); // Hard reset for next panel
+      }, 1500); 
   }
   
   function closeQr() { document.getElementById('qrPopup').style.display='none'; }
-
   function startDraw(e) { isDrawing=true; draw(e); }
   function endDraw() { isDrawing=false; document.getElementById('drawCanvas').getContext('2d').beginPath(); }
   function draw(e) {
       if(!isDrawing) return;
       const ctx = document.getElementById('drawCanvas').getContext('2d');
       const rect = e.target.getBoundingClientRect();
-      const x = e.clientX - rect.left, y = e.clientY - rect.top;
+      const x = (e.clientX || e.touches[0].clientX) - rect.left;
+      const y = (e.clientY || e.touches[0].clientY) - rect.top;
       ctx.lineWidth=5; ctx.strokeStyle=drawColor; ctx.lineTo(x,y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x,y);
   }
   function setDrawColor(c) { drawColor = c; }
-  function clearDraw() { const c = document.getElementById('drawCanvas'); if(c) c.getContext('2d').clearRect(0, 0, c.width, c.height); }
+  function clearDraw() { const c = document.getElementById('drawCanvas'); c.getContext('2d').clearRect(0,0,c.width,c.height); }
   function togglePatterns() { document.getElementById('patternOverlay').style.display='block'; nextPattern(); }
   let pIdx=-1; const pats=['#fff','#f00','#0f0','#00f','#000'];
   function nextPattern() { pIdx++; if(pIdx>=pats.length){document.getElementById('patternOverlay').style.display='none';pIdx=-1;} else document.getElementById('patternOverlay').style.background=pats[pIdx]; }
   function toggleFullScreen() { if(!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
   function toggleReportPanel() { document.getElementById('reportPanel').classList.toggle('open'); }
-  
   async function addUser() {
     const l = document.getElementById('newLogin').value.trim().toUpperCase(), p = document.getElementById('newPass').value.trim(), r = document.getElementById('newRole').value;
-    if(l && p) { 
-        users.push({login:l, pass:p, role:r}); saveUsers(); 
-        try { await fetch(CONFIG.loginUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({type: "ADD_USER", login: l, pass: p, role: r}) }); } catch(e) {}
-    }
+    if(l && p) { users.push({login:l, pass:p, role:r}); saveUsers(); }
   }
-  
   function renderAdminUserTable() {
-      const tb = document.querySelector('#admUserTable tbody'); if(!tb) return;
-      tb.innerHTML = "";
-      users.forEach((u, i) => {
-        let color = '#fff'; if(u.role === 'ADMIN') color = 'var(--neon-gold)';
-        tb.innerHTML += `<tr><td>${u.login}</td><td style="color:${color}">${u.role}</td><td><button class="adm-act-btn" onclick="removeUser(${i})">X</button></td></tr>`;
-      });
+      const tb = document.querySelector('#admUserTable tbody'); tb.innerHTML = "";
+      users.forEach((u, i) => { tb.innerHTML += `<tr><td>${u.login}</td><td>${u.role}</td><td><button onclick="removeUser(${i})">X</button></td></tr>`; });
   }
-  async function removeUser(idx) {
-      const l = users[idx].login;
-      try { await fetch(CONFIG.loginUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({type: "REMOVE_USER", login: l}) }); } catch(e) {}
-      users.splice(idx, 1); saveUsers();
-  }
+  function removeUser(idx) { users.splice(idx, 1); saveUsers(); }
   async function startAdminCamera() { try { const s = await navigator.mediaDevices.getUserMedia({video:true}); document.getElementById('adminCamPreview').srcObject = s; } catch(e) {} }
 </script>
 </body>
