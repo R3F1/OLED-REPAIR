@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR v1.8 (FIXED CAMERA & COORD)</title>
+  <title>OLED REPAIR v1.9 (OPERATOR SELF-CHECK) by Łukasz Gruszczyński</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -267,6 +267,11 @@
     .slide-panel.open { height: 85vh; }
     .panel-header { padding: 20px; background: #000; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
     .panel-content { flex: 1; overflow: auto; padding: 30px; }
+    
+    .op-stats-row { display: flex; gap: 10px; margin-bottom: 20px; }
+    .op-stat-box { flex: 1; background: #111; border: 1px solid #333; padding: 10px; text-align: center; border-radius: 6px; }
+    .op-stat-num { font-size: 24px; font-weight: bold; color: #fff; font-family: var(--font-tech); }
+    .op-stat-lbl { font-size: 10px; color: #888; }
 
     #qrPopup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fff; color: #000; padding: 30px; border-radius: 10px; z-index: 500; text-align: center; display: none; box-shadow: 0 0 100px rgba(0,0,0,1); border: 5px solid var(--neon-cyan); }
     #qrCodeBox { margin: 20px auto; }
@@ -302,13 +307,13 @@
         <div><strong>OPERATOR:</strong> <span id="plOp">---</span></div>
         <div><strong>STATUS:</strong> <span id="plStatus" style="font-weight:bold; font-size:20pt;">---</span></div>
     </div>
-    <div class="pl-footer">OLED REPAIR SYSTEM v1.8 - By Łukasz Gruszczyński</div>
+    <div class="pl-footer">OLED REPAIR SYSTEM v1.9 - By Łukasz Gruszczyński</div>
 </div>
 
 <div id="loginScreen">
   <div class="login-box">
     <h2 style="color:#fff;">OLED REPAIR SYSTEM</h2>
-    <div style="font-size:12px; color:#666; margin-bottom:30px; font-family: var(--font-tech);">v1.8 (by Łukasz Gruszczyński)</div>
+    <div style="font-size:12px; color:#666; margin-bottom:30px; font-family: var(--font-tech);">v1.9 (by Łukasz Gruszczyński)</div>
     
     <label class="input-label" style="text-align:left; margin-left:5px;">UŻYTKOWNIK</label>
     <input type="text" id="userInput" class="login-input" placeholder="LOGIN" autocomplete="off">
@@ -321,6 +326,17 @@
 
     <div id="loginError" class="login-error"></div>
     <button class="login-btn" onclick="attemptLogin()">ROZPOCZNIJ ZMIANĘ</button>
+  </div>
+</div>
+
+<div id="networkGuard">
+  <div class="alert-box">
+    <h1 style="color:var(--neon-red); margin:0;">⚠️ SYSTEM ROZŁĄCZONY ⚠️</h1>
+    <p style="font-size:16px; color:#ccc; margin:20px 0;">WYMAGANY DOSTĘP DO FOLDERU SIECIOWEGO</p>
+    <div class="input-label" style="color:#aaa;">CEL:</div>
+    <div class="path-box" id="displayPath">...</div>
+    <button class="guard-btn" onclick="connectNetwork()">📡 POŁĄCZ Z SERWEREM</button>
+    <button class="offline-btn" onclick="startOfflineMode()">📂 PRACA OFFLINE (ZIP)</button>
   </div>
 </div>
 
@@ -430,7 +446,7 @@
     <div class="admin-container">
         <div class="admin-status-bar">
             <div class="status-item"><div class="status-dot ok"></div> SYSTEM: ONLINE</div>
-            <div class="status-item">VER: 1.8</div>
+            <div class="status-item">VER: 1.9</div>
             <div class="status-item">CPU: <span id="simCpu">12%</span></div>
             <div class="status-item">MEM: <span id="simMem">2.4GB</span></div>
         </div>
@@ -467,7 +483,7 @@
                 <div class="admin-panel-box">
                     <div class="admin-h" style="margin-bottom:5px;">TERMINAL SYSTEMOWY</div>
                     <div class="admin-terminal" id="sysLog">
-                        <div class="log-line"><span class="log-time">System:</span> Inicjalizacja v1.8...</div>
+                        <div class="log-line"><span class="log-time">System:</span> Inicjalizacja v1.9...</div>
                         <div class="log-line"><span class="log-time">System:</span> Gotowy do pracy.</div>
                     </div>
                 </div>
@@ -508,7 +524,7 @@
 <div id="managerDash">
     <div class="mgr-header">
         <div class="mgr-title">
-            PANEL DANYCH
+            PANEL KIEROWNIKA 
             <button class="mgr-connect-btn" onclick="connectNetwork()">📡 POŁĄCZ Z BAZĄ DANYCH</button>
         </div>
         <div class="mgr-filters">
@@ -567,18 +583,40 @@
   <div id="connStatus" style="color:#444; font-size:11px;">🔴 OFFLINE</div>
   <div class="bar-group">
     <button class="bar-btn admin-only" onclick="alert('Użyj Panelu Administratora')">👥 UŻYTKOWNICY</button>
-    <button class="bar-btn" id="dbBtn" onclick="toggleReportPanel()">📂 BAZA DANYCH (OPERATOR)</button>
+    <button class="bar-btn" id="dbBtn" onclick="toggleReportPanel()">📊 MOJE WYNIKI</button>
   </div>
 </div>
 
 <div id="reportPanel" class="slide-panel">
   <div class="panel-header">
-    <div style="font-size:20px; color:var(--neon-cyan); font-family: var(--font-tech);">CENTRUM ANALIZ (PODGLĄD)</div>
-    <button class="bar-btn" onclick="toggleReportPanel()">ZAMKNIJ X</button>
+    <div style="font-size:20px; color:var(--neon-cyan); font-family: var(--font-tech);">MOJE DZISIEJSZE WYNIKI</div>
+    <div>
+        <button class="bar-btn" onclick="scanNetwork()">🔄 ODŚWIEŻ</button>
+        <button class="bar-btn" onclick="toggleReportPanel()">ZAMKNIJ X</button>
+    </div>
   </div>
   <div class="panel-content">
-    <div style="color:#888; text-align:center; margin-top:50px;">
-        To jest uproszczony podgląd dla Operatora. Pełne dane w panelu Kierownika/Admina.
+    <div style="color:#888; text-align:center; font-size:14px; margin-bottom:20px;">
+        Poniżej znajdują się Twoje statystyki z bieżącej zmiany. (Wymaga połączenia z bazą)
+    </div>
+    
+    <div class="op-stats-row">
+        <div class="op-stat-box" style="border-color:var(--neon-cyan)">
+            <div class="op-stat-num" id="opTotal">0</div>
+            <div class="op-stat-lbl">ZROBIONE</div>
+        </div>
+        <div class="op-stat-box" style="border-color:var(--neon-green)">
+            <div class="op-stat-num" id="opOK">0</div>
+            <div class="op-stat-lbl">OK</div>
+        </div>
+        <div class="op-stat-box" style="border-color:var(--neon-red)">
+            <div class="op-stat-num" id="opNG">0</div>
+            <div class="op-stat-lbl">NG</div>
+        </div>
+        <div class="op-stat-box" style="border-color:var(--neon-orange)">
+            <div class="op-stat-num" id="opYield">0%</div>
+            <div class="op-stat-lbl">YIELD</div>
+        </div>
     </div>
   </div>
 </div>
@@ -786,16 +824,20 @@
       document.getElementById('loginScreen').style.opacity = '0';
       setTimeout(() => {
         document.getElementById('loginScreen').style.display = 'none';
-        setupInterface(); // Go straight to interface
+        
         if(currentUser.role === 'ADMIN') {
+            document.body.classList.add('mode-admin');
+            setupInterface();
             startAdminCamera();
             document.getElementById('cfgPath').value = CONFIG.networkPath;
             document.getElementById('cfgMotd').value = CONFIG.motd;
             renderAdminUserTable();
-        } else if (currentUser.role === 'OPERATOR') {
-            initCamera();
+        } else if(currentUser.role === 'KIEROWNIK') {
+            document.body.classList.add('mode-manager');
+            setupInterface();
+        } else {
+            document.getElementById('networkGuard').style.display = 'flex';
         }
-        // No auto-connect for anyone
         document.getElementById('mainDashboard').style.opacity = '1';
       }, 800);
     } else { 
@@ -817,6 +859,11 @@
           document.getElementById('managerDash').style.display = 'none';
           document.getElementById('connStatus').innerHTML = "🔴 OFFLINE";
           document.getElementById('connStatus').style.color = "#444";
+          
+          if(!document.getElementById('rememberCheck').checked) {
+              document.getElementById('userInput').value = "";
+              document.getElementById('passInput').value = "";
+          }
       }
   }
 
@@ -837,9 +884,8 @@
         document.getElementById('dbBtn').style.display = 'none';
     } else if (currentUser.role === 'KOORDYNATOR') {
         b.classList.add('coord');
-        document.body.classList.add('mode-manager', 'mode-coord'); // Coord uses restricted Manager view
+        document.body.classList.add('mode-manager', 'mode-coord'); 
     } else {
-        // OPERATOR
         initCamera(); 
     }
   }
@@ -864,20 +910,40 @@
       // FOCUS FOR OPERATOR
       if(currentUser.role === 'OPERATOR') {
           document.getElementById('scanInput').focus();
+          scanNetworkForOperator(); // Load Operator stats immediately
       }
+      
+      document.getElementById('networkGuard').style.display = 'none';
 
     } catch(e) { alert("Anulowano wybór folderu."); }
   }
 
   function startOfflineMode() {
-      // Just a stub for UI consistency if triggered manually
-      alert("Tryb Offline jest domyślny przy starcie.");
+      dirHandle = null; 
+      const statusEl = document.getElementById('connStatus');
+      statusEl.innerHTML = "🟡 OFFLINE (ZIP)";
+      statusEl.style.color = "var(--neon-orange)";
+      
+      logSystem("Uruchomiono tryb OFFLINE");
+      
+      document.getElementById('networkGuard').style.display = 'none';
+      setupInterface(); 
+      
+      if(currentUser.role === 'OPERATOR') {
+          document.getElementById('scanInput').focus();
+      }
   }
 
-  /* --- MANAGER LOGIC (DATA) --- */
+  /* --- MANAGER & OPERATOR LOGIC (DATA) --- */
   async function scanNetwork() {
     if(!dirHandle) {
         document.getElementById('mgrLogBody').innerHTML = "<tr><td colspan='6' style='text-align:center;color:orange;'>TRYB OFFLINE - BRAK DANYCH (Kliknij POŁĄCZ)</td></tr>";
+        return;
+    }
+    
+    // Operator handling inside scanNetwork
+    if(currentUser.role === 'OPERATOR') {
+        scanNetworkForOperator();
         return;
     }
     
@@ -914,6 +980,53 @@
       updateLeaderStats(leaderMode);
       logSystem("Dane załadowane pomyślnie.");
     } catch(e) { console.error(e); logSystem("Błąd skanowania!"); }
+  }
+
+  async function scanNetworkForOperator() {
+      if(!dirHandle) return;
+      reportsCache = [];
+      try {
+          for await (const e of dirHandle.values()) {
+            if(e.kind === 'directory') {
+              const sn = e.name; 
+              let op="---", dateStr="---", dec="---", com="---", oc="---";
+              let rawDateObj = null;
+              try {
+                const sub = await dirHandle.getDirectoryHandle(sn);
+                for await (const f of sub.values()) {
+                  if(f.name.includes('RAPORT')) {
+                    const fl = await f.getFile(); const tx = await fl.text(); 
+                    rawDateObj = fl.lastModifiedDate;
+                    const mOp = tx.match(/OPERATOR: (.*)/); if(mOp) op=mOp[1];
+                    const mDec = tx.match(/DECYZJA: (.*)/); if(mDec) dec=mDec[1];
+                  }
+                }
+              } catch(err){}
+              reportsCache.push({rawDate: rawDateObj, sn, op, dec});
+            }
+          }
+          calculateOperatorStats();
+      } catch(e) {}
+  }
+
+  function calculateOperatorStats() {
+      const today = new Date().toDateString();
+      const myStats = reportsCache.filter(r => r.op === currentUser.login && r.rawDate && r.rawDate.toDateString() === today);
+      
+      let total = myStats.length;
+      let ok = 0;
+      let ng = 0;
+      
+      myStats.forEach(r => {
+          if(['OK','OFFRS_OK','NDF'].includes(r.dec)) ok++; else ng++;
+      });
+      
+      let yieldVal = total > 0 ? ((ok/total)*100).toFixed(1) : 0;
+      
+      document.getElementById('opTotal').innerText = total;
+      document.getElementById('opOK').innerText = ok;
+      document.getElementById('opNG').innerText = ng;
+      document.getElementById('opYield').innerText = yieldVal + "%";
   }
 
   function updateLeaderStats(mode) {
@@ -1157,6 +1270,9 @@
           let c = r.dec.includes('NG') ? 'red' : 'green';
           list.innerHTML += `<div class="recent-item"><span>${r.sn}</span><span style="color:${c}">${r.dec}</span></div>`;
       });
+
+      // Update Operator Stats (if network connected)
+      if(dirHandle) scanNetworkForOperator();
 
       new QRCode(document.getElementById('qrCodeBox'), `${currentSN}|${dec}`);
       document.getElementById('qrPopup').style.display='block';
