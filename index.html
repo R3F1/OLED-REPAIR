@@ -1038,27 +1038,6 @@
       }
     }
   });
-
-  document.getElementById('scanInputOC').addEventListener('keydown', e => {
-    if(e.key==='Enter') {
-        const v = e.target.value.trim().toUpperCase();
-        // Walidacja: minimum 4 znaki ORAZ prefiks TBV lub TOV
-        if(v.length > 3 && (v.startsWith("TBV") || v.startsWith("TOV"))) { 
-            currentOC = v; SoundFX.play('beep'); 
-            document.getElementById('ocCheck').style.display = 'inline';
-            
-            // POKAZANIE PRZYCISKU ZATWIERDZENIA
-            document.getElementById('scanStatusInfo').style.display = 'block';
-            document.getElementById('confirmIdentityBtn').style.display = 'block';
-            
-            checkOcRequirement(); saveRecoveryState(); 
-        } else {
-            SoundFX.play('error');
-            alert("BŁĘDNY OC! Numer musi zaczynać się od TBV lub TOV.");
-        }
-    }
-  });
-
   function saveRecoveryState() {
       if(!currentSN) return;
       localStorage.setItem('oled_recovery', JSON.stringify({sn:currentSN, oc:currentOC, status:document.getElementById('statusSelect').value}));
