@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR v3.1 (FULL SYSTEM)</title>
+  <title>OLED REPAIR v3.2 (PHOTO LOCK)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -322,7 +322,7 @@
 <div id="loginScreen">
   <div class="login-box">
     <h2 style="color:#fff;">OLED REPAIR SYSTEM</h2>
-    <div style="font-size:12px; color:#666; font-family: var(--font-tech);">v3.1 (FULL SYSTEM)</div>
+    <div style="font-size:12px; color:#666; font-family: var(--font-tech);">v3.2 (PHOTO LOCK)</div>
     <div id="syncStatus" class="sync-status">Ładowanie użytkowników...</div>
     
     <label class="input-label" style="text-align:left; margin-left:5px; margin-top:20px;">UŻYTKOWNIK</label>
@@ -456,7 +456,7 @@
     <div class="admin-container">
         <div class="admin-status-bar">
             <div class="status-item"><div class="status-dot ok"></div> SYSTEM: ONLINE</div>
-            <div class="status-item">VER: 3.1</div>
+            <div class="status-item">VER: 3.2</div>
             <div class="status-item">CPU: <span id="simCpu">12%</span></div>
             <div class="status-item">MEM: <span id="simMem">2.4GB</span></div>
         </div>
@@ -489,7 +489,7 @@
                 <div class="admin-panel-box">
                     <div class="admin-h" style="margin-bottom:5px;">TERMINAL SYSTEMOWY</div>
                     <div class="admin-terminal" id="sysLog">
-                        <div class="log-line"><span class="log-time">System:</span> Inicjalizacja v3.1...</div>
+                        <div class="log-line"><span class="log-time">System:</span> Inicjalizacja v3.2...</div>
                         <div class="log-line"><span class="log-time">System:</span> Gotowy do pracy.</div>
                     </div>
                 </div>
@@ -1076,136 +1076,63 @@
       document.getElementById('opYield').innerText = yieldVal + "%";
   }
 
-  function updateLeaderStats(mode) {
-      leaderMode = mode;
+  // --- NOWE FUNKCJE --- 
+  
+  function updatePhotoProgress() {
+      if(photos.PRZOD) document.getElementById('btnFront').classList.add('done');
+      if(photos.TYL) document.getElementById('btnBack').classList.add('done');
+      if(photos.OBRAZ) document.getElementById('btnImage').classList.add('done');
+
+      let count = 0;
+      if(photos.PRZOD) count++;
+      if(photos.TYL) count++;
+      if(photos.OBRAZ) count++;
+
+      const btn = document.getElementById('actionBtn');
       
-      document.getElementById('fToday').classList.remove('active');
-      document.getElementById('fYesterday').classList.remove('active');
-      document.getElementById('fAll').classList.remove('active');
-      
-      if(mode==='TODAY') document.getElementById('fToday').classList.add('active');
-      else if(mode==='YESTERDAY') document.getElementById('fYesterday').classList.add('active');
-      else document.getElementById('fAll').classList.add('active');
-      
-      const now = new Date();
-      const todayStr = now.toDateString();
-      const yesterday = new Date(now); yesterday.setDate(yesterday.getDate() - 1);
-      const yestStr = yesterday.toDateString();
-
-      let filtered = [];
-      if(mode === 'TODAY') filtered = reportsCache.filter(r => r.rawDate && r.rawDate.toDateString() === todayStr);
-      else if(mode === 'YESTERDAY') filtered = reportsCache.filter(r => r.rawDate && r.rawDate.toDateString() === yestStr);
-      else filtered = reportsCache;
-      
-      filtered.sort((a,b) => (b.rawDate || 0) - (a.rawDate || 0));
-
-      const tb = document.getElementById('mgrLogBody'); tb.innerHTML = "";
-      if(filtered.length===0) tb.innerHTML = "<tr><td colspan='6' style='text-align:center'>BRAK DANYCH</td></tr>";
-      
-      filtered.forEach(r => {
-          let color = "#fff";
-          if(r.dec.includes('NG') || r.dec.includes('SCRAP')) color = "var(--neon-red)";
-          if(r.dec.includes('OK') || r.dec.includes('OFFRS')) color = "var(--neon-green)";
-          if(r.dec.includes('RMA')) color = "orange";
-          
-          tb.innerHTML += `<tr><td>${r.date}</td><td>${r.sn}</td><td>${r.oc||'---'}</td><td>${r.op}</td><td style="color:${color};font-weight:bold">${r.dec}</td><td>${r.com}</td></tr>`;
-      });
-
-      // ONLY CALCULATE STATS IF NOT COORDINATOR
-      if(currentUser.role !== 'KOORDYNATOR') {
-          const total = filtered.length;
-          let ok=0, ng=0;
-          const opStats = {};
-
-          filtered.forEach(r => {
-              if(['OK','OFFRS_OK','NDF'].includes(r.dec)) ok++; else ng++;
-              if(!opStats[r.op]) opStats[r.op] = { total:0, ok:0 };
-              opStats[r.op].total++;
-              if(['OK','OFFRS_OK','NDF'].includes(r.dec)) opStats[r.op].ok++;
-          });
-
-          let yieldVal = total > 0 ? ((ok/total)*100).toFixed(1) : 0;
-          document.getElementById('mgrTotal').innerText = total;
-          document.getElementById('mgrOK').innerText = ok;
-          document.getElementById('mgrNG').innerText = ng;
-          document.getElementById('mgrYield').innerText = yieldVal + "%";
-
-          const rankBody = document.getElementById('mgrRankBody'); rankBody.innerHTML = "";
-          const sortedOps = Object.keys(opStats).sort((a,b) => opStats[b].total - opStats[a].total);
-          
-          if(sortedOps.length===0) rankBody.innerHTML = "<tr><td colspan='3' style='text-align:center'>BRAK DANYCH</td></tr>";
-          
-          sortedOps.forEach(op => {
-              const s = opStats[op];
-              const y = ((s.ok/s.total)*100).toFixed(0);
-              let c = "#fff";
-              if(y<80) c="var(--neon-red)"; else if(y>95) c="var(--neon-green)"; else c="orange";
-              rankBody.innerHTML += `<tr><td>${op}</td><td>${s.total}</td><td style="color:${c}">${y}%</td></tr>`;
-          });
+      // Zmiana tekstu i aktywacja
+      if(count === 3) {
+          btn.innerText = "ZAPISZ DANE";
+          btn.classList.add('active'); // Zielony i pulsujący
+      } else {
+          btn.innerText = `OCZEKIWANIE (${count}/3)`;
+          btn.classList.remove('active'); // Szary
       }
   }
 
-  function exportCSV() {
-    if(!reportsCache.length) return alert("Brak danych w pamięci (Odśwież najpierw)");
-    let c = "DATA,SN_MODULU,SN_SZKLA_OC,OPERATOR,DECYZJA,UWAGI\n";
-    reportsCache.forEach(r => c+=`${r.date},${r.sn},${r.oc},${r.op},${r.dec},${r.com}\n`);
-    saveAs(new Blob([c],{type:'text/csv'}), "raport_serwisowy.csv");
-    logSystem("Wyeksportowano CSV");
-  }
-
-  /* --- ADMIN FUNCTIONS --- */
-  function renderAdminUserTable() {
-      const tb = document.querySelector('#admUserTable tbody'); tb.innerHTML = "";
-      users.forEach((u, i) => {
-        let color = '#fff';
-        if(u.role === 'ADMIN') color = 'var(--neon-gold)';
-        if(u.role === 'KOORDYNATOR') color = 'var(--neon-purple)';
-        if(u.role === 'KIEROWNIK') color = 'var(--neon-red)';
-        tb.innerHTML += `<tr><td>${u.login}</td><td style="color:${color}">${u.role}</td><td><div class="adm-btn-group"><button class="adm-act-btn" onclick="resetUserPass(${i})">RESET</button><button class="adm-act-btn" style="color:red" onclick="removeUser(${i})">X</button></div></td></tr>`;
-      });
-  }
-  function addUser() {
-    const l = document.getElementById('newLogin').value.trim().toUpperCase();
-    const p = document.getElementById('newPass').value.trim();
-    const r = document.getElementById('newRole').value;
-    if(l && p) { users.push({login:l, pass:p, role:r}); saveUsers(); logSystem(`Dodano usera: ${l}`); }
-  }
-  function removeUser(idx) { if(confirm("Usunąć?")) { logSystem(`Usunięto usera: ${users[idx].login}`); users.splice(idx, 1); saveUsers(); } }
-  function resetUserPass(idx) { if(confirm("Reset hasła na 1234?")) { users[idx].pass="1234"; saveUsers(); alert("OK"); logSystem(`Reset hasła dla: ${users[idx].login}`); } }
-  
-  function backupUsers() {
-      const blob = new Blob([JSON.stringify(users, null, 2)], {type: "application/json"});
-      saveAs(blob, "users_backup.json");
-      logSystem("Wykonano backup użytkowników");
-  }
-
-  async function startAdminCamera() {
-      try {
-          const s = await navigator.mediaDevices.getUserMedia({video:true});
-          document.getElementById('adminCamPreview').srcObject = s;
-      } catch(e) {}
-  }
-
-  async function initCamera() {
-    if(currentUser.role === 'KIEROWNIK' || currentUser.role === 'KOORDYNATOR' || currentUser.role === 'ADMIN') return;
-    try {
-      const s = await navigator.mediaDevices.getUserMedia({video:{width:{ideal:3840}}});
-      document.getElementById('videoFeed').srcObject = s;
-    } catch(e) { console.log("Cam error"); }
-  }
-
-  /* --- OPERATOR LOGIC --- */
   function startSession(sn) {
     currentSN = sn; currentOC = ""; photos = { PRZOD: null, TYL: null, OBRAZ: null };
     document.getElementById('tagSN').innerText = "SN: " + sn;
     document.getElementById('scanInputOC').value = ""; document.getElementById('scanInputOC').disabled = true;
     document.querySelectorAll('.checklist-btn').forEach(b => b.classList.remove('done'));
+    
+    // Reset przycisku (0/3)
     document.getElementById('actionBtn').innerText = "OCZEKIWANIE (0/3)";
     document.getElementById('actionBtn').classList.remove('active');
+    
     document.getElementById('statusSelect').value = "OK";
     
     sessionStartTime = new Date();
     document.getElementById('sessionTimer').innerText = "⏱️ 00:00";
+  }
+
+  // Zaktualizowana funkcja processPhoto - wywołuje updatePhotoProgress
+  function processPhoto() {
+      const v = document.getElementById('videoFeed');
+      const finalC = document.getElementById('photoCanvas'); finalC.width=v.videoWidth; finalC.height=v.videoHeight;
+      const ctx = finalC.getContext('2d');
+      if(isMirrored) { ctx.translate(finalC.width,0); ctx.scale(-1,1); }
+      ctx.drawImage(v,0,0);
+      ctx.drawImage(document.getElementById('drawCanvas'),0,0,finalC.width,finalC.height);
+      
+      const fs=Math.floor(finalC.height/25); ctx.font=`bold ${fs}px Roboto`; ctx.fillStyle="#0aff00";
+      ctx.fillText(`SN: ${currentSN}`,50,fs+20);
+      
+      finalC.toBlob(b => {
+          photos[tempPhotoType] = b;
+          updatePhotoProgress(); // <--- KLUCZOWA ZMIANA
+          cancelPhoto();
+      },'image/jpeg',0.9);
   }
 
   function checkOcRequirement() {
@@ -1267,26 +1194,14 @@
       document.getElementById('drawToolbar').style.display='none';
       document.getElementById('drawCanvas').style.display='none';
   }
-  function processPhoto() {
-      const v = document.getElementById('videoFeed');
-      const finalC = document.getElementById('photoCanvas'); finalC.width=v.videoWidth; finalC.height=v.videoHeight;
-      const ctx = finalC.getContext('2d');
-      if(isMirrored) { ctx.translate(finalC.width,0); ctx.scale(-1,1); }
-      ctx.drawImage(v,0,0);
-      ctx.drawImage(document.getElementById('drawCanvas'),0,0,finalC.width,finalC.height);
-      
-      const fs=Math.floor(finalC.height/25); ctx.font=`bold ${fs}px Roboto`; ctx.fillStyle="#0aff00";
-      ctx.fillText(`SN: ${currentSN}`,50,fs+20);
-      
-      finalC.toBlob(b => {
-          photos[tempPhotoType] = b;
-          document.getElementById('actionBtn').innerText = `GOTOWE (ZAPISZ)`; 
-          document.getElementById('actionBtn').classList.add('active'); 
-          cancelPhoto();
-      },'image/jpeg',0.9);
-  }
 
   async function saveData() {
+      // 1. Walidacja zdjęć (NOWA)
+      if(!photos.PRZOD || !photos.TYL || !photos.OBRAZ) {
+          alert("BRAKUJE ZDJĘĆ! MUSISZ WYKONAĆ WSZYSTKIE 3 ZDJĘCIA.");
+          return;
+      }
+
       const dec = document.getElementById('statusSelect').value;
       if(['OK','RMA'].includes(dec) && !currentOC) return alert("BRAK OC!");
       
