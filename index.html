@@ -1475,7 +1475,45 @@
   }
   
   function resetUserPass(idx) { if(confirm("Reset hasła na 1234?")) { users[idx].pass="1234"; saveUsers(); alert("OK"); logSystem(`Reset hasła dla: ${users[idx].login}`); } }
-  function removeUser(idx) { if(confirm("Usunąć?")) { logSystem(`Usunięto usera: ${users[idx].login}`); users.splice(idx, 1); saveUsers(); } }
+
+  async function removeUser(idx) {
+      if(!confirm("Czy na pewno usunąć użytkownika " + users[idx].login + " z bazy lokalnej i online?")) return;
+      
+      const userToDelete = users[idx];
+      const loginToDelete = userToDelete.login;
+
+      logSystem(`Usuwanie użytkownika ${loginToDelete}...`);
+
+      // 1. Usuń z Google Sheets (Online)
+      try {
+          const res = await fetch(CONFIG.sheetUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                  type: "REMOVE_USER",
+                  login: loginToDelete
+              })
+          });
+          
+          if(res.ok) {
+              const json = await res.json();
+              if(json.status === "ok") {
+                  logSystem("✅ Usunięto z chmury Google.");
+              } else {
+                  logSystem("⚠️ " + json.msg);
+              }
+          } else {
+              alert("Błąd usuwania z chmury!");
+          }
+      } catch(e) {
+          console.error(e);
+          alert("Błąd połączenia. Użytkownik usunięty tylko lokalnie.");
+      }
+
+      // 2. Usuń lokalnie
+      users.splice(idx, 1);
+      saveUsers();
+  }
 
   async function startAdminCamera() {
       try {
