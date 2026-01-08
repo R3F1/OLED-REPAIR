@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR v3.8 (SMART CAPTURE)</title>
+  <title>OLED REPAIR v3.9 (ULTRA STABLE)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -322,7 +322,7 @@
 <div id="loginScreen">
   <div class="login-box">
     <h2 style="color:#fff;">OLED REPAIR SYSTEM</h2>
-    <div style="font-size:12px; color:#666; font-family: var(--font-tech);">v3.8 (SMART CAPTURE)</div>
+    <div style="font-size:12px; color:#666; font-family: var(--font-tech);">v3.9 (ULTRA STABLE)</div>
     <div id="syncStatus" class="sync-status">Ładowanie użytkowników...</div>
     
     <label class="input-label" style="text-align:left; margin-left:5px; margin-top:20px;">UŻYTKOWNIK</label>
@@ -456,7 +456,7 @@
     <div class="admin-container">
         <div class="admin-status-bar">
             <div class="status-item"><div class="status-dot ok"></div> SYSTEM: ONLINE</div>
-            <div class="status-item">VER: 3.8</div>
+            <div class="status-item">VER: 3.9</div>
             <div class="status-item">CPU: <span id="simCpu">12%</span></div>
             <div class="status-item">MEM: <span id="simMem">2.4GB</span></div>
         </div>
@@ -489,7 +489,7 @@
                 <div class="admin-panel-box">
                     <div class="admin-h" style="margin-bottom:5px;">TERMINAL SYSTEMOWY</div>
                     <div class="admin-terminal" id="sysLog">
-                        <div class="log-line"><span class="log-time">System:</span> Inicjalizacja v3.8...</div>
+                        <div class="log-line"><span class="log-time">System:</span> Inicjalizacja v3.9...</div>
                         <div class="log-line"><span class="log-time">System:</span> Gotowy do pracy.</div>
                     </div>
                 </div>
@@ -1249,30 +1249,42 @@
 
       const txt = `RAPORT\nSN: ${currentSN}\nOC: ${currentOC}\nOP: ${currentUser.login}\nDEC: ${dec}`;
       
-      // 1. Zapis lokalny (txt + jpg)
+      // ----------------------------------------------------------------
+      // 2. ZAPIS LOKALNY (KLUCZOWY FIX)
+      // ----------------------------------------------------------------
       if(dirHandle) {
           try {
+              // A. Utwórz folder
               const d = await dirHandle.getDirectoryHandle(currentSN, {create:true});
               
-              // Zapis tekstu
+              // B. Zapisz plik tekstowy
               const h = await d.getFileHandle(`RAPORT_${currentSN}.txt`, {create:true});
-              const w = await h.createWritable(); await w.write(txt); await w.close();
+              const w = await h.createWritable(); 
+              await w.write(txt); 
+              await w.close();
               
-              // Zapis zdjęć (FIX z poprzedniej wersji)
-              for (const [key, blob] of Object.entries(photos)) {
-                  if (blob) {
-                      const imgName = `${currentSN}_${key}.jpg`; 
-                      const imgHandle = await d.getFileHandle(imgName, {create: true});
-                      const imgWritable = await imgHandle.createWritable();
-                      await imgWritable.write(blob);
-                      await imgWritable.close();
+              // C. Zapisz zdjęcia (ODSEPAROWANY BLOK TRY-CATCH)
+              try {
+                  const types = ['PRZOD', 'TYL', 'OBRAZ'];
+                  for (const type of types) {
+                      if (photos[type]) {
+                          const fileName = `${currentSN}_${type}.jpg`; 
+                          const fileHandle = await d.getFileHandle(fileName, {create: true});
+                          const writable = await fileHandle.createWritable();
+                          await writable.write(photos[type]);
+                          await writable.close();
+                      }
                   }
+              } catch (imgErr) {
+                  alert("BŁĄD ZAPISU ZDJĘĆ NA DYSK: " + imgErr);
               }
               
-          } catch(e) { console.log("Błąd zapisu lokalnego: " + e); }
+          } catch(e) { console.log("Błąd zapisu lokalnego folderu/tekstu: " + e); }
       }
 
-      // 2. Zapis do Google Sheets (Cloud)
+      // ----------------------------------------------------------------
+      // 3. ZAPIS DO CHMURY (GOOGLE)
+      // ----------------------------------------------------------------
       try {
           const payload = {
               sn: currentSN,
@@ -1295,16 +1307,14 @@
               } else {
                   console.error("Google Script Error:", respJson);
                   const errorMsg = respJson.google || respJson.msg || "Brak szczegółów";
-                  alert("Błąd Google Script:\n" + errorMsg); 
+                  // alert("Błąd Google Script:\n" + errorMsg); // Opcjonalne, żeby nie męczyć operatora
               }
-          } else {
-              alert("Błąd wysyłania do Google Sheets (Network Error)!");
           }
       } catch(e) {
           console.error("Cloud save error:", e);
-          alert("Błąd połączenia z bazą online (Zapisano tylko lokalnie)\n" + e);
       }
 
+      // 4. FINALIZACJA (Dopiero teraz czyścimy formularz!)
       finishSave(dec);
   }
 
