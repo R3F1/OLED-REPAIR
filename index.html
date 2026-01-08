@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR v2.2 (SAFE MODE)</title>
+  <title>OLED REPAIR v2.3 (ONLINE SYNC)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -60,6 +60,12 @@
     }
     .login-btn:hover { background: #fff; box-shadow: 0 0 30px var(--neon-cyan); }
     .login-error { color: var(--neon-red); font-size: 12px; height: 20px; margin-top: 10px; font-weight: bold; font-family: var(--font-ui); }
+    
+    .sync-status {
+        color: #666; font-size: 11px; margin-top: 10px; font-family: monospace;
+    }
+    .sync-status.ok { color: var(--neon-green); }
+    .sync-status.err { color: var(--neon-red); }
 
     .remember-me {
         display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px; font-size: 14px; color: #aaa;
@@ -316,9 +322,10 @@
 <div id="loginScreen">
   <div class="login-box">
     <h2 style="color:#fff;">OLED REPAIR SYSTEM</h2>
-    <div style="font-size:12px; color:#666; margin-bottom:30px; font-family: var(--font-tech);">v2.2 (SAFE MODE)</div>
+    <div style="font-size:12px; color:#666; font-family: var(--font-tech);">v2.3 (ONLINE SYNC)</div>
+    <div id="syncStatus" class="sync-status">Ładowanie użytkowników...</div>
     
-    <label class="input-label" style="text-align:left; margin-left:5px;">UŻYTKOWNIK</label>
+    <label class="input-label" style="text-align:left; margin-left:5px; margin-top:20px;">UŻYTKOWNIK</label>
     <input type="text" id="userInput" class="login-input" placeholder="LOGIN" autocomplete="off">
     <label class="input-label" style="text-align:left; margin-left:5px; color:var(--neon-red);">HASŁO</label>
     <input type="password" id="passInput" class="login-input" placeholder="••••••••">
@@ -449,7 +456,7 @@
     <div class="admin-container">
         <div class="admin-status-bar">
             <div class="status-item"><div class="status-dot ok"></div> SYSTEM: ONLINE</div>
-            <div class="status-item">VER: 2.2</div>
+            <div class="status-item">VER: 2.3</div>
             <div class="status-item">CPU: <span id="simCpu">12%</span></div>
             <div class="status-item">MEM: <span id="simMem">2.4GB</span></div>
         </div>
@@ -482,7 +489,7 @@
                 <div class="admin-panel-box">
                     <div class="admin-h" style="margin-bottom:5px;">TERMINAL SYSTEMOWY</div>
                     <div class="admin-terminal" id="sysLog">
-                        <div class="log-line"><span class="log-time">System:</span> Inicjalizacja v2.2...</div>
+                        <div class="log-line"><span class="log-time">System:</span> Inicjalizacja v2.3...</div>
                         <div class="log-line"><span class="log-time">System:</span> Gotowy do pracy.</div>
                     </div>
                 </div>
@@ -627,6 +634,8 @@
   let CONFIG = {
     networkPath: String.raw`\\plgorfs001\pub\SERVICE\LCDR\LCDR\OLED OBM Panels\Zdjęcia z napraw OLED`,
     motd: "",
+    // Link przekonwertowany na format CSV dla skryptu:
+    sheetUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT0JV-DGhJz-sjbokG6xb7GZrQPW6LA_kB7JxAkiitH_1p5kHQM_vlTafVXUO0t21RJtXuPOdYbMe1E/pub?output=csv",
     defaultUsers: [
       { login: "LUKASZ", pass: "50699", role: "ADMIN" },
       { login: "BERNARD", pass: "coord12345!", role: "KOORDYNATOR" },
@@ -690,7 +699,8 @@
   /* --- INIT --- */
   window.onload = () => {
     loadConfig();
-    loadUsers();
+    loadUsers(); // Załaduj z cache/default
+    loadUsersFromSheet(); // Spróbuj pobrać nowe z Google
     checkSavedLogin();
     checkRecovery();
     checkOcRequirement();
@@ -725,564 +735,4 @@
 
     const camContainer = document.getElementById('camContainer');
     camContainer.addEventListener('mousedown', (e) => {
-        if(zoomLevel > 1 && !isDrawing && document.getElementById('drawCanvas').style.display === 'none') {
-            isPanning = true; startPanX = e.clientX - panX; startPanY = e.clientY - panY;
-            camContainer.style.cursor = 'grabbing';
-        }
-    });
-    window.addEventListener('mouseup', () => { isPanning = false; camContainer.style.cursor = zoomLevel > 1 ? 'grab' : 'default'; });
-    window.addEventListener('mousemove', (e) => {
-        if(!isPanning) return; e.preventDefault();
-        panX = e.clientX - startPanX; panY = e.clientY - startPanY;
-        applyTransform();
-    });
-  };
-
-  function updateSessionTimer() {
-      if(!sessionStartTime || !currentSN) return;
-      const now = new Date();
-      const diff = Math.floor((now - sessionStartTime) / 1000);
-      const m = Math.floor(diff / 60).toString().padStart(2, '0');
-      const s = (diff % 60).toString().padStart(2, '0');
-      document.getElementById('sessionTimer').innerText = `⏱️ ${m}:${s}`;
-  }
-
-  function addDefect(text) {
-      const field = document.getElementById('commentInput');
-      if(field.value) field.value += ", " + text;
-      else field.value = text;
-      saveRecoveryState();
-  }
-
-  function logSystem(msg) {
-      const term = document.getElementById('sysLog');
-      const time = new Date().toLocaleTimeString();
-      const div = document.createElement('div');
-      div.className = "log-line";
-      div.innerHTML = `<span class="log-time">[${time}]</span> ${msg}`;
-      term.appendChild(div);
-      term.scrollTop = term.scrollHeight;
-  }
-
-  function applyTransform() {
-    const v = document.getElementById('videoFeed');
-    const mirrorFactor = isMirrored ? -1 : 1;
-    v.style.transform = `scale(${zoomLevel * mirrorFactor}, ${zoomLevel}) translate(${panX / zoomLevel}px, ${panY / zoomLevel}px)`;
-  }
-
-  /* --- CONFIG & LOGIN --- */
-  function loadConfig() {
-      const savedPath = localStorage.getItem('oled_cfg_path');
-      if(savedPath) CONFIG.networkPath = savedPath;
-      const savedMotd = localStorage.getItem('oled_cfg_motd');
-      if(savedMotd) CONFIG.motd = savedMotd;
-      document.getElementById('displayPath').innerText = CONFIG.networkPath;
-  }
-  function saveConfigPath() {
-      const v = document.getElementById('cfgPath').value.trim();
-      if(v) { CONFIG.networkPath = v; localStorage.setItem('oled_cfg_path', v); alert("Zapisano!"); logSystem("Zmiana ścieżki sieciowej"); }
-  }
-  function saveMotd() {
-      const v = document.getElementById('cfgMotd').value.trim();
-      CONFIG.motd = v; localStorage.setItem('oled_cfg_motd', v); alert("Komunikat zapisany!"); logSystem("Aktualizacja MOTD");
-  }
-
-  function loadUsers() {
-    const stored = localStorage.getItem('oled_users');
-    // SAFE MODE: Jeśli pusta tablica, załaduj default
-    if(stored) {
-        users = JSON.parse(stored);
-        if(users.length === 0) users = CONFIG.defaultUsers;
-    } else {
-        users = CONFIG.defaultUsers;
-    }
-  }
-  function saveUsers() { localStorage.setItem('oled_users', JSON.stringify(users)); renderAdminUserTable(); }
-  function checkSavedLogin() {
-      const saved = localStorage.getItem('oled_saved_creds');
-      if(saved) {
-          try {
-              const creds = JSON.parse(saved);
-              document.getElementById('userInput').value = creds.login;
-              document.getElementById('passInput').value = creds.pass;
-              document.getElementById('rememberCheck').checked = true;
-          } catch(e) {}
-      }
-  }
-
-  function attemptLogin() {
-    const l = document.getElementById('userInput').value.trim().toUpperCase();
-    const p = document.getElementById('passInput').value.trim();
-    const remember = document.getElementById('rememberCheck').checked;
-
-    const u = users.find(user => user.login === l && user.pass === p);
-    if (u) {
-      currentUser = u;
-      if(remember) localStorage.setItem('oled_saved_creds', JSON.stringify({login:l, pass:p}));
-      else localStorage.removeItem('oled_saved_creds');
-
-      logSystem(`Zalogowano użytkownika: ${u.login} (${u.role})`);
-
-      document.getElementById('loginScreen').style.opacity = '0';
-      setTimeout(() => {
-        document.getElementById('loginScreen').style.display = 'none';
-        setupInterface(); // Go straight to interface
-        if(currentUser.role === 'ADMIN') {
-            startAdminCamera();
-            document.getElementById('cfgPath').value = CONFIG.networkPath;
-            document.getElementById('cfgMotd').value = CONFIG.motd;
-            renderAdminUserTable();
-        } else if (currentUser.role === 'OPERATOR') {
-            initCamera();
-        }
-        document.getElementById('mainDashboard').style.opacity = '1';
-      }, 800);
-    } else { 
-      SoundFX.play('error');
-      document.getElementById('loginError').innerText = "BŁĘDNY LOGIN LUB HASŁO"; 
-    }
-  }
-
-  function logout() {
-      if(confirm("Wylogować?")) {
-          location.reload(); // HARD RESET
-      }
-  }
-  
-  function emergencyReset() {
-      if(confirm("To usunie wszystkich użytkowników i przywróci ustawienia domyślne. Kontynuować?")) {
-          localStorage.removeItem('oled_users');
-          localStorage.removeItem('oled_saved_creds');
-          location.reload();
-      }
-  }
-
-  function setupInterface() {
-    const b = document.getElementById('operatorBadge');
-    b.innerText = currentUser.login;
-    document.getElementById('tagOp').innerText = "OP: " + currentUser.login;
-    b.className = "operator-badge"; 
-    
-    // Clean states
-    document.body.className = "";
-    document.getElementById('mainDashboard').style.display = 'none';
-    document.getElementById('adminDash').style.display = 'none';
-    document.getElementById('managerDash').style.display = 'none';
-
-    if(currentUser.role === 'KIEROWNIK') {
-        b.classList.add('manager');
-        document.body.classList.add('mode-manager');
-        document.getElementById('managerDash').style.display = 'flex';
-    } else if(currentUser.role === 'ADMIN') {
-        b.classList.add('admin');
-        document.body.classList.add('mode-admin');
-        document.getElementById('dbBtn').style.display = 'none';
-        document.getElementById('adminDash').style.display = 'flex';
-    } else if (currentUser.role === 'KOORDYNATOR') {
-        b.classList.add('coord');
-        document.body.classList.add('mode-manager', 'mode-coord'); 
-        document.getElementById('managerDash').style.display = 'flex'; 
-    } else {
-        // OPERATOR
-        document.getElementById('mainDashboard').style.display = 'grid';
-        setTimeout(() => document.getElementById('mainDashboard').style.opacity = '1', 100);
-    }
-  }
-
-  /* --- NETWORK --- */
-  async function connectNetwork() {
-    try {
-      await navigator.clipboard.writeText(CONFIG.networkPath);
-      alert("Ścieżka skopiowana! Wybierz folder.");
-      dirHandle = await window.showDirectoryPicker();
-      
-      const statusEl = document.getElementById('connStatus');
-      statusEl.innerHTML = "🟢 ONLINE";
-      statusEl.style.color = "var(--neon-green)";
-      
-      logSystem("Połączono z folderem sieciowym");
-      
-      document.getElementById('networkGuard').style.display = 'none';
-      
-      // AUTO SCAN FOR MANAGER/COORD
-      if(currentUser.role === 'KIEROWNIK' || currentUser.role === 'KOORDYNATOR') {
-          setTimeout(scanNetwork, 500); 
-      }
-      // FOCUS FOR OPERATOR
-      if(currentUser.role === 'OPERATOR') {
-          initCamera();
-          document.getElementById('scanInput').focus();
-          scanNetworkForOperator();
-      }
-
-    } catch(e) { alert("Anulowano wybór folderu."); }
-  }
-
-  function startOfflineMode() {
-      dirHandle = null; 
-  }
-
-  /* --- MANAGER LOGIC (DATA) --- */
-  async function scanNetwork() {
-    if(!dirHandle) {
-        document.getElementById('mgrLogBody').innerHTML = "<tr><td colspan='6' style='text-align:center;color:orange;'>TRYB OFFLINE - BRAK DANYCH (Kliknij POŁĄCZ)</td></tr>";
-        return;
-    }
-    
-    if(currentUser.role === 'OPERATOR') {
-        scanNetworkForOperator();
-        return;
-    }
-    
-    document.getElementById('mgrLogBody').innerHTML = "<tr><td colspan='6' style='text-align:center;'>POBIERANIE DANYCH...</td></tr>";
-    logSystem("Rozpoczęto skanowanie danych...");
-    
-    reportsCache = [];
-    try {
-      for await (const e of dirHandle.values()) {
-        if(e.kind === 'directory') {
-          const sn = e.name; 
-          let op="---", dateStr="---", dec="---", com="---", oc="---";
-          let rawDateObj = null;
-
-          try {
-            const sub = await dirHandle.getDirectoryHandle(sn);
-            for await (const f of sub.values()) {
-              if(f.name.includes('RAPORT')) {
-                const fl = await f.getFile(); 
-                const tx = await fl.text(); 
-                rawDateObj = fl.lastModifiedDate;
-                dateStr = rawDateObj.toLocaleString();
-
-                const mOp = tx.match(/OPERATOR: (.*)/); if(mOp) op=mOp[1];
-                const mDec = tx.match(/DECYZJA: (.*)/); if(mDec) dec=mDec[1];
-                const mCom = tx.match(/UWAGI: (.*)/); if(mCom) com=mCom[1];
-                const mOc = tx.match(/OC SN:\s+(.*)/); if(mOc) oc=mOc[1];
-              }
-            }
-          } catch(err){}
-          reportsCache.push({date: dateStr, rawDate: rawDateObj, sn, op, dec, com, oc});
-        }
-      }
-      updateLeaderStats(leaderMode);
-      logSystem("Dane załadowane pomyślnie.");
-    } catch(e) { console.error(e); logSystem("Błąd skanowania!"); }
-  }
-
-  async function scanNetworkForOperator() {
-      if(!dirHandle) return;
-      reportsCache = [];
-      try {
-          for await (const e of dirHandle.values()) {
-            if(e.kind === 'directory') {
-              const sn = e.name; 
-              let op="---", dateStr="---", dec="---", com="---", oc="---";
-              let rawDateObj = null;
-              try {
-                const sub = await dirHandle.getDirectoryHandle(sn);
-                for await (const f of sub.values()) {
-                  if(f.name.includes('RAPORT')) {
-                    const fl = await f.getFile(); const tx = await fl.text(); 
-                    rawDateObj = fl.lastModifiedDate;
-                    const mOp = tx.match(/OPERATOR: (.*)/); if(mOp) op=mOp[1];
-                    const mDec = tx.match(/DECYZJA: (.*)/); if(mDec) dec=mDec[1];
-                  }
-                }
-              } catch(err){}
-              reportsCache.push({rawDate: rawDateObj, sn, op, dec});
-            }
-          }
-          calculateOperatorStats();
-      } catch(e) {}
-  }
-
-  function calculateOperatorStats() {
-      const today = new Date().toDateString();
-      const myStats = reportsCache.filter(r => r.op === currentUser.login && r.rawDate && r.rawDate.toDateString() === today);
-      
-      let total = myStats.length;
-      let ok = 0;
-      let ng = 0;
-      
-      myStats.forEach(r => {
-          if(['OK','OFFRS_OK','NDF'].includes(r.dec)) ok++; else ng++;
-      });
-      
-      let yieldVal = total > 0 ? ((ok/total)*100).toFixed(1) : 0;
-      
-      document.getElementById('opTotal').innerText = total;
-      document.getElementById('opOK').innerText = ok;
-      document.getElementById('opNG').innerText = ng;
-      document.getElementById('opYield').innerText = yieldVal + "%";
-  }
-
-  function updateLeaderStats(mode) {
-      leaderMode = mode;
-      
-      document.getElementById('fToday').classList.remove('active');
-      document.getElementById('fYesterday').classList.remove('active');
-      document.getElementById('fAll').classList.remove('active');
-      
-      if(mode==='TODAY') document.getElementById('fToday').classList.add('active');
-      else if(mode==='YESTERDAY') document.getElementById('fYesterday').classList.add('active');
-      else document.getElementById('fAll').classList.add('active');
-      
-      const now = new Date();
-      const todayStr = now.toDateString();
-      const yesterday = new Date(now); yesterday.setDate(yesterday.getDate() - 1);
-      const yestStr = yesterday.toDateString();
-
-      let filtered = [];
-      if(mode === 'TODAY') filtered = reportsCache.filter(r => r.rawDate && r.rawDate.toDateString() === todayStr);
-      else if(mode === 'YESTERDAY') filtered = reportsCache.filter(r => r.rawDate && r.rawDate.toDateString() === yestStr);
-      else filtered = reportsCache;
-      
-      filtered.sort((a,b) => (b.rawDate || 0) - (a.rawDate || 0));
-
-      const tb = document.getElementById('mgrLogBody'); tb.innerHTML = "";
-      if(filtered.length===0) tb.innerHTML = "<tr><td colspan='6' style='text-align:center'>BRAK DANYCH</td></tr>";
-      
-      filtered.forEach(r => {
-          let color = "#fff";
-          if(r.dec.includes('NG') || r.dec.includes('SCRAP')) color = "var(--neon-red)";
-          if(r.dec.includes('OK') || r.dec.includes('OFFRS')) color = "var(--neon-green)";
-          if(r.dec.includes('RMA')) color = "orange";
-          
-          tb.innerHTML += `<tr><td>${r.date}</td><td>${r.sn}</td><td>${r.oc||'---'}</td><td>${r.op}</td><td style="color:${color};font-weight:bold">${r.dec}</td><td>${r.com}</td></tr>`;
-      });
-
-      // ONLY CALCULATE STATS IF NOT COORDINATOR
-      if(currentUser.role !== 'KOORDYNATOR') {
-          const total = filtered.length;
-          let ok=0, ng=0;
-          const opStats = {};
-
-          filtered.forEach(r => {
-              if(['OK','OFFRS_OK','NDF'].includes(r.dec)) ok++; else ng++;
-              if(!opStats[r.op]) opStats[r.op] = { total:0, ok:0 };
-              opStats[r.op].total++;
-              if(['OK','OFFRS_OK','NDF'].includes(r.dec)) opStats[r.op].ok++;
-          });
-
-          let yieldVal = total > 0 ? ((ok/total)*100).toFixed(1) : 0;
-          document.getElementById('mgrTotal').innerText = total;
-          document.getElementById('mgrOK').innerText = ok;
-          document.getElementById('mgrNG').innerText = ng;
-          document.getElementById('mgrYield').innerText = yieldVal + "%";
-
-          const rankBody = document.getElementById('mgrRankBody'); rankBody.innerHTML = "";
-          const sortedOps = Object.keys(opStats).sort((a,b) => opStats[b].total - opStats[a].total);
-          
-          if(sortedOps.length===0) rankBody.innerHTML = "<tr><td colspan='3' style='text-align:center'>BRAK DANYCH</td></tr>";
-          
-          sortedOps.forEach(op => {
-              const s = opStats[op];
-              const y = ((s.ok/s.total)*100).toFixed(0);
-              let c = "#fff";
-              if(y<80) c="var(--neon-red)"; else if(y>95) c="var(--neon-green)"; else c="orange";
-              rankBody.innerHTML += `<tr><td>${op}</td><td>${s.total}</td><td style="color:${c}">${y}%</td></tr>`;
-          });
-      }
-  }
-
-  function exportCSV() {
-    if(!reportsCache.length) return alert("Brak danych w pamięci (Odśwież najpierw)");
-    let c = "DATA,SN_MODULU,SN_SZKLA_OC,OPERATOR,DECYZJA,UWAGI\n";
-    reportsCache.forEach(r => c+=`${r.date},${r.sn},${r.oc},${r.op},${r.dec},${r.com}\n`);
-    saveAs(new Blob([c],{type:'text/csv'}), "raport_serwisowy.csv");
-    logSystem("Wyeksportowano CSV");
-  }
-
-  /* --- ADMIN FUNCTIONS --- */
-  function renderAdminUserTable() {
-      const tb = document.querySelector('#admUserTable tbody'); tb.innerHTML = "";
-      users.forEach((u, i) => {
-        let color = '#fff';
-        if(u.role === 'ADMIN') color = 'var(--neon-gold)';
-        if(u.role === 'KOORDYNATOR') color = 'var(--neon-purple)';
-        if(u.role === 'KIEROWNIK') color = 'var(--neon-red)';
-        tb.innerHTML += `<tr><td>${u.login}</td><td style="color:${color}">${u.role}</td><td><div class="adm-btn-group"><button class="adm-act-btn" onclick="resetUserPass(${i})">RESET</button><button class="adm-act-btn" style="color:red" onclick="removeUser(${i})">X</button></div></td></tr>`;
-      });
-  }
-  function addUser() {
-    const l = document.getElementById('newLogin').value.trim().toUpperCase();
-    const p = document.getElementById('newPass').value.trim();
-    const r = document.getElementById('newRole').value;
-    if(l && p) { users.push({login:l, pass:p, role:r}); saveUsers(); logSystem(`Dodano usera: ${l}`); }
-  }
-  function removeUser(idx) { if(confirm("Usunąć?")) { logSystem(`Usunięto usera: ${users[idx].login}`); users.splice(idx, 1); saveUsers(); } }
-  function resetUserPass(idx) { if(confirm("Reset hasła na 1234?")) { users[idx].pass="1234"; saveUsers(); alert("OK"); logSystem(`Reset hasła dla: ${users[idx].login}`); } }
-  
-  function backupUsers() {
-      const blob = new Blob([JSON.stringify(users, null, 2)], {type: "application/json"});
-      saveAs(blob, "users_backup.json");
-      logSystem("Wykonano backup użytkowników");
-  }
-
-  async function startAdminCamera() {
-      try {
-          const s = await navigator.mediaDevices.getUserMedia({video:true});
-          document.getElementById('adminCamPreview').srcObject = s;
-      } catch(e) {}
-  }
-
-  async function initCamera() {
-    if(currentUser.role === 'KIEROWNIK' || currentUser.role === 'KOORDYNATOR' || currentUser.role === 'ADMIN') return;
-    try {
-      const s = await navigator.mediaDevices.getUserMedia({video:{width:{ideal:3840}}});
-      document.getElementById('videoFeed').srcObject = s;
-    } catch(e) { console.log("Cam error"); }
-  }
-
-  /* --- OPERATOR LOGIC --- */
-  function startSession(sn) {
-    currentSN = sn; currentOC = ""; photos = { PRZOD: null, TYL: null, OBRAZ: null };
-    document.getElementById('tagSN').innerText = "SN: " + sn;
-    document.getElementById('scanInputOC').value = ""; document.getElementById('scanInputOC').disabled = true;
-    document.querySelectorAll('.checklist-btn').forEach(b => b.classList.remove('done'));
-    document.getElementById('actionBtn').innerText = "OCZEKIWANIE (0/3)";
-    document.getElementById('actionBtn').classList.remove('active');
-    document.getElementById('statusSelect').value = "OK";
-    
-    sessionStartTime = new Date();
-    document.getElementById('sessionTimer').innerText = "⏱️ 00:00";
-  }
-
-  function checkOcRequirement() {
-      const decision = document.getElementById('statusSelect').value;
-      const ocInput = document.getElementById('scanInputOC');
-      if(['OK','RMA'].includes(decision)) {
-          ocInput.placeholder = "⚠️ SKANUJ OC (WYMAGANE)";
-          ocInput.style.borderColor = currentOC ? "var(--neon-green)" : "var(--neon-red)";
-      } else {
-          ocInput.placeholder = "OC OPCJONALNE";
-          ocInput.style.borderColor = "#333";
-      }
-  }
-
-  document.getElementById('scanInput').addEventListener('keydown', e => {
-    if(e.key==='Enter') {
-      const v = e.target.value.trim().toUpperCase();
-      if(v.length>3) { SoundFX.play('beep'); startSession(v); saveRecoveryState(); 
-        document.getElementById('scanInputOC').disabled=false; checkOcRequirement(); document.getElementById('scanInputOC').focus(); 
-      } else SoundFX.play('error');
-      e.target.value = "";
-    }
-  });
-
-  document.getElementById('scanInputOC').addEventListener('keydown', e => {
-    if(e.key==='Enter') {
-        const v = e.target.value.trim().toUpperCase();
-        if(v.length>3) { currentOC = v; SoundFX.play('beep'); checkOcRequirement(); saveRecoveryState(); }
-    }
-  });
-
-  function saveRecoveryState() {
-      if(!currentSN) return;
-      localStorage.setItem('oled_recovery', JSON.stringify({sn:currentSN, oc:currentOC, status:document.getElementById('statusSelect').value}));
-  }
-  function checkRecovery() {
-      const rec = JSON.parse(localStorage.getItem('oled_recovery'));
-      if(rec && confirm(`Przywrócić sesję dla SN: ${rec.sn}?`)) {
-          startSession(rec.sn);
-          if(rec.oc) { currentOC = rec.oc; document.getElementById('scanInputOC').value = rec.oc; }
-          document.getElementById('statusSelect').value = rec.status;
-          document.getElementById('scanInputOC').disabled = false;
-      } else localStorage.removeItem('oled_recovery');
-  }
-  function clearRecovery() { localStorage.removeItem('oled_recovery'); }
-
-  /* --- CAPTURE & SAVE (OPERATOR) --- */
-  function capture(type) {
-      if(!currentSN) return; tempPhotoType=type;
-      const v = document.getElementById('videoFeed'); v.pause();
-      document.getElementById('drawToolbar').style.display='block';
-      document.getElementById('drawCanvas').style.display='block';
-      const c = document.getElementById('drawCanvas'); c.width=v.offsetWidth; c.height=v.offsetHeight;
-      const ctx = c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height);
-  }
-  function confirmPhoto() { processPhoto(); }
-  function cancelPhoto() {
-      document.getElementById('videoFeed').play();
-      document.getElementById('drawToolbar').style.display='none';
-      document.getElementById('drawCanvas').style.display='none';
-  }
-  function processPhoto() {
-      const v = document.getElementById('videoFeed');
-      const finalC = document.getElementById('photoCanvas'); finalC.width=v.videoWidth; finalC.height=v.videoHeight;
-      const ctx = finalC.getContext('2d');
-      if(isMirrored) { ctx.translate(finalC.width,0); ctx.scale(-1,1); }
-      ctx.drawImage(v,0,0);
-      ctx.drawImage(document.getElementById('drawCanvas'),0,0,finalC.width,finalC.height);
-      
-      const fs=Math.floor(finalC.height/25); ctx.font=`bold ${fs}px Roboto`; ctx.fillStyle="#0aff00";
-      ctx.fillText(`SN: ${currentSN}`,50,fs+20);
-      
-      finalC.toBlob(b => {
-          photos[tempPhotoType] = b;
-          document.getElementById('actionBtn').innerText = `GOTOWE (ZAPISZ)`; 
-          document.getElementById('actionBtn').classList.add('active'); 
-          cancelPhoto();
-      },'image/jpeg',0.9);
-  }
-
-  async function saveData() {
-      const dec = document.getElementById('statusSelect').value;
-      if(['OK','RMA'].includes(dec) && !currentOC) return alert("BRAK OC!");
-      
-      document.getElementById('saveStatus').innerText = "ZAPISYWANIE...";
-      const txt = `RAPORT\nSN: ${currentSN}\nOC: ${currentOC}\nOP: ${currentUser.login}\nDEC: ${dec}`;
-      
-      if(dirHandle) {
-          try {
-              const d = await dirHandle.getDirectoryHandle(currentSN, {create:true});
-              const h = await d.getFileHandle(`RAPORT_${currentSN}.txt`, {create:true});
-              const w = await h.createWritable(); await w.write(txt); await w.close();
-              finishSave(dec);
-          } catch(e) { alert("BŁĄD ZAPISU"); }
-      } else {
-          finishSave(dec);
-      }
-  }
-
-  function finishSave(dec) {
-      clearRecovery(); document.getElementById('saveStatus').innerText = "ZAPISANO";
-      
-      recentScans.unshift({sn: currentSN, dec: dec});
-      if(recentScans.length > 5) recentScans.pop();
-      const list = document.getElementById('recentList');
-      list.innerHTML = "";
-      recentScans.forEach(r => {
-          let c = r.dec.includes('NG') ? 'red' : 'green';
-          list.innerHTML += `<div class="recent-item"><span>${r.sn}</span><span style="color:${c}">${r.dec}</span></div>`;
-      });
-
-      if(dirHandle) scanNetworkForOperator();
-
-      new QRCode(document.getElementById('qrCodeBox'), `${currentSN}|${dec}`);
-      document.getElementById('qrPopup').style.display='block';
-      
-      sessionStartTime = null; 
-      setTimeout(()=>{ currentSN=""; startSession(""); },1000);
-  }
-  function closeQr() { document.getElementById('qrPopup').style.display='none'; }
-
-  function startDraw(e) { isDrawing=true; draw(e); }
-  function endDraw() { isDrawing=false; document.getElementById('drawCanvas').getContext('2d').beginPath(); }
-  function draw(e) {
-      if(!isDrawing) return;
-      const ctx = document.getElementById('drawCanvas').getContext('2d');
-      const rect = e.target.getBoundingClientRect();
-      const x = e.clientX - rect.left; const y = e.clientY - rect.top;
-      ctx.lineWidth=5; ctx.strokeStyle=drawColor; ctx.lineTo(x,y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x,y);
-  }
-  function setDrawColor(c) { drawColor=c; }
-  function clearDraw() { const c=document.getElementById('drawCanvas'); c.getContext('2d').clearRect(0,0,c.width,c.height); }
-  function togglePatterns() { document.getElementById('patternOverlay').style.display='block'; nextPattern(); }
-  let pIdx=-1; const pats=['#fff','#f00','#0f0','#00f','#000'];
-  function nextPattern() { pIdx++; if(pIdx>=pats.length){document.getElementById('patternOverlay').style.display='none';pIdx=-1;} else document.getElementById('patternOverlay').style.background=pats[pIdx]; }
-  function toggleFullScreen() { if(!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
-  function toggleReportPanel() { document.getElementById('reportPanel').classList.toggle('open'); }
-</script>
-</body>
-</html>
+        if(zoomLevel > 1 && !isDrawing && document.getElementById('drawCanvas').
