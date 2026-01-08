@@ -441,7 +441,7 @@
             <button class="mgr-btn" id="fYesterday" onclick="updateLeaderStats('YESTERDAY')">WCZORAJ</button>
             <button class="mgr-btn" id="fAll" onclick="updateLeaderStats('ALL')">CAŁA HISTORIA</button>
             <div style="width:1px; background:#444; margin:0 10px;"></div>
-            <button class="mgr-btn" onclick="scanNetwork()">🔄 ODŚWIEŻ</button>
+            <button class="mgr-btn" onclick="fetchCloudflareData()">🔄 ODŚWIEŻ (CLOUD)</button>
             <button class="mgr-btn" onclick="exportCSV()">💾 CSV</button>
         </div>
     </div>
@@ -497,7 +497,7 @@
   <div class="panel-header">
     <div style="font-size:20px; color:var(--neon-cyan); font-family: var(--font-tech);">MOJE DZISIEJSZE WYNIKI</div>
     <div>
-        <button class="bar-btn" onclick="scanNetwork()">🔄 ODŚWIEŻ</button>
+        <button class="bar-btn" onclick="fetchCloudflareData()">🔄 ODŚWIEŻ (CLOUD)</button>
         <button class="bar-btn" onclick="toggleReportPanel()">ZAMKNIJ X</button>
     </div>
   </div>
@@ -543,6 +543,7 @@
     networkPath: String.raw`\\plgorfs001\pub\SERVICE\LCDR\LCDR\OLED OBM Panels\Zdjęcia z napraw OLED`,
     motd: "",
     loginUrl: "https://oledrepair.lukaszarmiajotpe.workers.dev/", 
+    // ZAKTUALIZOWANY LINK CLOUDFLARE:
     reportUrl: "https://daneoled.lukaszarmiajotpe.workers.dev/", 
     defaultUsers: [] 
   };
@@ -836,7 +837,8 @@
 
     if(currentUser.role === 'KIEROWNIK' || currentUser.role === 'KOORDYNATOR') {
         const mgrTitle = document.querySelector('.mgr-title');
-        const btnHtml = '<button class="mgr-connect-btn" onclick="connectNetwork()">📡 POŁĄCZ Z BAZĄ DANYCH</button>';
+        // ZMODYFIKOWANO: Używamy fetchCloudflareData zamiast connectNetwork dla managera
+        const btnHtml = '<button class="mgr-connect-btn" onclick="fetchCloudflareData()">📡 POŁĄCZ Z BAZĄ (CLOUD)</button>';
         if (currentUser.role === 'KOORDYNATOR') {
             b.classList.add('coord');
             document.body.classList.add('mode-manager', 'mode-coord'); 
@@ -1191,6 +1193,151 @@
       users.splice(idx, 1); saveUsers();
   }
   async function startAdminCamera() { try { const s = await navigator.mediaDevices.getUserMedia({video:true}); document.getElementById('adminCamPreview').srcObject = s; } catch(e) {} }
+
+  /* --- NOWE FUNKCJE OBSŁUGUJĄCE CLOUDFLARE --- */
+  
+  async function fetchCloudflareData() {
+      // Wskaźniki ładowania
+      const statusEl = document.getElementById('mgrLogBody');
+      if(statusEl) statusEl.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--neon-cyan)">🔄 Pobieranie danych z chmury (Google Sheets)...</td></tr>';
+      
+      const connStatus = document.getElementById('connStatus');
+      if(connStatus) {
+         connStatus.innerHTML = "⏳ ŁĄCZENIE...";
+         connStatus.style.color = "var(--neon-orange)";
+      }
+
+      try {
+          // 1. Pobieramy dane z Twojego Workera
+          const res = await fetch(CONFIG.reportUrl, { method: "GET" });
+          if(!res.ok) throw new Error("Błąd sieci Cloudflare: " + res.status);
+          
+          const data = await res.json();
+          
+          // 2. Mapujemy dane na format aplikacji (reportsCache)
+          // Dane z Google przychodzą jako: {timestamp, sn, oc, dec, op, com}
+          reportsCache = data.map(item => ({
+              rawDate: new Date(item.timestamp),
+              sn: item.sn,
+              oc: item.oc,
+              op: item.op,
+              dec: item.dec,
+              com: item.com
+          }));
+
+          // 3. Odświeżamy widoki
+          updateManagerView();       // Tabela Managera
+          calculateOperatorStats();  // Statystyki Operatora
+
+          // 4. Sukces
+          if(connStatus) {
+            connStatus.innerHTML = "🟢 ONLINE (CLOUD)";
+            connStatus.style.color = "var(--neon-green)";
+          }
+
+      } catch(e) {
+          console.error(e);
+          if(statusEl) statusEl.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--neon-red)">⚠️ Błąd połączenia z bazą danych! Sprawdź internet.</td></tr>';
+          if(connStatus) {
+            connStatus.innerHTML = "🔴 BŁĄD SIECI";
+            connStatus.style.color = "var(--neon-red)";
+          }
+      }
+  }
+
+  function updateManagerView() {
+      const tbody = document.getElementById('mgrLogBody');
+      if(!tbody) return;
+      tbody.innerHTML = "";
+      
+      let total = 0, ok = 0, ng = 0;
+
+      // Filtrowanie daty (TODAY/YESTERDAY/ALL) - korzystamy z globalnej zmiennej leaderMode
+      // Domyślnie bierzemy wszystko jeśli filtrowanie nie jest zaimplementowane w pełni
+      let filteredData = reportsCache;
+      
+      const today = new Date().toDateString();
+      const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+      const yStr = yesterday.toDateString();
+
+      if(typeof leaderMode !== 'undefined') {
+          if(leaderMode === 'TODAY') filteredData = reportsCache.filter(r => r.rawDate && r.rawDate.toDateString() === today);
+          else if(leaderMode === 'YESTERDAY') filteredData = reportsCache.filter(r => r.rawDate && r.rawDate.toDateString() === yStr);
+      }
+
+      // Generowanie tabeli
+      filteredData.forEach(r => {
+          const tr = document.createElement('tr');
+          
+          let colorStyle = '#ccc';
+          let decText = r.dec;
+
+          if(r.dec === 'OK' || r.dec === 'OFFRS_OK') colorStyle = 'var(--neon-green)';
+          else if(r.dec === 'NG' || r.dec === 'RMA' || r.dec === 'SCRAP') colorStyle = 'var(--neon-red)';
+          else if(r.dec === 'NDF') colorStyle = 'var(--neon-cyan)';
+
+          tr.innerHTML = `
+            <td>${r.rawDate ? r.rawDate.toLocaleString() : '---'}</td>
+            <td>${r.sn}</td>
+            <td>${r.oc}</td>
+            <td>${r.op}</td>
+            <td style="color:${colorStyle}; font-weight:bold;">${decText}</td>
+            <td style="font-size:11px; color:#888;">${r.com || ''}</td>
+          `;
+          tbody.appendChild(tr);
+
+          // Statystyki
+          total++;
+          if(['OK','OFFRS_OK','NDF'].includes(r.dec)) ok++; else ng++;
+      });
+
+      // Aktualizacja kafelków statystyk w panelu Managera
+      const mTotal = document.getElementById('mgrTotal'); if(mTotal) mTotal.innerText = total;
+      const mOK = document.getElementById('mgrOK'); if(mOK) mOK.innerText = ok;
+      const mNG = document.getElementById('mgrNG'); if(mNG) mNG.innerText = ng;
+      const mYield = document.getElementById('mgrYield'); 
+      if(mYield) mYield.innerText = total > 0 ? ((ok/total)*100).toFixed(1) + "%" : "0%";
+
+      // Aktualizacja rankingu
+      updateRankingTable(filteredData);
+  }
+
+  function updateRankingTable(data) {
+      const counts = {};
+      data.forEach(r => {
+          const op = r.op || "Nieznany";
+          if(!counts[op]) counts[op] = {total:0, ok:0};
+          counts[op].total++;
+          if(['OK', 'OFFRS_OK', 'NDF'].includes(r.dec)) counts[op].ok++;
+      });
+
+      const sortedOps = Object.keys(counts).sort((a,b) => counts[b].total - counts[a].total);
+      const tbody = document.getElementById('mgrRankBody');
+      if(!tbody) return;
+      tbody.innerHTML = "";
+
+      if(sortedOps.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="3" style="text-align:center">Brak danych</td></tr>';
+          return;
+      }
+
+      sortedOps.forEach(op => {
+          const stats = counts[op];
+          const y = stats.total > 0 ? ((stats.ok / stats.total) * 100).toFixed(0) : 0;
+          
+          // Kolorowanie Yield
+          let yColor = "#fff";
+          if(y >= 90) yColor = "var(--neon-green)";
+          else if(y < 80) yColor = "var(--neon-red)";
+
+          tbody.innerHTML += `<tr>
+            <td>${op}</td>
+            <td style="font-weight:bold;">${stats.total}</td>
+            <td style="color:${yColor}">${y}%</td>
+          </tr>`;
+      });
+  }
+
 </script>
 </body>
 </html>
