@@ -533,11 +533,11 @@
     
     // --- TUTAJ MASZ DWA LINKI DO CLOUDFLARE ---
     
-    // 1. LINK DO STAREGO CLOUDFLARE (Logowanie i zarządzanie userami)
-    loginUrl: "TUTAJ_LINK_DO_STAREGO_CLOUDFLARE_OD_LOGOWANIA", 
+    // 1. LINK DO LOGOWANIA (Pobiera listę userów)
+    loginUrl: "https://oledrepair.lukaszarmiajotpe.workers.dev/", 
 
-    // 2. LINK DO NOWEGO CLOUDFLARE (Tylko zapisywanie raportów)
-    reportUrl: "TUTAJ_LINK_DO_NOWEGO_CLOUDFLARE_OD_RAPORTOW", 
+    // 2. LINK DO RAPORTÓW (Wysyła naprawę do arkusza raportów)
+    reportUrl: "https://daneoled.lukaszarmiajotpe.workers.dev/", 
     
     defaultUsers: [] 
   };
@@ -704,7 +704,7 @@
     }
   }
 
-  // --- ŁADOWANIE USERÓW ZE STAREGO CLOUDFLARE ---
+  // --- ŁADOWANIE USERÓW Z LINKU 1 (LOGIN) ---
   async function loadUsersFromSheet() {
       if(!CONFIG.loginUrl) return;
       const statusEl = document.getElementById('syncStatus');
@@ -1167,7 +1167,7 @@
   }
   function clearRecovery() { localStorage.removeItem('oled_recovery'); }
 
-  // --- ZAPISYWANIE RAPORTU (DO NOWEGO CLOUDFLARE) ---
+  // --- ZAPISYWANIE RAPORTU (DO LINKU 2 - RAPORTY) ---
   async function saveData() {
       // 1. Walidacja zdjęć
       if(!photos.PRZOD || !photos.TYL || !photos.OBRAZ) {
@@ -1203,7 +1203,7 @@
           } catch(e) { console.log("Błąd zapisu lokalnego: " + e); }
       }
 
-      // 3. ZAPIS DO CHMURY (NOWE CLOUDFLARE)
+      // 3. ZAPIS DO CHMURY (UŻYWAMY LINKU RAPORTOWEGO)
       try {
           const payload = {
               sn: currentSN,
@@ -1213,6 +1213,7 @@
               com: document.getElementById('commentInput').value
           };
 
+          // --- TUTAJ IDZIE DO 'daneoled' ---
           const res = await fetch(CONFIG.reportUrl, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -1220,7 +1221,10 @@
           });
 
           if(res.ok) {
-              logSystem("Dane wysłane do Google Sheets");
+              const respJson = await res.json();
+              if(respJson.status === "ok") {
+                  logSystem("Dane wysłane do Google Sheets");
+              }
           } else {
               alert("Błąd wysyłania do Google Sheets!");
           }
@@ -1278,7 +1282,7 @@
   function toggleFullScreen() { if(!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
   function toggleReportPanel() { document.getElementById('reportPanel').classList.toggle('open'); }
   
-  // --- ADMIN FUNCTIONALITY (DODAWANIE USERA DO STAREGO CLOUDFLARE) ---
+  // --- ADMIN FUNCTIONALITY (UŻYWAMY LINKU 1 - LOGOWANIE) ---
   async function addUser() {
     const l = document.getElementById('newLogin').value.trim().toUpperCase();
     const p = document.getElementById('newPass').value.trim();
@@ -1289,7 +1293,7 @@
         users.push({login:l, pass:p, role:r}); 
         saveUsers(); 
         
-        // 2. Wyślij do Google Sheets (STARY LINK)
+        // 2. Wyślij do Google Sheets (LINK LOGINOWY)
         logSystem(`Wysyłanie użytkownika ${l} do chmury...`);
         
         try {
@@ -1346,7 +1350,7 @@
   
   function resetUserPass(idx) { if(confirm("Reset hasła na 1234?")) { users[idx].pass="1234"; saveUsers(); alert("OK"); logSystem(`Reset hasła dla: ${users[idx].login}`); } }
 
-  // --- USUWANIE USERA (ZE STAREGO CLOUDFLARE) ---
+  // --- USUWANIE USERA (LINK LOGINOWY) ---
   async function removeUser(idx) {
       if(!confirm("Czy na pewno usunąć użytkownika " + users[idx].login + " z bazy lokalnej i online?")) return;
       
