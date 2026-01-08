@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR v3.9 (ULTRA STABLE)</title>
+  <title>OLED REPAIR v4.0 (FLOW CONTROL)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -242,6 +242,7 @@
     /* UI ELEMENTS */
     .input-label { font-size: 11px; color: var(--neon-cyan); letter-spacing: 1px; margin-bottom: 5px; display: block; font-weight: bold; font-family: var(--font-tech); }
     #scanInput { width: 100%; background: #080808; border: 1px solid #444; color: #fff; padding: 12px; font-size: 22px; text-align: center; font-family: var(--font-tech); outline: none; border-radius: 6px; margin-bottom: 15px; }
+    #scanInput:disabled { background: #111; color: #333; border-color: #222; cursor: not-allowed; }
     #scanInput:focus { border-color: var(--neon-cyan); box-shadow: 0 0 20px rgba(0, 243, 255, 0.2); }
     .checklist-btn { width: 100%; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); color: #888; padding: 12px; margin-bottom: 8px; cursor: pointer; text-align: left; font-family: var(--font-ui); display: flex; justify-content: space-between; transition: 0.2s; font-size: 14px; border-radius: 6px; font-weight: 500; }
     .checklist-btn:hover { background: rgba(255,255,255,0.05); color: #fff; border-color: #fff; }
@@ -322,7 +323,7 @@
 <div id="loginScreen">
   <div class="login-box">
     <h2 style="color:#fff;">OLED REPAIR SYSTEM</h2>
-    <div style="font-size:12px; color:#666; font-family: var(--font-tech);">v3.9 (ULTRA STABLE)</div>
+    <div style="font-size:12px; color:#666; font-family: var(--font-tech);">v4.0 (FLOW CONTROL)</div>
     <div id="syncStatus" class="sync-status">Ładowanie użytkowników...</div>
     
     <label class="input-label" style="text-align:left; margin-left:5px; margin-top:20px;">UŻYTKOWNIK</label>
@@ -377,12 +378,16 @@
     
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
         <span class="input-label">1. SN MODUŁU (SET)</span>
-        <span id="sessionTimer" style="font-family:var(--font-tech); color:#666; font-size:12px;">⏱️ 00:00</span>
+        <span id="snCheck" style="display:none; color:#0aff00; font-weight:bold; margin-left:10px;">✅</span>
+        <span id="sessionTimer" style="font-family:var(--font-tech); color:#666; font-size:12px; margin-left:auto;">⏱️ 00:00</span>
     </div>
-    <input type="text" id="scanInput" placeholder="SKANUJ MODUŁ..." autofocus>
+    <input type="text" id="scanInput" placeholder="NAJPIERW POŁĄCZ Z BAZĄ..." disabled>
 
-    <span class="input-label" style="color:var(--neon-green)">2. SN OC (SZKŁO)</span>
-    <input type="text" id="scanInputOC" placeholder="OCZEKIWANIE NA DECYZJĘ..." disabled 
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+        <span class="input-label" style="color:var(--neon-green)">2. SN OC (SZKŁO)</span>
+        <span id="ocCheck" style="display:none; color:#0aff00; font-weight:bold; margin-left:10px;">✅</span>
+    </div>
+    <input type="text" id="scanInputOC" placeholder="OCZEKIWANIE NA SN MODUŁU..." disabled 
            style="width: 100%; background: #080808; border: 1px solid #333; color: var(--neon-green); padding: 12px; font-size: 18px; text-align: center; font-family: var(--font-tech); outline: none; border-radius: 6px; margin-bottom: 15px;">
 
     <div id="checklist">
@@ -456,7 +461,7 @@
     <div class="admin-container">
         <div class="admin-status-bar">
             <div class="status-item"><div class="status-dot ok"></div> SYSTEM: ONLINE</div>
-            <div class="status-item">VER: 3.9</div>
+            <div class="status-item">VER: 4.0</div>
             <div class="status-item">CPU: <span id="simCpu">12%</span></div>
             <div class="status-item">MEM: <span id="simMem">2.4GB</span></div>
         </div>
@@ -489,7 +494,7 @@
                 <div class="admin-panel-box">
                     <div class="admin-h" style="margin-bottom:5px;">TERMINAL SYSTEMOWY</div>
                     <div class="admin-terminal" id="sysLog">
-                        <div class="log-line"><span class="log-time">System:</span> Inicjalizacja v3.9...</div>
+                        <div class="log-line"><span class="log-time">System:</span> Inicjalizacja v4.0...</div>
                         <div class="log-line"><span class="log-time">System:</span> Gotowy do pracy.</div>
                     </div>
                 </div>
@@ -971,6 +976,11 @@
       
       logSystem("Połączono z folderem sieciowym");
       
+      // --- FLOW CONTROL: Enable first input ---
+      document.getElementById('scanInput').disabled = false;
+      document.getElementById('scanInput').placeholder = "SKANUJ MODUŁ...";
+      document.getElementById('scanInput').focus();
+      
       document.getElementById('networkGuard').style.display = 'none';
       
       // AUTO SCAN FOR MANAGER/COORD
@@ -1126,8 +1136,15 @@
   function startSession(sn) {
     currentSN = sn; currentOC = ""; photos = { PRZOD: null, TYL: null, OBRAZ: null };
     document.getElementById('tagSN').innerText = "SN: " + sn;
-    document.getElementById('scanInputOC').value = ""; document.getElementById('scanInputOC').disabled = true;
+    
+    // Reset inputs
+    document.getElementById('scanInputOC').value = ""; 
+    document.getElementById('scanInputOC').disabled = true;
+    
+    // Reset visuals
     document.querySelectorAll('.checklist-btn').forEach(b => b.classList.remove('done'));
+    document.getElementById('snCheck').style.display = 'none';
+    document.getElementById('ocCheck').style.display = 'none';
     
     // Reset przycisku (0/3)
     document.getElementById('actionBtn').innerText = "OCZEKIWANIE (0/3)";
@@ -1205,17 +1222,34 @@
   document.getElementById('scanInput').addEventListener('keydown', e => {
     if(e.key==='Enter') {
       const v = e.target.value.trim().toUpperCase();
-      if(v.length>3) { SoundFX.play('beep'); startSession(v); saveRecoveryState(); 
-        document.getElementById('scanInputOC').disabled=false; checkOcRequirement(); document.getElementById('scanInputOC').focus(); 
+      if(v.length>3) { 
+          SoundFX.play('beep'); 
+          startSession(v); 
+          saveRecoveryState();
+          
+          // FLOW CONTROL
+          document.getElementById('snCheck').style.display = 'inline';
+          document.getElementById('scanInputOC').disabled=false; 
+          checkOcRequirement(); 
+          document.getElementById('scanInputOC').focus(); 
       } else SoundFX.play('error');
-      e.target.value = "";
+      // e.target.value = ""; // Don't clear immediately so operator sees what they scanned
     }
   });
 
   document.getElementById('scanInputOC').addEventListener('keydown', e => {
     if(e.key==='Enter') {
         const v = e.target.value.trim().toUpperCase();
-        if(v.length>3) { currentOC = v; SoundFX.play('beep'); checkOcRequirement(); saveRecoveryState(); }
+        if(v.length>3) { 
+            currentOC = v; 
+            SoundFX.play('beep'); 
+            
+            // FLOW CONTROL
+            document.getElementById('ocCheck').style.display = 'inline';
+            
+            checkOcRequirement(); 
+            saveRecoveryState(); 
+        }
     }
   });
 
@@ -1263,7 +1297,7 @@
               await w.write(txt); 
               await w.close();
               
-              // C. Zapisz zdjęcia (ODSEPAROWANY BLOK TRY-CATCH)
+              // C. Zapisz zdjęcia (ODSEPAROWANY BLOK TRY-CATCH Z PĘTLĄ OCZEKUJĄCĄ)
               try {
                   const types = ['PRZOD', 'TYL', 'OBRAZ'];
                   for (const type of types) {
@@ -1277,9 +1311,14 @@
                   }
               } catch (imgErr) {
                   alert("BŁĄD ZAPISU ZDJĘĆ NA DYSK: " + imgErr);
+                  return; // Przerywamy jeśli zapis zdjęć się nie udał
               }
               
-          } catch(e) { console.log("Błąd zapisu lokalnego folderu/tekstu: " + e); }
+          } catch(e) { 
+              console.log("Błąd zapisu lokalnego folderu/tekstu: " + e); 
+              alert("BŁĄD DOSTĘPU DO DYSKU: " + e);
+              return;
+          }
       }
 
       // ----------------------------------------------------------------
@@ -1307,11 +1346,14 @@
               } else {
                   console.error("Google Script Error:", respJson);
                   const errorMsg = respJson.google || respJson.msg || "Brak szczegółów";
-                  // alert("Błąd Google Script:\n" + errorMsg); // Opcjonalne, żeby nie męczyć operatora
+                  // alert("Błąd Google Script:\n" + errorMsg); // Opcjonalne
               }
+          } else {
+              alert("Błąd wysyłania do Google Sheets (Network Error)!");
           }
       } catch(e) {
           console.error("Cloud save error:", e);
+          // alert("Błąd połączenia z bazą online (Zapisano tylko lokalnie)\n" + e);
       }
 
       // 4. FINALIZACJA (Dopiero teraz czyścimy formularz!)
@@ -1338,6 +1380,13 @@
       document.getElementById('qrPopup').style.display='block';
       
       sessionStartTime = null; 
+      
+      // Clear inputs manually here
+      document.getElementById('scanInput').value = "";
+      document.getElementById('scanInputOC').value = "";
+      document.getElementById('snCheck').style.display = 'none';
+      document.getElementById('ocCheck').style.display = 'none';
+      
       setTimeout(()=>{ currentSN=""; startSession(""); },1000);
   }
   function closeQr() { document.getElementById('qrPopup').style.display='none'; }
