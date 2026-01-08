@@ -580,7 +580,7 @@
   let dirHandle = null;
   let currentSN = "";
   let currentOC = ""; 
-  let isScanConfirmed = false; // NOWA ZMIENNA DLA FLOW CONTROL
+  let isScanConfirmed = false;
   let photos = { PRZOD: null, TYL: null, OBRAZ: null };
   let isMirrored = false;
   let reportsCache = [];
@@ -647,7 +647,6 @@
     });
   };
 
-  /* --- NOWA LOGIKA FLOW CONTROL --- */
   function confirmScanData() {
       if(!currentSN || !currentOC) {
           alert("BRAKUJE NUMERÓW SN LUB OC!");
@@ -656,11 +655,9 @@
       isScanConfirmed = true;
       SoundFX.play('success');
       
-      // Ukryj przycisk zatwierdzania i info o skanie
       document.getElementById('confirmIdentityBtn').style.display = 'none';
       document.getElementById('scanStatusInfo').style.display = 'none';
       
-      // Odblokuj przyciski zdjęć
       const btns = document.querySelectorAll('.checklist-btn');
       btns.forEach(btn => btn.classList.remove('locked'));
       
@@ -699,7 +696,6 @@
     v.style.transform = `scale(${zoomLevel * mirrorFactor}, ${zoomLevel}) translate(${panX / zoomLevel}px, ${panY / zoomLevel}px)`;
   }
 
-  /* --- KONFIGURACJA I LOGOWANIE --- */
   function loadConfig() {
       const savedPath = localStorage.getItem('oled_cfg_path');
       if(savedPath) CONFIG.networkPath = savedPath;
@@ -846,7 +842,6 @@
     }
   }
 
-  /* --- FOLDER SIECIOWY --- */
   async function connectNetwork() {
     try {
       await navigator.clipboard.writeText(CONFIG.networkPath);
@@ -960,7 +955,6 @@
     photos = { PRZOD: null, TYL: null, OBRAZ: null };
     document.getElementById('tagSN').innerText = "SN: " + sn;
     
-    // UI RESET DLA FLOW CONTROL
     document.getElementById('scanStatusInfo').style.display = 'none';
     document.getElementById('confirmIdentityBtn').style.display = 'none';
     const btns = document.querySelectorAll('.checklist-btn');
@@ -974,6 +968,7 @@
     document.getElementById('actionBtn').innerText = "OCZEKIWANIE (0/3)";
     document.getElementById('actionBtn').classList.remove('active');
     document.getElementById('statusSelect').value = "OK";
+    document.getElementById('commentInput').value = "";
     sessionStartTime = new Date();
   }
 
@@ -985,7 +980,7 @@
       ctx.drawImage(v,0,0);
       ctx.drawImage(document.getElementById('drawCanvas'),0,0,finalC.width,finalC.height);
       const fs=Math.floor(finalC.height/25); ctx.font=`bold ${fs}px Roboto`; ctx.fillStyle="#0aff00";
-      ctx.fillText(`SN: ${currentSN}`, 50, fs + 20);
+      ctx.fillText(`SN: ${currentSN}`,50,fs+20);
       finalC.toBlob(b => { photos[tempPhotoType] = b; updatePhotoProgress(); cancelPhoto(); },'image/jpeg',0.9);
   }
 
@@ -1023,7 +1018,6 @@
       document.getElementById('drawCanvas').style.display='none';
   }
 
-  // SN MODUŁU: WYMAGA TBV LUB TOV
   document.getElementById('scanInput').addEventListener('keydown', e => {
     if(e.key==='Enter') {
       const v = e.target.value.trim().toUpperCase();
@@ -1039,17 +1033,14 @@
     }
   });
 
-  // OC SN: ORYGINALNA LOGIKA
   document.getElementById('scanInputOC').addEventListener('keydown', e => {
     if(e.key==='Enter') {
         const v = e.target.value.trim().toUpperCase();
         if(v.length > 3) { 
             currentOC = v; SoundFX.play('beep'); 
             document.getElementById('ocCheck').style.display = 'inline';
-            
             document.getElementById('scanStatusInfo').style.display = 'block';
             document.getElementById('confirmIdentityBtn').style.display = 'block';
-            
             checkOcRequirement(); saveRecoveryState(); 
         } else {
             SoundFX.play('error');
@@ -1076,7 +1067,6 @@
       }
   }
 
-  // ZAPIS DANYCH: DODANO SEKUNDY
   async function saveData() {
       if(!photos.PRZOD || !photos.TYL || !photos.OBRAZ) { alert("BRAK ZDJĘĆ!"); return; }
       const dec = document.getElementById('statusSelect').value;
@@ -1084,7 +1074,7 @@
       document.getElementById('saveStatus').innerText = "ZAPISYWANIE...";
 
       const now = new Date();
-      const timestamp = now.toLocaleDateString() + " " + now.toLocaleTimeString(); // SEKUNDY
+      const timestamp = now.toLocaleDateString() + " " + now.toLocaleTimeString();
 
       const txt = `RAPORT\nDATA: ${timestamp}\nSN: ${currentSN}\nOC: ${currentOC}\nOP: ${currentUser.login}\nDEC: ${dec}`;
       if(dirHandle) {
@@ -1103,7 +1093,7 @@
           await fetch(CONFIG.reportUrl, {
               method: "POST", headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                  timestamp: timestamp, // DODANO DO RAPORTU
+                  timestamp: timestamp,
                   sn: currentSN, 
                   oc: currentOC || "---", 
                   op: currentUser.login, 
@@ -1115,13 +1105,44 @@
       finishSave(dec);
   }
 
+  // TUTAJ ZMIENIONO - RESET BEZ F5
   function finishSave(dec) {
       recentScans.unshift({sn: currentSN, dec: dec});
       const qrb = document.getElementById('qrCodeBox'); qrb.innerHTML = "";
       new QRCode(qrb, `${currentSN}|${dec}`);
       document.getElementById('qrPopup').style.display='block';
-      setTimeout(()=>{ location.reload(); }, 1500); 
+      
+      localStorage.removeItem('oled_recovery'); // Czyścimy recovery bo zapisane
+      
+      // Zamiast location.reload() - czyścimy interfejs dla nowego skanu
+      setTimeout(() => {
+          // Reset zmiennych
+          currentSN = ""; currentOC = ""; isScanConfirmed = false;
+          photos = { PRZOD: null, TYL: null, OBRAZ: null };
+          
+          // Reset UI
+          document.getElementById('scanInput').value = "";
+          document.getElementById('scanInputOC').value = "";
+          document.getElementById('scanInputOC').disabled = true;
+          document.getElementById('commentInput').value = "";
+          document.getElementById('statusSelect').value = "OK";
+          document.getElementById('snCheck').style.display = 'none';
+          document.getElementById('ocCheck').style.display = 'none';
+          document.getElementById('tagSN').innerText = "SN: ---";
+          document.querySelectorAll('.checklist-btn').forEach(btn => {
+              btn.classList.add('locked');
+              btn.classList.remove('done');
+          });
+          document.getElementById('actionBtn').classList.remove('active');
+          document.getElementById('actionBtn').innerText = "OCZEKIWANIE (0/3)";
+          document.getElementById('saveStatus').innerText = "";
+          
+          // Aktywacja skanera
+          document.getElementById('scanInput').focus();
+          scanNetworkForOperator(); // Odśwież statystyki po zapisie
+      }, 1000); 
   }
+  
   function closeQr() { document.getElementById('qrPopup').style.display='none'; }
 
   function startDraw(e) { isDrawing=true; draw(e); }
@@ -1133,8 +1154,8 @@
       const x = e.clientX - rect.left, y = e.clientY - rect.top;
       ctx.lineWidth=5; ctx.strokeStyle=drawColor; ctx.lineTo(x,y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x,y);
   }
-  function setDrawColor(c) { drawColor = c; }
-  function clearDraw() { const c = document.getElementById('drawCanvas'); c.getContext('2d').clearRect(0, 0, c.width, c.height); }
+  function setDrawColor(c) { drawColor=c; }
+  function clearDraw() { const c=document.getElementById('drawCanvas'); c.getContext('2d').clearRect(0,0,c.width,c.height); }
   function togglePatterns() { document.getElementById('patternOverlay').style.display='block'; nextPattern(); }
   let pIdx=-1; const pats=['#fff','#f00','#0f0','#00f','#000'];
   function nextPattern() { pIdx++; if(pIdx>=pats.length){document.getElementById('patternOverlay').style.display='none';pIdx=-1;} else document.getElementById('patternOverlay').style.background=pats[pIdx]; }
