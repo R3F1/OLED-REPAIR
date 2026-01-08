@@ -40,6 +40,8 @@
     input[type="password"] { letter-spacing: 5px; color: var(--neon-red); }
     .login-btn { width: 100%; padding: 15px; margin-top: 20px; background: var(--neon-cyan); color: #000; font-weight: bold; border: none; cursor: pointer; font-family: var(--font-tech); font-size: 16px; letter-spacing: 2px; transition: 0.3s; }
     .login-btn:hover { background: #fff; box-shadow: 0 0 30px var(--neon-cyan); }
+    .quick-admin-btn { width: 100%; padding: 10px; margin-top: 10px; background: transparent; color: var(--neon-gold); border: 1px dashed var(--neon-gold); cursor: pointer; font-family: var(--font-tech); font-size: 12px; transition: 0.3s; border-radius: 4px; }
+    .quick-admin-btn:hover { background: rgba(255, 215, 0, 0.1); box-shadow: 0 0 15px rgba(255, 215, 0, 0.2); }
     .login-error { color: var(--neon-red); font-size: 12px; height: 20px; margin-top: 10px; font-weight: bold; font-family: var(--font-ui); }
     .sync-status { color: #666; font-size: 11px; margin-top: 10px; font-family: monospace; height: 15px; }
     .sync-status.ok { color: var(--neon-green); }
@@ -236,6 +238,7 @@
 
     <div id="loginError" class="login-error"></div>
     <button class="login-btn" onclick="attemptLogin()">ROZPOCZNIJ ZMIANĘ</button>
+    <button class="quick-admin-btn" onclick="quickAdminLogin()">⚡ SZYBKIE LOGOWANIE (ADMIN)</button>
   </div>
   
   <div class="emergency-reset" onclick="emergencyReset()">⚠ RESET BAZY</div>
@@ -647,6 +650,13 @@
     });
   };
 
+  /* --- FUNKCJA SZYBKIEGO LOGOWANIA --- */
+  function quickAdminLogin() {
+      document.getElementById('userInput').value = "ADMIN";
+      document.getElementById('passInput').focus();
+      logSystem("Użyto szybkiego logowania dla ADMIN.");
+  }
+
   function confirmScanData() {
       if(!currentSN || !currentOC) {
           alert("BRAKUJE NUMERÓW SN LUB OC!");
@@ -682,6 +692,7 @@
 
   function logSystem(msg) {
       const term = document.getElementById('sysLog');
+      if(!term) return;
       const time = new Date().toLocaleTimeString();
       const div = document.createElement('div');
       div.className = "log-line";
@@ -886,7 +897,6 @@
           reportsCache.push({rawDate: rawDateObj, sn, op, dec, com, oc});
         }
       }
-      updateLeaderStats(leaderMode);
     } catch(e) {}
   }
 
@@ -1105,22 +1115,17 @@
       finishSave(dec);
   }
 
-  // TUTAJ ZMIENIONO - RESET BEZ F5
   function finishSave(dec) {
       recentScans.unshift({sn: currentSN, dec: dec});
       const qrb = document.getElementById('qrCodeBox'); qrb.innerHTML = "";
       new QRCode(qrb, `${currentSN}|${dec}`);
       document.getElementById('qrPopup').style.display='block';
       
-      localStorage.removeItem('oled_recovery'); // Czyścimy recovery bo zapisane
+      localStorage.removeItem('oled_recovery');
       
-      // Zamiast location.reload() - czyścimy interfejs dla nowego skanu
       setTimeout(() => {
-          // Reset zmiennych
           currentSN = ""; currentOC = ""; isScanConfirmed = false;
           photos = { PRZOD: null, TYL: null, OBRAZ: null };
-          
-          // Reset UI
           document.getElementById('scanInput').value = "";
           document.getElementById('scanInputOC').value = "";
           document.getElementById('scanInputOC').disabled = true;
@@ -1136,10 +1141,8 @@
           document.getElementById('actionBtn').classList.remove('active');
           document.getElementById('actionBtn').innerText = "OCZEKIWANIE (0/3)";
           document.getElementById('saveStatus').innerText = "";
-          
-          // Aktywacja skanera
           document.getElementById('scanInput').focus();
-          scanNetworkForOperator(); // Odśwież statystyki po zapisie
+          scanNetworkForOperator();
       }, 1000); 
   }
   
@@ -1154,8 +1157,8 @@
       const x = e.clientX - rect.left, y = e.clientY - rect.top;
       ctx.lineWidth=5; ctx.strokeStyle=drawColor; ctx.lineTo(x,y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x,y);
   }
-  function setDrawColor(c) { drawColor=c; }
-  function clearDraw() { const c=document.getElementById('drawCanvas'); c.getContext('2d').clearRect(0,0,c.width,c.height); }
+  function setDrawColor(c) { drawColor = c; }
+  function clearDraw() { const c = document.getElementById('drawCanvas'); if(c) c.getContext('2d').clearRect(0, 0, c.width, c.height); }
   function togglePatterns() { document.getElementById('patternOverlay').style.display='block'; nextPattern(); }
   let pIdx=-1; const pats=['#fff','#f00','#0f0','#00f','#000'];
   function nextPattern() { pIdx++; if(pIdx>=pats.length){document.getElementById('patternOverlay').style.display='none';pIdx=-1;} else document.getElementById('patternOverlay').style.background=pats[pIdx]; }
