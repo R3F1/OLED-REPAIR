@@ -1068,6 +1068,11 @@
   function saveRecoveryState() {
       if(!currentSN) return;
       localStorage.setItem('oled_recovery', JSON.stringify({sn:currentSN, oc:currentOC, status:document.getElementById('statusSelect').value}));
+      
+      // DODANE: Resetowanie koloru ramki, gdy użytkownik wpisuje komentarz
+      if(document.getElementById('commentInput').value.trim().length > 0) {
+          document.getElementById('commentInput').style.borderColor = "#444";
+      }
   }
   function checkRecovery() {
       const rec = JSON.parse(localStorage.getItem('oled_recovery'));
@@ -1087,6 +1092,17 @@
       if(!photos.PRZOD || !photos.TYL || !photos.OBRAZ) { alert("BRAK ZDJĘĆ!"); return; }
       const dec = document.getElementById('statusSelect').value;
       if(['OK','RMA'].includes(dec) && !currentOC) return alert("BRAK OC!");
+
+      // DODANE: Sprawdzanie czy komentarz jest uzupełniony
+      const commentVal = document.getElementById('commentInput').value.trim();
+      if(commentVal.length === 0) {
+          alert("KOMENTARZ JEST OBOWIĄZKOWY!");
+          const cBox = document.getElementById('commentInput');
+          cBox.style.borderColor = "var(--neon-red)";
+          cBox.focus();
+          return;
+      }
+
       document.getElementById('saveStatus').innerText = "ZAPISYWANIE...";
 
       const now = new Date();
