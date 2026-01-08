@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR v2.2 (SAFE MODE)</title>
+  <title>OLED REPAIR v2.3 (NETWORK SYNC) by Łukasz Gruszczyński</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -72,30 +72,6 @@
     }
     .emergency-reset:hover { color: var(--neon-red); border-color: var(--neon-red); }
 
-    /* --- NETWORK GUARD --- */
-    #networkGuard {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.95); z-index: 8000; backdrop-filter: blur(15px);
-      display: none; align-items: center; justify-content: center; flex-direction: column;
-    }
-    .alert-box {
-      width: 600px; padding: 40px; border: 2px solid var(--neon-red); background: #050505;
-      text-align: center; border-radius: 12px; box-shadow: 0 0 100px rgba(255, 0, 60, 0.2);
-    }
-    .path-box {
-      background:#111; padding:15px; border:1px dashed #555; font-size:12px; color:#fff; 
-      font-family:var(--font-tech); margin-top: 5px; word-break: break-all;
-    }
-    .guard-btn {
-      width: 100%; padding: 20px; background: var(--neon-red); color: #fff; font-weight: bold;
-      border: none; cursor: pointer; font-family: var(--font-tech); font-size: 18px; margin-top: 20px;
-    }
-    .offline-btn {
-        width: 100%; padding: 15px; background: transparent; color: var(--neon-orange); border: 1px solid var(--neon-orange);
-        font-family: var(--font-tech); cursor: pointer; margin-top: 10px; font-weight: bold; transition: 0.3s;
-    }
-    .offline-btn:hover { background: var(--neon-orange); color: #000; }
-
     /* --- HEADER --- */
     header {
       height: 70px; display: flex; justify-content: space-between; align-items: center; padding: 0 30px;
@@ -130,14 +106,19 @@
       opacity: 0; transition: opacity 1s;
     }
     
-    /* MODES */
+    /* MODES & VISIBILITY */
     body.mode-admin .dashboard { display: none !important; }
     body.mode-admin #adminDash { display: flex !important; }
+    
     body.mode-manager .dashboard { display: none !important; }
     body.mode-manager #managerDash { display: flex !important; }
-    
-    /* Hide bottom bar for Manager */
+    /* Hide bottom bar for Manager & Coordinator (they use main dashboard) */
     body.mode-manager .bar-bottom { display: none !important; } 
+
+    /* COORDINATOR SPECIFIC: Hide stats, show only table */
+    body.mode-coord .mgr-stats-row { display: none !important; }
+    body.mode-coord .mgr-content-grid { grid-template-columns: 1fr !important; } /* Full width table */
+    body.mode-coord .mgr-ranking-panel { display: none !important; } /* Hide ranking */
 
     .panel-left {
       background: var(--panel-glass); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px;
@@ -149,6 +130,14 @@
       cursor: grab;
     }
     .panel-right:active { cursor: grabbing; }
+
+    /* CONNECT BUTTON (OPERATOR) */
+    .op-connect-btn {
+        width: 100%; padding: 12px; background: var(--neon-cyan); color: #000; font-weight: bold; border: none;
+        font-family: var(--font-tech); cursor: pointer; border-radius: 6px; margin-bottom: 15px; 
+        box-shadow: 0 0 15px rgba(0, 243, 255, 0.3); transition: 0.3s;
+    }
+    .op-connect-btn:hover { background: #fff; box-shadow: 0 0 25px rgba(0, 243, 255, 0.6); }
 
     /* --- ADMIN DASHBOARD --- */
     #adminDash {
@@ -262,8 +251,6 @@
     .recent-list { margin-top: 15px; border-top: 1px solid #333; padding-top: 10px; max-height: 100px; overflow-y: auto; }
     .recent-item { display: flex; justify-content: space-between; font-size: 12px; color: #666; padding: 4px 0; border-bottom: 1px dashed #222; }
     .recent-item span:last-child { font-weight: bold; }
-    .op-connect-btn { width: 100%; padding: 12px; background: var(--neon-cyan); color: #000; font-weight: bold; border: none; font-family: var(--font-tech); cursor: pointer; border-radius: 6px; margin-bottom: 15px; box-shadow: 0 0 15px rgba(0, 243, 255, 0.3); transition: 0.3s; }
-    .op-connect-btn:hover { background: #fff; box-shadow: 0 0 25px rgba(0, 243, 255, 0.6); }
 
     /* SLIDE PANEL */
     .slide-panel { position: fixed; bottom: 0; left: 0; width: 100%; height: 0; background: rgba(10, 12, 16, 0.98); z-index: 200; transition: height 0.5s cubic-bezier(0.25, 1, 0.5, 1); overflow: hidden; border-top: 2px solid var(--neon-cyan); display: flex; flex-direction: column; }
@@ -310,13 +297,13 @@
         <div><strong>OPERATOR:</strong> <span id="plOp">---</span></div>
         <div><strong>STATUS:</strong> <span id="plStatus" style="font-weight:bold; font-size:20pt;">---</span></div>
     </div>
-    <div class="pl-footer">OLED REPAIR SYSTEM v2.2 - By Łukasz Gruszczyński</div>
+    <div class="pl-footer">OLED REPAIR SYSTEM v2.3 - By Łukasz Gruszczyński</div>
 </div>
 
 <div id="loginScreen">
   <div class="login-box">
     <h2 style="color:#fff;">OLED REPAIR SYSTEM</h2>
-    <div style="font-size:12px; color:#666; margin-bottom:30px; font-family: var(--font-tech);">v2.2 (SAFE MODE)</div>
+    <div style="font-size:12px; color:#666; margin-bottom:30px; font-family: var(--font-tech);">v2.3 (NETWORK SYNC)</div>
     
     <label class="input-label" style="text-align:left; margin-left:5px;">UŻYTKOWNIK</label>
     <input type="text" id="userInput" class="login-input" placeholder="LOGIN" autocomplete="off">
@@ -334,16 +321,7 @@
   <div class="emergency-reset" onclick="emergencyReset()">⚠ RESET BAZY</div>
 </div>
 
-<div id="networkGuard">
-  <div class="alert-box">
-    <h1 style="color:var(--neon-red); margin:0;">⚠️ SYSTEM ROZŁĄCZONY ⚠️</h1>
-    <p style="font-size:16px; color:#ccc; margin:20px 0;">WYMAGANY DOSTĘP DO FOLDERU SIECIOWEGO</p>
-    <div class="input-label" style="color:#aaa;">CEL:</div>
-    <div class="path-box" id="displayPath">...</div>
-    <button class="guard-btn" onclick="connectNetwork()">📡 POŁĄCZ Z SERWEREM</button>
-    <button class="offline-btn" onclick="startOfflineMode()">📂 PRACA OFFLINE (ZIP)</button>
-  </div>
-</div>
+<div id="networkGuard" style="display:none;"></div> 
 
 <header>
   <div class="brand">TPV <span>OLED</span> REPAIR STATION</div>
@@ -359,7 +337,7 @@
 
 <div class="dashboard" id="mainDashboard">
   <aside class="panel-left">
-    <button id="opConnectBtn" class="op-connect-btn" onclick="connectNetwork()">📡 POŁĄCZ Z SERWEREM</button>
+    <button id="opConnectBtn" class="op-connect-btn" onclick="connectNetwork()">📡 POŁĄCZ Z SERWEREM (SYNC)</button>
 
     <div class="scene-container">
       <div class="tv-pivot" id="tv3d">
@@ -449,7 +427,7 @@
     <div class="admin-container">
         <div class="admin-status-bar">
             <div class="status-item"><div class="status-dot ok"></div> SYSTEM: ONLINE</div>
-            <div class="status-item">VER: 2.2</div>
+            <div class="status-item">VER: 2.3</div>
             <div class="status-item">CPU: <span id="simCpu">12%</span></div>
             <div class="status-item">MEM: <span id="simMem">2.4GB</span></div>
         </div>
@@ -457,7 +435,7 @@
             <div style="display:flex; flex-direction:column; gap:20px;">
                 <div class="admin-panel-box highlight">
                     <div class="admin-h">
-                        <span>ZARZĄDZANIE UŻYTKOWNIKAMI</span>
+                        <span>ZARZĄDZANIE UŻYTKOWNIKAMI (SYNC)</span>
                         <span style="font-size:12px; color:#666;">EDYCJA / RESET HASEŁ</span>
                     </div>
                     <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 100px; gap:10px; margin-bottom:15px;">
@@ -477,12 +455,12 @@
                             <tbody></tbody>
                         </table>
                     </div>
-                    <button class="cfg-btn" style="margin-top:10px; width:100%; border-style:dashed;" onclick="backupUsers()">💾 BACKUP UŻYTKOWNIKÓW (JSON)</button>
+                    <div style="font-size:10px; color:var(--neon-green); margin-top:5px; text-align:center;">* Zmiany są automatycznie zapisywane w pliku users_db.json na serwerze</div>
                 </div>
                 <div class="admin-panel-box">
                     <div class="admin-h" style="margin-bottom:5px;">TERMINAL SYSTEMOWY</div>
                     <div class="admin-terminal" id="sysLog">
-                        <div class="log-line"><span class="log-time">System:</span> Inicjalizacja v2.2...</div>
+                        <div class="log-line"><span class="log-time">System:</span> Inicjalizacja v2.3...</div>
                         <div class="log-line"><span class="log-time">System:</span> Gotowy do pracy.</div>
                     </div>
                 </div>
@@ -490,9 +468,9 @@
             <div style="display:flex; flex-direction:column; gap:20px;">
                 <div class="admin-panel-box" style="border-color:var(--neon-cyan);">
                     <div class="admin-h" style="color:var(--neon-cyan)">BAZA DANYCH</div>
-                    <div style="font-size:12px; color:#aaa; margin-bottom:15px;">Połącz, aby zarządzać plikami.</div>
+                    <div style="font-size:12px; color:#aaa; margin-bottom:15px;">Połącz, aby zarządzać plikami i synchronizować użytkowników.</div>
                     <div style="display:flex; gap:10px;">
-                        <button class="cfg-btn cyan" style="flex:1;" onclick="connectNetwork()">📡 POŁĄCZ</button>
+                        <button class="cfg-btn cyan" style="flex:1;" onclick="connectNetwork()">📡 POŁĄCZ (SYNC)</button>
                         <button class="cfg-btn cyan" style="flex:1;" onclick="toggleReportPanel()">📊 RAPORTY</button>
                     </div>
                 </div>
@@ -689,7 +667,7 @@
   /* --- INIT --- */
   window.onload = () => {
     loadConfig();
-    loadUsers();
+    loadUsers(); // Initial load from cache or defaults
     checkSavedLogin();
     checkRecovery();
     checkOcRequirement();
@@ -713,6 +691,7 @@
         updateSessionTimer(); 
     }, 1000);
     
+    // Event listeners...
     const c = document.getElementById('drawCanvas');
     c.addEventListener('mousedown', startDraw); c.addEventListener('mouseup', endDraw); c.addEventListener('mousemove', draw);
     c.addEventListener('touchstart', (e)=>{e.preventDefault(); startDraw(e.touches[0])});
@@ -737,6 +716,75 @@
     });
   };
 
+  /* --- NETWORK SYNC LOGIC --- */
+  
+  // 1. Sync Down: Read users from network to local
+  async function syncUsersDown() {
+      if(!dirHandle) return;
+      try {
+          const fileHandle = await dirHandle.getFileHandle('users_db.json', {create: false});
+          const file = await fileHandle.getFile();
+          const text = await file.text();
+          const remoteUsers = JSON.parse(text);
+          
+          if(Array.isArray(remoteUsers) && remoteUsers.length > 0) {
+              users = remoteUsers;
+              localStorage.setItem('oled_users', JSON.stringify(users));
+              renderAdminUserTable();
+              logSystem("Pobrano aktualną bazę użytkowników z sieci.");
+          }
+      } catch(e) {
+          // File doesn't exist? Try creating it
+          console.log("Brak pliku users_db.json, tworzenie...");
+          syncUsersUp(); 
+      }
+  }
+
+  // 2. Sync Up: Write local users to network
+  async function syncUsersUp() {
+      if(!dirHandle) return;
+      try {
+          const fileHandle = await dirHandle.getFileHandle('users_db.json', {create: true});
+          const writable = await fileHandle.createWritable();
+          await writable.write(JSON.stringify(users, null, 2));
+          await writable.close();
+          logSystem("Zapisano bazę użytkowników w sieci.");
+      } catch(e) {
+          console.error("Błąd zapisu bazy userów:", e);
+          logSystem("BŁĄD synchronizacji bazy userów!");
+      }
+  }
+
+  /* --- CONNECT & SYNC --- */
+  async function connectNetwork() {
+    try {
+      await navigator.clipboard.writeText(CONFIG.networkPath);
+      alert("Ścieżka skopiowana! Wybierz folder.");
+      dirHandle = await window.showDirectoryPicker();
+      
+      const statusEl = document.getElementById('connStatus');
+      statusEl.innerHTML = "🟢 ONLINE";
+      statusEl.style.color = "var(--neon-green)";
+      
+      logSystem("Połączono z folderem sieciowym");
+      document.getElementById('networkGuard').style.display = 'none';
+      
+      // TRIGGER SYNC
+      await syncUsersDown();
+      
+      if(currentUser.role === 'KIEROWNIK' || currentUser.role === 'KOORDYNATOR') {
+          setTimeout(scanNetwork, 500); 
+      }
+      if(currentUser.role === 'OPERATOR') {
+          initCamera();
+          document.getElementById('scanInput').focus();
+          scanNetworkForOperator();
+      }
+
+    } catch(e) { alert("Anulowano wybór folderu."); }
+  }
+
+  /* --- EXISTING FUNCTIONS --- */
   function updateSessionTimer() {
       if(!sessionStartTime || !currentSN) return;
       const now = new Date();
@@ -755,6 +803,7 @@
 
   function logSystem(msg) {
       const term = document.getElementById('sysLog');
+      if(!term) return;
       const time = new Date().toLocaleTimeString();
       const div = document.createElement('div');
       div.className = "log-line";
@@ -769,7 +818,6 @@
     v.style.transform = `scale(${zoomLevel * mirrorFactor}, ${zoomLevel}) translate(${panX / zoomLevel}px, ${panY / zoomLevel}px)`;
   }
 
-  /* --- CONFIG & LOGIN --- */
   function loadConfig() {
       const savedPath = localStorage.getItem('oled_cfg_path');
       if(savedPath) CONFIG.networkPath = savedPath;
@@ -788,7 +836,6 @@
 
   function loadUsers() {
     const stored = localStorage.getItem('oled_users');
-    // SAFE MODE: Jeśli pusta tablica, załaduj default
     if(stored) {
         users = JSON.parse(stored);
         if(users.length === 0) users = CONFIG.defaultUsers;
@@ -796,7 +843,12 @@
         users = CONFIG.defaultUsers;
     }
   }
-  function saveUsers() { localStorage.setItem('oled_users', JSON.stringify(users)); renderAdminUserTable(); }
+  function saveUsers() { 
+      localStorage.setItem('oled_users', JSON.stringify(users)); 
+      renderAdminUserTable();
+      // Auto-sync up if connected
+      if(dirHandle) syncUsersUp();
+  }
   function checkSavedLogin() {
       const saved = localStorage.getItem('oled_saved_creds');
       if(saved) {
@@ -825,7 +877,7 @@
       document.getElementById('loginScreen').style.opacity = '0';
       setTimeout(() => {
         document.getElementById('loginScreen').style.display = 'none';
-        setupInterface(); // Go straight to interface
+        setupInterface(); 
         if(currentUser.role === 'ADMIN') {
             startAdminCamera();
             document.getElementById('cfgPath').value = CONFIG.networkPath;
@@ -844,7 +896,7 @@
 
   function logout() {
       if(confirm("Wylogować?")) {
-          location.reload(); // HARD RESET
+          location.reload(); 
       }
   }
   
@@ -862,11 +914,7 @@
     document.getElementById('tagOp').innerText = "OP: " + currentUser.login;
     b.className = "operator-badge"; 
     
-    // Clean states
-    document.body.className = "";
-    document.getElementById('mainDashboard').style.display = 'none';
-    document.getElementById('adminDash').style.display = 'none';
-    document.getElementById('managerDash').style.display = 'none';
+    document.body.classList.remove('mode-manager', 'mode-admin', 'mode-coord');
 
     if(currentUser.role === 'KIEROWNIK') {
         b.classList.add('manager');
@@ -882,39 +930,9 @@
         document.body.classList.add('mode-manager', 'mode-coord'); 
         document.getElementById('managerDash').style.display = 'flex'; 
     } else {
-        // OPERATOR
         document.getElementById('mainDashboard').style.display = 'grid';
         setTimeout(() => document.getElementById('mainDashboard').style.opacity = '1', 100);
     }
-  }
-
-  /* --- NETWORK --- */
-  async function connectNetwork() {
-    try {
-      await navigator.clipboard.writeText(CONFIG.networkPath);
-      alert("Ścieżka skopiowana! Wybierz folder.");
-      dirHandle = await window.showDirectoryPicker();
-      
-      const statusEl = document.getElementById('connStatus');
-      statusEl.innerHTML = "🟢 ONLINE";
-      statusEl.style.color = "var(--neon-green)";
-      
-      logSystem("Połączono z folderem sieciowym");
-      
-      document.getElementById('networkGuard').style.display = 'none';
-      
-      // AUTO SCAN FOR MANAGER/COORD
-      if(currentUser.role === 'KIEROWNIK' || currentUser.role === 'KOORDYNATOR') {
-          setTimeout(scanNetwork, 500); 
-      }
-      // FOCUS FOR OPERATOR
-      if(currentUser.role === 'OPERATOR') {
-          initCamera();
-          document.getElementById('scanInput').focus();
-          scanNetworkForOperator();
-      }
-
-    } catch(e) { alert("Anulowano wybór folderu."); }
   }
 
   function startOfflineMode() {
@@ -1107,7 +1125,11 @@
     const l = document.getElementById('newLogin').value.trim().toUpperCase();
     const p = document.getElementById('newPass').value.trim();
     const r = document.getElementById('newRole').value;
-    if(l && p) { users.push({login:l, pass:p, role:r}); saveUsers(); logSystem(`Dodano usera: ${l}`); }
+    if(l && p) { 
+        users.push({login:l, pass:p, role:r}); 
+        saveUsers(); 
+        logSystem(`Dodano usera: ${l}`); 
+    }
   }
   function removeUser(idx) { if(confirm("Usunąć?")) { logSystem(`Usunięto usera: ${users[idx].login}`); users.splice(idx, 1); saveUsers(); } }
   function resetUserPass(idx) { if(confirm("Reset hasła na 1234?")) { users[idx].pass="1234"; saveUsers(); alert("OK"); logSystem(`Reset hasła dla: ${users[idx].login}`); } }
@@ -1126,6 +1148,7 @@
   }
 
   async function initCamera() {
+    // FIX: Camera ONLY for Operator (and small one for Admin)
     if(currentUser.role === 'KIEROWNIK' || currentUser.role === 'KOORDYNATOR' || currentUser.role === 'ADMIN') return;
     try {
       const s = await navigator.mediaDevices.getUserMedia({video:{width:{ideal:3840}}});
@@ -1143,6 +1166,7 @@
     document.getElementById('actionBtn').classList.remove('active');
     document.getElementById('statusSelect').value = "OK";
     
+    // START TIMER
     sessionStartTime = new Date();
     document.getElementById('sessionTimer').innerText = "⏱️ 00:00";
   }
