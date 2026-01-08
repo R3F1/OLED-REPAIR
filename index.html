@@ -82,6 +82,11 @@
     .panel-right { position: relative; background: #000; border: 2px solid #333; border-radius: 12px; overflow: hidden; box-shadow: inset 0 0 50px rgba(0,0,0,0.8); cursor: grab; }
     .panel-right:active { cursor: grabbing; }
 
+    /* FLOW CONTROL STYLES */
+    .checklist-btn.locked { opacity: 0.3; cursor: not-allowed; border-color: #333 !important; color: #444 !important; filter: grayscale(1); }
+    .scan-status-msg { font-family: var(--font-tech); font-size: 13px; font-weight: bold; color: var(--neon-green); text-align: center; margin-bottom: 15px; padding: 8px; border: 1px dashed var(--neon-green); border-radius: 4px; animation: blink 2s infinite; }
+    @keyframes blink { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
+
     /* ADMIN DASH */
     #adminDash { display: none; flex: 1; padding: 40px; flex-direction: column; overflow-y: auto; gap: 20px; align-items: center; background: radial-gradient(circle at center, #111, #000); }
     .admin-container { width: 100%; max-width: 1600px; display: flex; flex-direction: column; gap: 20px; }
@@ -149,7 +154,7 @@
     #scanInput:disabled { background: #111; color: #333; border-color: #222; cursor: not-allowed; }
     #scanInput:focus { border-color: var(--neon-cyan); box-shadow: 0 0 20px rgba(0, 243, 255, 0.2); }
     .checklist-btn { width: 100%; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); color: #888; padding: 12px; margin-bottom: 8px; cursor: pointer; text-align: left; font-family: var(--font-ui); display: flex; justify-content: space-between; transition: 0.2s; font-size: 14px; border-radius: 6px; font-weight: 500; }
-    .checklist-btn:hover { background: rgba(255,255,255,0.05); color: #fff; border-color: #fff; }
+    .checklist-btn:hover:not(.locked) { background: rgba(255,255,255,0.05); color: #fff; border-color: #fff; }
     .checklist-btn.done { border-color: var(--neon-green); color: var(--neon-green); background: rgba(10,255,0,0.1); font-weight: 700; }
     .decision-panel { border-top: 1px solid #333; margin-top: 10px; padding-top: 15px; }
     .custom-select { width: 100%; background: #080808; color: #fff; border: 1px solid var(--neon-purple); padding: 10px; font-family: var(--font-tech); font-size: 14px; border-radius: 5px; outline: none; cursor: pointer; margin-bottom: 10px; }
@@ -283,12 +288,14 @@
     <input type="text" id="scanInputOC" placeholder="OCZEKIWANIE NA SN MODUŁU..." disabled 
            style="width: 100%; background: #080808; border: 1px solid #333; color: var(--neon-green); padding: 12px; font-size: 18px; text-align: center; font-family: var(--font-tech); outline: none; border-radius: 6px; margin-bottom: 15px;">
 
+    <div id="scanStatusMsg" class="scan-status-msg" style="display:none;">✅ DANE ZWERYFIKOWANE - ZRÓB ZDJĘCIA</div>
+
     <div id="checklist">
         <button class="checklist-btn" style="border-color:var(--neon-purple); color:var(--neon-purple);" onclick="togglePatterns()"><span>🖥️ TEST EKRANU (PATTERNS)</span> <span>⏯</span></button>
         <div style="height:10px;"></div>
-        <div id="btnFront" class="checklist-btn" onclick="capture('PRZOD')"><span>1. PRZÓD EKRANU</span> <span>📷</span></div>
-        <div id="btnBack" class="checklist-btn" onclick="capture('TYL')"><span>2. TYŁ (TABLICZKA)</span> <span>📷</span></div>
-        <div id="btnImage" class="checklist-btn" onclick="capture('OBRAZ')"><span>3. TEST OBRAZU</span> <span>📷</span></div>
+        <div id="btnFront" class="checklist-btn locked" onclick="capture('PRZOD')"><span>1. PRZÓD EKRANU</span> <span>📷</span></div>
+        <div id="btnBack" class="checklist-btn locked" onclick="capture('TYL')"><span>2. TYŁ (TABLICZKA)</span> <span>📷</span></div>
+        <div id="btnImage" class="checklist-btn locked" onclick="capture('OBRAZ')"><span>3. TEST OBRAZU</span> <span>📷</span></div>
     </div>
 
     <div class="decision-panel">
@@ -530,15 +537,8 @@
   let CONFIG = {
     networkPath: String.raw`\\plgorfs001\pub\SERVICE\LCDR\LCDR\OLED OBM Panels\Zdjęcia z napraw OLED`,
     motd: "",
-    
-    // --- TUTAJ MASZ DWA LINKI DO CLOUDFLARE ---
-    
-    // 1. LINK DO LOGOWANIA (Pobiera listę userów)
     loginUrl: "https://oledrepair.lukaszarmiajotpe.workers.dev/", 
-
-    // 2. LINK DO RAPORTÓW (Wysyła naprawę do arkusza raportów)
     reportUrl: "https://daneoled.lukaszarmiajotpe.workers.dev/", 
-    
     defaultUsers: [] 
   };
 
@@ -602,7 +602,6 @@
     checkRecovery();
     checkOcRequirement();
     
-    // UI Reset
     document.getElementById('mainDashboard').style.display = 'none';
     document.getElementById('adminDash').style.display = 'none';
     document.getElementById('managerDash').style.display = 'none';
@@ -645,6 +644,16 @@
     });
   };
 
+  /* --- FLOW CONTROL LOGIC --- */
+  function lockPhotoButtons(status) {
+    const btns = ['btnFront', 'btnBack', 'btnImage'];
+    btns.forEach(id => {
+      const el = document.getElementById(id);
+      if(status) el.classList.add('locked');
+      else el.classList.remove('locked');
+    });
+  }
+
   function updateSessionTimer() {
       if(!sessionStartTime || !currentSN) return;
       const now = new Date();
@@ -677,7 +686,6 @@
     v.style.transform = `scale(${zoomLevel * mirrorFactor}, ${zoomLevel}) translate(${panX / zoomLevel}px, ${panY / zoomLevel}px)`;
   }
 
-  /* --- CONFIG & LOGIN --- */
   function loadConfig() {
       const savedPath = localStorage.getItem('oled_cfg_path');
       if(savedPath) CONFIG.networkPath = savedPath;
@@ -704,7 +712,6 @@
     }
   }
 
-  // --- ŁADOWANIE USERÓW Z LINKU 1 (LOGIN) ---
   async function loadUsersFromSheet() {
       if(!CONFIG.loginUrl) return;
       const statusEl = document.getElementById('syncStatus');
@@ -714,49 +721,33 @@
           const res = await fetch(CONFIG.loginUrl, { method: "GET" });
           if(!res.ok) throw new Error("Network response was not ok");
           const txt = await res.text();
-          
           const rows = txt.split(/\r?\n/); 
           const newUsers = [];
-          
           for(let i=1; i<rows.length; i++) {
               const row = rows[i];
               if(!row || row.trim() === '') continue;
-
               const cols = row.split(',');
               if(cols.length >= 3) {
                    const l = cols[0].replace(/^"|"$/g, '').trim().toUpperCase();
                    const p = cols[1].replace(/^"|"$/g, '').trim(); 
                    let r = cols[2].replace(/^"|"$/g, '').trim().toUpperCase();
-                   
-                   // --- Mapowanie nazw ról ---
                    if (r === 'ADMINISTRATOR') r = 'ADMIN';
                    if (r === 'OPERATOR') r = 'OPERATOR';
-                   
                    if(l && p && ['OPERATOR','ADMIN','KIEROWNIK','KOORDYNATOR'].includes(r)) {
                        newUsers.push({login:l, pass:p, role:r});
-                   } else {
-                       console.log("Pominięto wiersz (zła rola?):", row);
                    }
               }
           }
-          
           if(newUsers.length > 0) {
               users = newUsers;
               saveUsers();
               statusEl.innerText = "Zsynchronizowano! (" + newUsers.length + " os.)";
               statusEl.className = "sync-status ok";
               setTimeout(()=>{ statusEl.innerText=""; }, 3000);
-              
-              if(currentUser && currentUser.role === 'ADMIN') {
-                  renderAdminUserTable();
-              }
-              
+              if(currentUser && currentUser.role === 'ADMIN') renderAdminUserTable();
               logSystem("Zaktualizowano bazę użytkowników z chmury");
-          } else {
-              throw new Error("Pusty plik lub błąd parsowania");
           }
       } catch(e) {
-          console.error("Sync error:", e);
           statusEl.innerText = "Błąd pobierania bazy";
           statusEl.className = "sync-status err";
       }
@@ -780,19 +771,16 @@
     const l = document.getElementById('userInput').value.trim().toUpperCase();
     const p = document.getElementById('passInput').value.trim();
     const remember = document.getElementById('rememberCheck').checked;
-
     const u = users.find(user => user.login === l && user.pass === p);
     if (u) {
       currentUser = u;
       if(remember) localStorage.setItem('oled_saved_creds', JSON.stringify({login:l, pass:p}));
       else localStorage.removeItem('oled_saved_creds');
-
       logSystem(`Zalogowano użytkownika: ${u.login} (${u.role})`);
-
       document.getElementById('loginScreen').style.opacity = '0';
       setTimeout(() => {
         document.getElementById('loginScreen').style.display = 'none';
-        setupInterface(); // Go straight to interface
+        setupInterface();
         if(currentUser.role === 'ADMIN') {
             startAdminCamera();
             document.getElementById('cfgPath').value = CONFIG.networkPath;
@@ -809,11 +797,7 @@
     }
   }
 
-  function logout() {
-      if(confirm("Wylogować?")) {
-          location.reload(); // HARD RESET
-      }
-  }
+  function logout() { if(confirm("Wylogować?")) location.reload(); }
   
   function emergencyReset() {
       if(confirm("To usunie lokalną bazę i przywróci ustawienia domyślne. Kontynuować?")) {
@@ -828,8 +812,6 @@
     b.innerText = currentUser.login;
     document.getElementById('tagOp').innerText = "OP: " + currentUser.login;
     b.className = "operator-badge"; 
-    
-    // Clean states
     document.body.className = "";
     document.getElementById('mainDashboard').style.display = 'none';
     document.getElementById('adminDash').style.display = 'none';
@@ -838,7 +820,6 @@
     if(currentUser.role === 'KIEROWNIK' || currentUser.role === 'KOORDYNATOR') {
         const mgrTitle = document.querySelector('.mgr-title');
         const btnHtml = '<button class="mgr-connect-btn" onclick="connectNetwork()">📡 POŁĄCZ Z BAZĄ DANYCH</button>';
-        
         if (currentUser.role === 'KOORDYNATOR') {
             b.classList.add('coord');
             document.body.classList.add('mode-manager', 'mode-coord'); 
@@ -848,7 +829,6 @@
             document.body.classList.add('mode-manager');
             mgrTitle.innerHTML = 'PANEL KIEROWNIKA ' + btnHtml; 
         }
-        
         document.getElementById('managerDash').style.display = 'flex';
     } else if(currentUser.role === 'ADMIN') {
         b.classList.add('admin');
@@ -856,65 +836,43 @@
         document.getElementById('dbBtn').style.display = 'none';
         document.getElementById('adminDash').style.display = 'flex';
     } else {
-        // OPERATOR
         document.getElementById('mainDashboard').style.display = 'grid';
         setTimeout(() => document.getElementById('mainDashboard').style.opacity = '1', 100);
     }
   }
 
-  /* --- NETWORK --- */
   async function connectNetwork() {
     try {
       await navigator.clipboard.writeText(CONFIG.networkPath);
       alert("Ścieżka skopiowana! Wybierz folder.");
       dirHandle = await window.showDirectoryPicker();
-      
       const statusEl = document.getElementById('connStatus');
       statusEl.innerHTML = "🟢 ONLINE";
       statusEl.style.color = "var(--neon-green)";
-      
       logSystem("Połączono z folderem sieciowym");
-      
-      // --- FLOW CONTROL: Enable first input ---
       document.getElementById('scanInput').disabled = false;
       document.getElementById('scanInput').placeholder = "SKANUJ MODUŁ...";
       document.getElementById('scanInput').focus();
-      
       document.getElementById('networkGuard').style.display = 'none';
-      
-      // AUTO SCAN FOR MANAGER/COORD
-      if(currentUser.role === 'KIEROWNIK' || currentUser.role === 'KOORDYNATOR') {
-          setTimeout(scanNetwork, 500); 
-      }
-      // FOCUS FOR OPERATOR
+      if(currentUser.role === 'KIEROWNIK' || currentUser.role === 'KOORDYNATOR') setTimeout(scanNetwork, 500); 
       if(currentUser.role === 'OPERATOR') {
           initCamera();
           document.getElementById('scanInput').focus();
           scanNetworkForOperator();
       }
-
     } catch(e) { alert("Anulowano wybór folderu."); }
   }
 
-  function startOfflineMode() {
-      dirHandle = null; 
-  }
+  function startOfflineMode() { dirHandle = null; }
 
-  /* --- MANAGER LOGIC (DATA) --- */
   async function scanNetwork() {
     if(!dirHandle) {
         document.getElementById('mgrLogBody').innerHTML = "<tr><td colspan='6' style='text-align:center;color:orange;'>TRYB OFFLINE - BRAK DANYCH (Kliknij POŁĄCZ)</td></tr>";
         return;
     }
-    
-    if(currentUser.role === 'OPERATOR') {
-        scanNetworkForOperator();
-        return;
-    }
-    
+    if(currentUser.role === 'OPERATOR') { scanNetworkForOperator(); return; }
     document.getElementById('mgrLogBody').innerHTML = "<tr><td colspan='6' style='text-align:center;'>POBIERANIE DANYCH...</td></tr>";
     logSystem("Rozpoczęto skanowanie danych...");
-    
     reportsCache = [];
     try {
       for await (const e of dirHandle.values()) {
@@ -922,16 +880,12 @@
           const sn = e.name; 
           let op="---", dateStr="---", dec="---", com="---", oc="---";
           let rawDateObj = null;
-
           try {
             const sub = await dirHandle.getDirectoryHandle(sn);
             for await (const f of sub.values()) {
               if(f.name.includes('RAPORT')) {
-                const fl = await f.getFile(); 
-                const tx = await fl.text(); 
-                rawDateObj = fl.lastModifiedDate;
-                dateStr = rawDateObj.toLocaleString();
-
+                const fl = await f.getFile(); const tx = await fl.text(); 
+                rawDateObj = fl.lastModifiedDate; dateStr = rawDateObj.toLocaleString();
                 const mOp = tx.match(/OPERATOR: (.*)/); if(mOp) op=mOp[1];
                 const mDec = tx.match(/DECYZJA: (.*)/); if(mDec) dec=mDec[1];
                 const mCom = tx.match(/UWAGI: (.*)/); if(mCom) com=mCom[1];
@@ -944,7 +898,7 @@
       }
       updateLeaderStats(leaderMode);
       logSystem("Dane załadowane pomyślnie.");
-    } catch(e) { console.error(e); logSystem("Błąd skanowania!"); }
+    } catch(e) { logSystem("Błąd skanowania!"); }
   }
 
   async function scanNetworkForOperator() {
@@ -954,7 +908,7 @@
           for await (const e of dirHandle.values()) {
             if(e.kind === 'directory') {
               const sn = e.name; 
-              let op="---", dateStr="---", dec="---", com="---", oc="---";
+              let op="---", dec="---";
               let rawDateObj = null;
               try {
                 const sub = await dirHandle.getDirectoryHandle(sn);
@@ -977,85 +931,53 @@
   function calculateOperatorStats() {
       const today = new Date().toDateString();
       const myStats = reportsCache.filter(r => r.op === currentUser.login && r.rawDate && r.rawDate.toDateString() === today);
-      
-      let total = myStats.length;
-      let ok = 0;
-      let ng = 0;
-      
-      myStats.forEach(r => {
-          if(['OK','OFFRS_OK','NDF'].includes(r.dec)) ok++; else ng++;
-      });
-      
+      let total = myStats.length, ok = 0, ng = 0;
+      myStats.forEach(r => { if(['OK','OFFRS_OK','NDF'].includes(r.dec)) ok++; else ng++; });
       let yieldVal = total > 0 ? ((ok/total)*100).toFixed(1) : 0;
-      
       document.getElementById('opTotal').innerText = total;
       document.getElementById('opOK').innerText = ok;
       document.getElementById('opNG').innerText = ng;
       document.getElementById('opYield').innerText = yieldVal + "%";
   }
 
-  // --- KAMERA FIX ---
   async function initCamera() {
     if(currentUser.role === 'KIEROWNIK' || currentUser.role === 'KOORDYNATOR' || currentUser.role === 'ADMIN') return;
     try {
-      const s = await navigator.mediaDevices.getUserMedia({ video: true }); // Bez ograniczeń 4K
+      const s = await navigator.mediaDevices.getUserMedia({ video: true }); 
       const video = document.getElementById('videoFeed');
       video.srcObject = s;
       video.play();
-    } catch(e) { 
-        console.error("Cam error", e);
-        alert("BŁĄD KAMERY: " + e.name + " - " + e.message);
-    }
+    } catch(e) { alert("BŁĄD KAMERY: " + e.name); }
   }
 
-  // --- NOWE FUNKCJE --- 
-  
   function updatePhotoProgress() {
       if(photos.PRZOD) document.getElementById('btnFront').classList.add('done');
       if(photos.TYL) document.getElementById('btnBack').classList.add('done');
       if(photos.OBRAZ) document.getElementById('btnImage').classList.add('done');
-
       let count = 0;
-      if(photos.PRZOD) count++;
-      if(photos.TYL) count++;
-      if(photos.OBRAZ) count++;
-
+      if(photos.PRZOD) count++; if(photos.TYL) count++; if(photos.OBRAZ) count++;
       const btn = document.getElementById('actionBtn');
-      
-      // Zmiana tekstu i aktywacja
-      if(count === 3) {
-          btn.innerText = "ZAPISZ DANE";
-          btn.classList.add('active'); // Zielony i pulsujący
-      } else {
-          btn.innerText = `OCZEKIWANIE (${count}/3)`;
-          btn.classList.remove('active'); // Szary
-      }
+      if(count === 3) { btn.innerText = "ZAPISZ DANE"; btn.classList.add('active'); } 
+      else { btn.innerText = `OCZEKIWANIE (${count}/3)`; btn.classList.remove('active'); }
   }
 
   function startSession(sn) {
     currentSN = sn; currentOC = ""; photos = { PRZOD: null, TYL: null, OBRAZ: null };
     document.getElementById('tagSN').innerText = "SN: " + sn;
-    
-    // Reset inputs
+    document.getElementById('scanStatusMsg').style.display = 'none';
+    lockPhotoButtons(true);
     document.getElementById('scanInputOC').value = ""; 
     document.getElementById('scanInputOC').disabled = true;
-    
-    // Reset visuals
     document.querySelectorAll('.checklist-btn').forEach(b => b.classList.remove('done'));
     document.getElementById('snCheck').style.display = 'none';
     document.getElementById('ocCheck').style.display = 'none';
-    
-    // Reset przycisku (0/3)
     document.getElementById('actionBtn').innerText = "OCZEKIWANIE (0/3)";
     document.getElementById('actionBtn').classList.remove('active');
-    
     document.getElementById('statusSelect').value = "OK";
-    
     sessionStartTime = new Date();
     document.getElementById('sessionTimer').innerText = "⏱️ 00:00";
   }
 
-  // Zaktualizowana funkcja processPhoto - wywołuje updatePhotoProgress
   function processPhoto() {
       const v = document.getElementById('videoFeed');
       const finalC = document.getElementById('photoCanvas'); finalC.width=v.videoWidth; finalC.height=v.videoHeight;
@@ -1063,15 +985,9 @@
       if(isMirrored) { ctx.translate(finalC.width,0); ctx.scale(-1,1); }
       ctx.drawImage(v,0,0);
       ctx.drawImage(document.getElementById('drawCanvas'),0,0,finalC.width,finalC.height);
-      
       const fs=Math.floor(finalC.height/25); ctx.font=`bold ${fs}px Roboto`; ctx.fillStyle="#0aff00";
       ctx.fillText(`SN: ${currentSN}`,50,fs+20);
-      
-      finalC.toBlob(b => {
-          photos[tempPhotoType] = b;
-          updatePhotoProgress(); // <--- KLUCZOWA ZMIANA
-          cancelPhoto();
-      },'image/jpeg',0.9);
+      finalC.toBlob(b => { photos[tempPhotoType] = b; updatePhotoProgress(); cancelPhoto(); },'image/jpeg',0.9);
   }
 
   function checkOcRequirement() {
@@ -1086,29 +1002,16 @@
       }
   }
 
-  // --- SMART CAPTURE (AUTOMATYZACJA) ---
   function capture(type) {
-      if(!currentSN) return; 
+      if(!currentSN || !currentOC) { alert("NAJPIERW ZESKANUJ SN ORAZ OC!"); return; }
       tempPhotoType = type;
       const dec = document.getElementById('statusSelect').value;
-
-      // Jeśli status jest "czysty" (OK, NDF, OFFRS_OK) -> Rób zdjęcie natychmiast
-      if(['OK', 'NDF', 'OFFRS_OK'].includes(dec)) {
-          processPhoto(); // Zapisz klatkę z wideo bez rysowania
-          SoundFX.play('shutter'); // Dźwięk migawki
-          return;
-      }
-
-      // Jeśli status to WADA (NG, RMA, SCRAP) -> Pokaż narzędzia do rysowania
-      const v = document.getElementById('videoFeed');
-      v.pause();
+      if(['OK', 'NDF', 'OFFRS_OK'].includes(dec)) { processPhoto(); SoundFX.play('shutter'); return; }
+      const v = document.getElementById('videoFeed'); v.pause();
       document.getElementById('drawToolbar').style.display='block';
       document.getElementById('drawCanvas').style.display='block';
-      const c = document.getElementById('drawCanvas'); 
-      c.width=v.offsetWidth; 
-      c.height=v.offsetHeight;
-      const ctx = c.getContext('2d'); 
-      ctx.clearRect(0,0,c.width,c.height);
+      const c = document.getElementById('drawCanvas'); c.width=v.offsetWidth; c.height=v.offsetHeight;
+      const ctx = c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height);
   }
 
   function confirmPhoto() { processPhoto(); }
@@ -1122,17 +1025,11 @@
     if(e.key==='Enter') {
       const v = e.target.value.trim().toUpperCase();
       if(v.length>3) { 
-          SoundFX.play('beep'); 
-          startSession(v); 
-          saveRecoveryState();
-          
-          // FLOW CONTROL
+          SoundFX.play('beep'); startSession(v); saveRecoveryState();
           document.getElementById('snCheck').style.display = 'inline';
           document.getElementById('scanInputOC').disabled=false; 
-          checkOcRequirement(); 
-          document.getElementById('scanInputOC').focus(); 
+          checkOcRequirement(); document.getElementById('scanInputOC').focus(); 
       } else SoundFX.play('error');
-      // e.target.value = ""; // Don't clear immediately so operator sees what they scanned
     }
   });
 
@@ -1140,14 +1037,11 @@
     if(e.key==='Enter') {
         const v = e.target.value.trim().toUpperCase();
         if(v.length>3) { 
-            currentOC = v; 
-            SoundFX.play('beep'); 
-            
-            // FLOW CONTROL
+            currentOC = v; SoundFX.play('beep'); 
             document.getElementById('ocCheck').style.display = 'inline';
-            
-            checkOcRequirement(); 
-            saveRecoveryState(); 
+            document.getElementById('scanStatusMsg').style.display = 'block';
+            lockPhotoButtons(false); 
+            checkOcRequirement(); saveRecoveryState(); 
         }
     }
   });
@@ -1163,104 +1057,55 @@
           if(rec.oc) { currentOC = rec.oc; document.getElementById('scanInputOC').value = rec.oc; }
           document.getElementById('statusSelect').value = rec.status;
           document.getElementById('scanInputOC').disabled = false;
+          if(currentSN && currentOC) { document.getElementById('scanStatusMsg').style.display = 'block'; lockPhotoButtons(false); }
       } else localStorage.removeItem('oled_recovery');
   }
   function clearRecovery() { localStorage.removeItem('oled_recovery'); }
 
-  // --- ZAPISYWANIE RAPORTU (DO LINKU 2 - RAPORTY) ---
   async function saveData() {
-      // 1. Walidacja zdjęć
-      if(!photos.PRZOD || !photos.TYL || !photos.OBRAZ) {
-          alert("BRAKUJE ZDJĘĆ! MUSISZ WYKONAĆ WSZYSTKIE 3 ZDJĘCIA.");
-          return;
-      }
-
+      if(!photos.PRZOD || !photos.TYL || !photos.OBRAZ) { alert("BRAKUJE ZDJĘĆ!"); return; }
       const dec = document.getElementById('statusSelect').value;
       if(['OK','RMA'].includes(dec) && !currentOC) return alert("BRAK OC!");
-      
       document.getElementById('saveStatus').innerText = "ZAPISYWANIE...";
-      document.getElementById('saveStatus').style.color = "orange";
-
       const txt = `RAPORT\nSN: ${currentSN}\nOC: ${currentOC}\nOP: ${currentUser.login}\nDEC: ${dec}`;
-      
-      // 2. ZAPIS LOKALNY
       if(dirHandle) {
           try {
               const d = await dirHandle.getDirectoryHandle(currentSN, {create:true});
               const h = await d.getFileHandle(`RAPORT_${currentSN}.txt`, {create:true});
               const w = await h.createWritable(); await w.write(txt); await w.close();
-              
               const types = ['PRZOD', 'TYL', 'OBRAZ'];
               for (const type of types) {
-                  if (photos[type]) {
-                      const fileName = `${currentSN}_${type}.jpg`; 
-                      const fileHandle = await d.getFileHandle(fileName, {create: true});
-                      const writable = await fileHandle.createWritable();
-                      await writable.write(photos[type]);
-                      await writable.close();
-                  }
+                  const fileHandle = await d.getFileHandle(`${currentSN}_${type}.jpg`, {create: true});
+                  const writable = await fileHandle.createWritable();
+                  await writable.write(photos[type]); await writable.close();
               }
-          } catch(e) { console.log("Błąd zapisu lokalnego: " + e); }
+          } catch(e) {}
       }
-
-      // 3. ZAPIS DO CHMURY (UŻYWAMY LINKU RAPORTOWEGO)
       try {
-          const payload = {
-              sn: currentSN,
-              oc: currentOC || "---",
-              op: currentUser.login,
-              dec: dec,
-              com: document.getElementById('commentInput').value
-          };
-
-          // --- TUTAJ IDZIE DO 'daneoled' ---
-          const res = await fetch(CONFIG.reportUrl, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload)
+          await fetch(CONFIG.reportUrl, {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({sn: currentSN, oc: currentOC || "---", op: currentUser.login, dec: dec, com: document.getElementById('commentInput').value})
           });
-
-          if(res.ok) {
-              const respJson = await res.json();
-              if(respJson.status === "ok") {
-                  logSystem("Dane wysłane do Google Sheets");
-              }
-          } else {
-              alert("Błąd wysyłania do Google Sheets!");
-          }
-      } catch(e) {
-          console.error("Cloud save error:", e);
-      }
-
+      } catch(e) {}
       finishSave(dec);
   }
 
   function finishSave(dec) {
       clearRecovery(); 
       document.getElementById('saveStatus').innerText = "ZAPISANO";
-      document.getElementById('saveStatus').style.color = "var(--neon-green)";
-      
       recentScans.unshift({sn: currentSN, dec: dec});
       if(recentScans.length > 5) recentScans.pop();
-      const list = document.getElementById('recentList');
-      list.innerHTML = "";
+      const list = document.getElementById('recentList'); list.innerHTML = "";
       recentScans.forEach(r => {
           let c = r.dec.includes('NG') ? 'red' : 'green';
           list.innerHTML += `<div class="recent-item"><span>${r.sn}</span><span style="color:${c}">${r.dec}</span></div>`;
       });
-
       if(dirHandle) scanNetworkForOperator();
-
-      new QRCode(document.getElementById('qrCodeBox'), `${currentSN}|${dec}`);
+      const qrb = document.getElementById('qrCodeBox'); qrb.innerHTML = "";
+      new QRCode(qrb, `${currentSN}|${dec}`);
       document.getElementById('qrPopup').style.display='block';
-      
       sessionStartTime = null; 
-      
-      document.getElementById('scanInput').value = "";
-      document.getElementById('scanInputOC').value = "";
-      document.getElementById('snCheck').style.display = 'none';
-      document.getElementById('ocCheck').style.display = 'none';
-      
+      document.getElementById('scanInput').value = ""; document.getElementById('scanInputOC').value = "";
       setTimeout(()=>{ currentSN=""; startSession(""); },1000);
   }
   function closeQr() { document.getElementById('qrPopup').style.display='none'; }
@@ -1271,7 +1116,7 @@
       if(!isDrawing) return;
       const ctx = document.getElementById('drawCanvas').getContext('2d');
       const rect = e.target.getBoundingClientRect();
-      const x = e.clientX - rect.left; const y = e.clientY - rect.top;
+      const x = e.clientX - rect.left, y = e.clientY - rect.top;
       ctx.lineWidth=5; ctx.strokeStyle=drawColor; ctx.lineTo(x,y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x,y);
   }
   function setDrawColor(c) { drawColor=c; }
@@ -1282,119 +1127,36 @@
   function toggleFullScreen() { if(!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
   function toggleReportPanel() { document.getElementById('reportPanel').classList.toggle('open'); }
   
-  // --- ADMIN FUNCTIONALITY (UŻYWAMY LINKU 1 - LOGOWANIE) ---
   async function addUser() {
-    const l = document.getElementById('newLogin').value.trim().toUpperCase();
-    const p = document.getElementById('newPass').value.trim();
-    const r = document.getElementById('newRole').value;
-    
+    const l = document.getElementById('newLogin').value.trim().toUpperCase(), p = document.getElementById('newPass').value.trim(), r = document.getElementById('newRole').value;
     if(l && p) { 
-        // 1. Dodaj lokalnie
-        users.push({login:l, pass:p, role:r}); 
-        saveUsers(); 
-        
-        // 2. Wyślij do Google Sheets (LINK LOGINOWY)
-        logSystem(`Wysyłanie użytkownika ${l} do chmury...`);
-        
+        users.push({login:l, pass:p, role:r}); saveUsers(); 
         try {
-            const payload = {
-                type: "ADD_USER", 
-                login: l,
-                pass: p,
-                role: r
-            };
-
-            const res = await fetch(CONFIG.loginUrl, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
+            await fetch(CONFIG.loginUrl, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({type: "ADD_USER", login: l, pass: p, role: r})
             });
-
-            if(res.ok) {
-                logSystem("✅ Użytkownik dodany do bazy Google!");
-                alert("Użytkownik dodany do bazy online!");
-                renderAdminUserTable(); 
-            } else {
-                alert("Błąd zapisu online! Użytkownik jest tylko lokalnie.");
-            }
-        } catch(e) {
-            console.error(e);
-            alert("Błąd połączenia z chmurą. Użytkownik dodany tylko lokalnie.");
-        }
-        
-        document.getElementById('newLogin').value = "";
-        document.getElementById('newPass').value = "";
-    } else {
-        alert("Podaj login i hasło!");
+        } catch(e) {}
+        document.getElementById('newLogin').value = ""; document.getElementById('newPass').value = "";
     }
   }
   
   function renderAdminUserTable() {
-      const tb = document.querySelector('#admUserTable tbody'); 
-      if(!tb) return;
+      const tb = document.querySelector('#admUserTable tbody'); if(!tb) return;
       tb.innerHTML = "";
       users.forEach((u, i) => {
-        let color = '#fff';
-        if(u.role === 'ADMIN') color = 'var(--neon-gold)';
-        if(u.role === 'KOORDYNATOR') color = 'var(--neon-purple)';
-        if(u.role === 'KIEROWNIK') color = 'var(--neon-red)';
+        let color = '#fff'; if(u.role === 'ADMIN') color = 'var(--neon-gold)'; if(u.role === 'KOORDYNATOR') color = 'var(--neon-purple)'; if(u.role === 'KIEROWNIK') color = 'var(--neon-red)';
         tb.innerHTML += `<tr><td>${u.login}</td><td style="color:${color}">${u.role}</td><td><div class="adm-btn-group"><button class="adm-act-btn" onclick="resetUserPass(${i})">RESET</button><button class="adm-act-btn" style="color:red" onclick="removeUser(${i})">X</button></div></td></tr>`;
       });
   }
-  
-  function backupUsers() {
-      const blob = new Blob([JSON.stringify(users, null, 2)], {type: "application/json"});
-      saveAs(blob, "users_backup.json");
-      logSystem("Wykonano backup użytkowników");
-  }
-  
-  function resetUserPass(idx) { if(confirm("Reset hasła na 1234?")) { users[idx].pass="1234"; saveUsers(); alert("OK"); logSystem(`Reset hasła dla: ${users[idx].login}`); } }
-
-  // --- USUWANIE USERA (LINK LOGINOWY) ---
+  function resetUserPass(idx) { if(confirm("Reset hasła na 1234?")) { users[idx].pass="1234"; saveUsers(); } }
   async function removeUser(idx) {
-      if(!confirm("Czy na pewno usunąć użytkownika " + users[idx].login + " z bazy lokalnej i online?")) return;
-      
-      const userToDelete = users[idx];
-      const loginToDelete = userToDelete.login;
-
-      logSystem(`Usuwanie użytkownika ${loginToDelete}...`);
-
-      try {
-          const res = await fetch(CONFIG.loginUrl, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                  type: "REMOVE_USER",
-                  login: loginToDelete
-              })
-          });
-          
-          if(res.ok) {
-              const json = await res.json();
-              if(json.status === "ok") {
-                  logSystem("✅ Usunięto z chmury Google.");
-              } else {
-                  logSystem("⚠️ " + json.msg);
-              }
-          } else {
-              alert("Błąd usuwania z chmury!");
-          }
-      } catch(e) {
-          console.error(e);
-          alert("Błąd połączenia. Użytkownik usunięty tylko lokalnie.");
-      }
-
-      users.splice(idx, 1);
-      saveUsers();
+      if(!confirm("Usunąć użytkownika?")) return;
+      const l = users[idx].login;
+      try { await fetch(CONFIG.loginUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({type: "REMOVE_USER", login: l}) }); } catch(e) {}
+      users.splice(idx, 1); saveUsers();
   }
-
-  async function startAdminCamera() {
-      try {
-          const s = await navigator.mediaDevices.getUserMedia({video:true});
-          document.getElementById('adminCamPreview').srcObject = s;
-      } catch(e) {}
-  }
-
+  async function startAdminCamera() { try { const s = await navigator.mediaDevices.getUserMedia({video:true}); document.getElementById('adminCamPreview').srcObject = s; } catch(e) {} }
 </script>
 </body>
 </html>
