@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR v4.1 (TARGET SYSTEM)</title>
+  <title>OLED REPAIR v4.2 (AUTO-SYNC + UX)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -85,12 +85,16 @@
     .panel-right:active { cursor: grabbing; }
 
     /* TARGET SYSTEM STYLES */
-    .target-box { background: #0a0a0a; border: 1px solid #333; padding: 12px; border-radius: 8px; margin-bottom: 15px; box-shadow: inset 0 0 20px rgba(0,0,0,0.5); }
+    .target-box { background: #0a0a0a; border: 1px solid #333; padding: 12px; border-radius: 8px; margin-bottom: 15px; box-shadow: inset 0 0 20px rgba(0,0,0,0.5); transition: 0.5s; }
     .target-header { display: flex; justify-content: space-between; font-size: 11px; color: #888; margin-bottom: 6px; font-family: var(--font-tech); letter-spacing: 1px; }
     .progress-track { width: 100%; height: 10px; background: #151515; border-radius: 5px; overflow: hidden; border: 1px solid #333; position: relative; }
     .progress-fill { height: 100%; background: linear-gradient(90deg, var(--neon-cyan), var(--neon-green)); width: 0%; transition: width 0.8s cubic-bezier(0.25, 1, 0.5, 1); box-shadow: 0 0 10px var(--neon-green); }
     .target-val { color: var(--neon-green); font-weight: bold; font-size: 14px; }
     
+    .target-box.reached { border-color: var(--neon-gold); box-shadow: 0 0 30px rgba(255, 215, 0, 0.2); animation: pulseGold 2s infinite; }
+    .target-box.reached .progress-fill { background: var(--neon-gold); box-shadow: 0 0 20px var(--neon-gold); }
+    @keyframes pulseGold { 0% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.1); } 50% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.3); } 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.1); } }
+
     .mini-target-track { width: 100%; height: 6px; background: #222; margin-top: 5px; border-radius: 3px; overflow: hidden; }
     .mini-target-fill { height: 100%; background: var(--neon-green); width: 0%; transition: width 0.5s; }
 
@@ -234,11 +238,11 @@
 <div id="loginScreen">
   <div class="login-box">
     <h2 style="color:#fff;">OLED REPAIR SYSTEM</h2>
-    <div style="font-size:12px; color:#666; font-family: var(--font-tech);">v4.0 (DUAL CLOUDFLARE)</div>
+    <div style="font-size:12px; color:#666; font-family: var(--font-tech);">v4.2 (AUTO-SYNC + UX)</div>
     <div id="syncStatus" class="sync-status">Ładowanie użytkowników...</div>
     
     <label class="input-label" style="text-align:left; margin-left:5px; margin-top:20px;">UŻYTKOWNIK</label>
-    <input type="text" id="userInput" class="login-input" placeholder="LOGIN" autocomplete="off">
+    <input type="text" id="userInput" class="login-input" placeholder="LOGIN" autocomplete="off" oninput="this.value = this.value.toUpperCase()">
     <label class="input-label" style="text-align:left; margin-left:5px; color:var(--neon-red);">HASŁO</label>
     <input type="password" id="passInput" class="login-input" placeholder="••••••••">
     
@@ -281,7 +285,7 @@
   <aside class="panel-left">
     <button id="opConnectBtn" class="op-connect-btn" onclick="connectNetwork()">📡 POŁĄCZ Z SERWEREM</button>
     
-    <div class="target-box">
+    <div id="targetBox" class="target-box">
         <div class="target-header">
             <span>CEL DZIENNY (OK+NDF+OFFRS)</span>
             <span id="targetText">0 / 15</span>
@@ -303,14 +307,15 @@
         <span id="snCheck" style="display:none; color:#0aff00; font-weight:bold; margin-left:10px;">✅</span>
         <span id="sessionTimer" style="font-family:var(--font-tech); color:#666; font-size:12px; margin-left:auto;">⏱️ 00:00</span>
     </div>
-    <input type="text" id="scanInput" placeholder="NAJPIERW POŁĄCZ Z BAZĄ..." disabled>
+    <input type="text" id="scanInput" placeholder="NAJPIERW POŁĄCZ Z BAZĄ..." disabled oninput="this.value = this.value.toUpperCase()">
 
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
         <span class="input-label" style="color:var(--neon-green)">2. SN OC (SZKŁO)</span>
         <span id="ocCheck" style="display:none; color:#0aff00; font-weight:bold; margin-left:10px;">✅</span>
     </div>
     <input type="text" id="scanInputOC" placeholder="OCZEKIWANIE NA SN MODUŁU..." disabled 
-           style="width: 100%; background: #080808; border: 1px solid #333; color: var(--neon-green); padding: 12px; font-size: 18px; text-align: center; font-family: var(--font-tech); outline: none; border-radius: 6px; margin-bottom: 15px;">
+           style="width: 100%; background: #080808; border: 1px solid #333; color: var(--neon-green); padding: 12px; font-size: 18px; text-align: center; font-family: var(--font-tech); outline: none; border-radius: 6px; margin-bottom: 15px;"
+           oninput="this.value = this.value.toUpperCase()">
 
     <div id="scanStatusInfo" class="scan-status-info">NUMERY ZESKANOWANE POPRAWNIE</div>
     <button id="confirmIdentityBtn" class="confirm-identity-btn" onclick="confirmScanData()">✅ ZATWIERDŹ DANE (OK)</button>
@@ -386,7 +391,7 @@
     <div class="admin-container">
         <div class="admin-status-bar">
             <div class="status-item"><div class="status-dot ok"></div> SYSTEM: ONLINE</div>
-            <div class="status-item">VER: 4.0</div>
+            <div class="status-item">VER: 4.2</div>
             <div class="status-item">CPU: <span id="simCpu">12%</span></div>
             <div class="status-item">MEM: <span id="simMem">2.4GB</span></div>
         </div>
@@ -398,7 +403,7 @@
                         <span style="font-size:12px; color:#666;">EDYCJA / RESET HASEŁ</span>
                     </div>
                     <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 100px; gap:10px; margin-bottom:15px;">
-                      <input type="text" id="newLogin" placeholder="LOGIN" class="cfg-input" style="margin:0;">
+                      <input type="text" id="newLogin" placeholder="LOGIN" class="cfg-input" style="margin:0;" oninput="this.value = this.value.toUpperCase()">
                       <input type="text" id="newPass" placeholder="HASŁO" class="cfg-input" style="margin:0;">
                       <select id="newRole" class="cfg-input" style="margin:0; padding:10px; cursor:pointer;">
                         <option value="OPERATOR">OPERATOR</option>
@@ -419,7 +424,7 @@
                 <div class="admin-panel-box">
                     <div class="admin-h" style="margin-bottom:5px;">TERMINAL SYSTEMOWY</div>
                     <div class="admin-terminal" id="sysLog">
-                        <div class="log-line"><span class="log-time">System:</span> Inicjalizacja v4.0...</div>
+                        <div class="log-line"><span class="log-time">System:</span> Inicjalizacja v4.2...</div>
                         <div class="log-line"><span class="log-time">System:</span> Gotowy do pracy.</div>
                     </div>
                 </div>
@@ -842,7 +847,17 @@
     }
   }
 
-  function logout() { if(confirm("Wylogować?")) location.reload(); }
+  function logout() { 
+      // DODANE: Podsumowanie przy wylogowaniu
+      let summary = "";
+      if(currentUser && currentUser.role === 'OPERATOR') {
+          const total = document.getElementById('opTotal').innerText;
+          summary = `\nZrobione dzisiaj: ${total} szt.`;
+      }
+      if(confirm(`Czy na pewno chcesz zakończyć zmianę?${summary}`)) {
+          location.reload(); 
+      }
+  }
   function emergencyReset() { if(confirm("Reset bazy?")) { localStorage.removeItem('oled_users'); location.reload(); } }
 
   function setupInterface() {
@@ -854,6 +869,11 @@
     document.getElementById('mainDashboard').style.display = 'none';
     document.getElementById('adminDash').style.display = 'none';
     document.getElementById('managerDash').style.display = 'none';
+
+    // DODANE: Automatyczne pobieranie danych przy starcie
+    fetchCloudflareData(); 
+    // DODANE: Auto-refresh co 5 minut (300000 ms)
+    setInterval(fetchCloudflareData, 300000);
 
     if(currentUser.role === 'KIEROWNIK' || currentUser.role === 'KOORDYNATOR') {
         const mgrTitle = document.querySelector('.mgr-title');
@@ -970,13 +990,19 @@
       
       const targetFill = document.getElementById('targetFill');
       const targetText = document.getElementById('targetText');
+      const targetBox = document.getElementById('targetBox');
+
       if(targetFill && targetText) {
           targetFill.style.width = progressPct + "%";
           targetText.innerText = `${ok} / ${DAILY_TARGET}`;
           if(ok >= DAILY_TARGET) {
+              // DODANE: Efekt osiągnięcia celu
               targetText.style.color = "var(--neon-gold)";
-              targetFill.style.boxShadow = "0 0 20px var(--neon-gold)";
-              targetFill.style.background = "var(--neon-gold)";
+              targetText.innerHTML = `${ok} / ${DAILY_TARGET} 🏆`;
+              targetBox.classList.add('reached');
+          } else {
+              targetBox.classList.remove('reached');
+              targetText.style.color = "#888";
           }
       }
   }
