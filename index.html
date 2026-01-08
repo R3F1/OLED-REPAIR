@@ -1026,19 +1026,24 @@
   document.getElementById('scanInput').addEventListener('keydown', e => {
     if(e.key==='Enter') {
       const v = e.target.value.trim().toUpperCase();
-      if(v.length>3) { 
+      // Walidacja: minimum 4 znaki ORAZ prefiks TBV lub TOV
+      if(v.length > 3 && (v.startsWith("TBV") || v.startsWith("TOV"))) { 
           SoundFX.play('beep'); startSession(v); saveRecoveryState();
           document.getElementById('snCheck').style.display = 'inline';
           document.getElementById('scanInputOC').disabled=false; 
           document.getElementById('scanInputOC').focus(); 
-      } else SoundFX.play('error');
+      } else {
+          SoundFX.play('error');
+          alert("BŁĘDNY SN! Numer musi zaczynać się od TBV lub TOV.");
+      }
     }
   });
 
   document.getElementById('scanInputOC').addEventListener('keydown', e => {
     if(e.key==='Enter') {
         const v = e.target.value.trim().toUpperCase();
-        if(v.length>3) { 
+        // Walidacja: minimum 4 znaki ORAZ prefiks TBV lub TOV
+        if(v.length > 3 && (v.startsWith("TBV") || v.startsWith("TOV"))) { 
             currentOC = v; SoundFX.play('beep'); 
             document.getElementById('ocCheck').style.display = 'inline';
             
@@ -1047,6 +1052,9 @@
             document.getElementById('confirmIdentityBtn').style.display = 'block';
             
             checkOcRequirement(); saveRecoveryState(); 
+        } else {
+            SoundFX.play('error');
+            alert("BŁĘDNY OC! Numer musi zaczynać się od TBV lub TOV.");
         }
     }
   });
