@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR v1.0 (FINAL RELEASE)</title>
+  <title>OLED REPAIR v1.1 (MONTHLY REPORTS)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -232,13 +232,13 @@
         <div><strong>OPERATOR:</strong> <span id="plOp">---</span></div>
         <div><strong>STATUS:</strong> <span id="plStatus" style="font-weight:bold; font-size:20pt;">---</span></div>
     </div>
-    <div class="pl-footer">OLED REPAIR SYSTEM v1.0 - By Łukasz Gruszczyński</div>
+    <div class="pl-footer">OLED REPAIR SYSTEM v1.1 - By Łukasz Gruszczyński</div>
 </div>
 
 <div id="loginScreen">
   <div class="login-box">
     <h2 style="color:#fff;">OLED REPAIR SYSTEM</h2>
-    <div style="font-size:12px; color:#666; font-family: var(--font-tech);">v1.0 (FINAL RELEASE)</div>
+    <div style="font-size:12px; color:#666; font-family: var(--font-tech);">v1.1 (MONTHLY REPORTS)</div>
     <div id="syncStatus" class="sync-status">Ładowanie użytkowników...</div>
     
     <label class="input-label" style="text-align:left; margin-left:5px; margin-top:20px;">UŻYTKOWNIK</label>
@@ -393,7 +393,7 @@
     <div class="admin-container">
         <div class="admin-status-bar">
             <div class="status-item"><div class="status-dot ok"></div> SYSTEM: ONLINE</div>
-            <div class="status-item">VER: 1.0</div>
+            <div class="status-item">VER: 1.1</div>
             <div class="status-item">CPU: <span id="simCpu">12%</span></div>
             <div class="status-item">MEM: <span id="simMem">2.4GB</span></div>
         </div>
@@ -426,7 +426,7 @@
                 <div class="admin-panel-box">
                     <div class="admin-h" style="margin-bottom:5px;">TERMINAL SYSTEMOWY</div>
                     <div class="admin-terminal" id="sysLog">
-                        <div class="log-line"><span class="log-time">System:</span> Inicjalizacja v1.0...</div>
+                        <div class="log-line"><span class="log-time">System:</span> Inicjalizacja v1.1...</div>
                         <div class="log-line"><span class="log-time">System:</span> Gotowy do pracy.</div>
                     </div>
                 </div>
@@ -437,7 +437,7 @@
                     <div style="font-size:12px; color:#aaa; margin-bottom:15px;">Połącz, aby zarządzać plikami.</div>
                     <div style="display:flex; gap:10px;">
                         <button class="cfg-btn cyan" style="flex:1;" onclick="connectNetwork()">📡 POŁĄCZ</button>
-                        <button class="cfg-btn cyan" style="flex:1;" onclick="toggleReportPanel()">📊 RAPORTY</button>
+                        <button class="cfg-btn cyan" style="flex:1;" onclick="switchToManagerReports()">📊 RAPORTY (TABELA)</button>
                     </div>
                 </div>
                 <div class="admin-panel-box">
@@ -466,6 +466,7 @@
         <div class="mgr-filters">
             <button class="mgr-btn active" id="fToday" onclick="updateLeaderStats('TODAY')">DZISIAJ</button>
             <button class="mgr-btn" id="fYesterday" onclick="updateLeaderStats('YESTERDAY')">WCZORAJ</button>
+            <button class="mgr-btn" id="fMonth" onclick="updateLeaderStats('MONTH')">TEN MIESIĄC</button>
             <button class="mgr-btn" id="fAll" onclick="updateLeaderStats('ALL')">CAŁA HISTORIA</button>
             <div style="width:1px; background:#444; margin:0 10px;"></div>
             <button class="mgr-btn" onclick="fetchCloudflareData()">🔄 ODŚWIEŻ (CLOUD)</button>
@@ -495,7 +496,7 @@
             <h4>RANKING OPERATORÓW</h4>
             <div style="overflow:auto;">
                 <table class="data-table">
-                    <thead><tr><th>OP</th><th>ILOŚĆ</th><th>CEL (15)</th><th>YIELD</th></tr></thead>
+                    <thead><tr><th>OP</th><th>ILOŚĆ</th><th>CEL</th><th>YIELD</th></tr></thead>
                     <tbody id="mgrRankBody"><tr><td colspan="4" style="text-align:center">Brak danych</td></tr></tbody>
                 </table>
             </div>
@@ -1337,6 +1338,14 @@
   }
   async function startAdminCamera() { try { const s = await navigator.mediaDevices.getUserMedia({video:true}); document.getElementById('adminCamPreview').srcObject = s; } catch(e) {} }
 
+  /* --- NEW FUNCTION: SWITCH TO MANAGER REPORTS --- */
+  function switchToManagerReports() {
+      document.getElementById('adminDash').style.display = 'none';
+      document.getElementById('managerDash').style.display = 'flex';
+      // Automatically show Monthly data for Admin view
+      updateLeaderStats('MONTH');
+  }
+
   /* --- MGR FILTER LOGIC --- */
   function updateLeaderStats(mode) {
       leaderMode = mode;
@@ -1345,6 +1354,7 @@
       
       if(mode==='TODAY') document.getElementById('fToday').classList.add('active');
       else if(mode==='YESTERDAY') document.getElementById('fYesterday').classList.add('active');
+      else if(mode==='MONTH') document.getElementById('fMonth').classList.add('active');
       else document.getElementById('fAll').classList.add('active');
 
       updateManagerView();
@@ -1408,17 +1418,18 @@
       
       let total = 0, ok = 0, ng = 0;
 
-      // Filtrowanie daty (TODAY/YESTERDAY/ALL) - korzystamy z globalnej zmiennej leaderMode
-      // Domyślnie bierzemy wszystko jeśli filtrowanie nie jest zaimplementowane w pełni
+      // Filtrowanie daty (TODAY/YESTERDAY/ALL/MONTH)
       let filteredData = reportsCache;
       
       const today = new Date().toDateString();
       const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
       const yStr = yesterday.toDateString();
+      const now = new Date();
 
       if(typeof leaderMode !== 'undefined') {
           if(leaderMode === 'TODAY') filteredData = reportsCache.filter(r => r.rawDate && r.rawDate.toDateString() === today);
           else if(leaderMode === 'YESTERDAY') filteredData = reportsCache.filter(r => r.rawDate && r.rawDate.toDateString() === yStr);
+          else if(leaderMode === 'MONTH') filteredData = reportsCache.filter(r => r.rawDate && r.rawDate.getMonth() === now.getMonth() && r.rawDate.getFullYear() === now.getFullYear());
       }
 
       // Generowanie tabeli
@@ -1487,6 +1498,15 @@
           let tPct = (stats.ok / TARGET) * 100;
           if(tPct > 100) tPct = 100;
 
+          // Display Logic for Month View vs Day View
+          let targetDisplay = `${stats.ok} / ${TARGET}`;
+          let barDisplay = `<div class="mini-target-track"><div class="mini-target-fill" style="width:${tPct}%"></div></div>`;
+          
+          if (leaderMode === 'MONTH' || leaderMode === 'ALL') {
+              targetDisplay = `${stats.ok}`; // Just show total count for Month/All
+              barDisplay = ""; // Hide daily target bar for monthly view
+          }
+
           // Kolorowanie Yield
           let yColor = "#fff";
           if(y >= 90) yColor = "var(--neon-green)";
@@ -1495,10 +1515,10 @@
           tbody.innerHTML += `<tr>
             <td>
                 ${op}
-                <div class="mini-target-track"><div class="mini-target-fill" style="width:${tPct}%"></div></div>
+                ${barDisplay}
             </td>
             <td style="font-weight:bold;">${stats.total}</td>
-            <td style="color:${tPct === 100 ? 'var(--neon-gold)' : '#ccc'}">${stats.ok} / ${TARGET}</td>
+            <td style="color:${tPct === 100 && leaderMode !== 'MONTH' ? 'var(--neon-gold)' : '#ccc'}">${targetDisplay}</td>
             <td style="color:${yColor}">${y}%</td>
           </tr>`;
       });
