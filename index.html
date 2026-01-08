@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR v3.3 (DIAGNOSTIC)</title>
+  <title>OLED REPAIR v3.4 (ADMIN TABLE FIX)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -322,7 +322,7 @@
 <div id="loginScreen">
   <div class="login-box">
     <h2 style="color:#fff;">OLED REPAIR SYSTEM</h2>
-    <div style="font-size:12px; color:#666; font-family: var(--font-tech);">v3.3 (DIAGNOSTIC)</div>
+    <div style="font-size:12px; color:#666; font-family: var(--font-tech);">v3.4 (ADMIN TABLE FIX)</div>
     <div id="syncStatus" class="sync-status">Ładowanie użytkowników...</div>
     
     <label class="input-label" style="text-align:left; margin-left:5px; margin-top:20px;">UŻYTKOWNIK</label>
@@ -456,7 +456,7 @@
     <div class="admin-container">
         <div class="admin-status-bar">
             <div class="status-item"><div class="status-dot ok"></div> SYSTEM: ONLINE</div>
-            <div class="status-item">VER: 3.3</div>
+            <div class="status-item">VER: 3.4</div>
             <div class="status-item">CPU: <span id="simCpu">12%</span></div>
             <div class="status-item">MEM: <span id="simMem">2.4GB</span></div>
         </div>
@@ -474,7 +474,7 @@
                         <option value="OPERATOR">OPERATOR</option>
                         <option value="KOORDYNATOR">KOORDYNATOR</option>
                         <option value="KIEROWNIK">KIEROWNIK</option>
-                        <option value="ADMIN">ADMIN</option>
+                        <option value="ADMIN">ADMINISTRATOR</option>
                       </select>
                       <button onclick="addUser()" class="cfg-btn">DODAJ</button>
                     </div>
@@ -489,7 +489,7 @@
                 <div class="admin-panel-box">
                     <div class="admin-h" style="margin-bottom:5px;">TERMINAL SYSTEMOWY</div>
                     <div class="admin-terminal" id="sysLog">
-                        <div class="log-line"><span class="log-time">System:</span> Inicjalizacja v3.3...</div>
+                        <div class="log-line"><span class="log-time">System:</span> Inicjalizacja v3.4...</div>
                         <div class="log-line"><span class="log-time">System:</span> Gotowy do pracy.</div>
                     </div>
                 </div>
@@ -811,7 +811,7 @@
           if(!res.ok) throw new Error("Network response was not ok");
           const txt = await res.text();
           
-          const rows = txt.split(/\r?\n/); // Bezpieczne podział linii
+          const rows = txt.split(/\r?\n/); 
           const newUsers = [];
           
           for(let i=1; i<rows.length; i++) {
@@ -820,13 +820,18 @@
 
               const cols = row.split(',');
               if(cols.length >= 3) {
-                   // Czyścimy cudzysłowy i spacje
                    const l = cols[0].replace(/^"|"$/g, '').trim().toUpperCase();
-                   const p = cols[1].replace(/^"|"$/g, '').trim();
-                   const r = cols[2].replace(/^"|"$/g, '').trim().toUpperCase();
+                   const p = cols[1].replace(/^"|"$/g, '').trim(); // Hasło bez uppercase!
+                   let r = cols[2].replace(/^"|"$/g, '').trim().toUpperCase();
+                   
+                   // --- Mapowanie nazw ról ---
+                   if (r === 'ADMINISTRATOR') r = 'ADMIN';
+                   if (r === 'OPERATOR') r = 'OPERATOR';
                    
                    if(l && p && ['OPERATOR','ADMIN','KIEROWNIK','KOORDYNATOR'].includes(r)) {
                        newUsers.push({login:l, pass:p, role:r});
+                   } else {
+                       console.log("Pominięto wiersz (zła rola?):", row);
                    }
               }
           }
@@ -834,18 +839,23 @@
           if(newUsers.length > 0) {
               users = newUsers;
               saveUsers();
-              statusEl.innerText = "Zsynchronizowano!";
+              statusEl.innerText = "Zsynchronizowano! (" + newUsers.length + " os.)";
               statusEl.className = "sync-status ok";
               setTimeout(()=>{ statusEl.innerText=""; }, 3000);
+              
+              // --- FIX: Odśwież tabelę jeśli admin jest zalogowany ---
+              if(currentUser && currentUser.role === 'ADMIN') {
+                  renderAdminUserTable();
+              }
+              
               logSystem("Zaktualizowano bazę użytkowników z chmury");
           } else {
-              throw new Error("Pusty plik");
+              throw new Error("Pusty plik lub błąd parsowania");
           }
       } catch(e) {
           console.error("Sync error:", e);
-          statusEl.innerText = "Tryb Offline (Brak połączenia)";
+          statusEl.innerText = "Błąd pobierania bazy";
           statusEl.className = "sync-status err";
-          setTimeout(()=>{ statusEl.innerText=""; }, 5000);
       }
   }
 
