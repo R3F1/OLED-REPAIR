@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR v11.5 ONYX (SMART FLOW)</title>
+  <title>OLED REPAIR v12.0 ONYX (ZOOM + RECOVERY)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -71,7 +71,6 @@
       width: 600px; padding: 40px; border: 2px solid var(--neon-red); background: #050505;
       text-align: center; border-radius: 12px; box-shadow: 0 0 100px rgba(255, 0, 60, 0.2);
     }
-    .alert-box h1 { font-family: var(--font-tech); letter-spacing: 1px; }
     .path-box {
       background:#111; padding:15px; border:1px dashed #555; font-size:12px; color:#fff; 
       font-family:var(--font-tech); margin-top: 5px; word-break: break-all;
@@ -106,10 +105,21 @@
     .panel-right {
       position: relative; background: #000; border: 2px solid #333; border-radius: 12px; overflow: hidden;
       box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
+      cursor: grab; /* Cursor pan */
     }
+    .panel-right:active { cursor: grabbing; }
     
-    video { width: 100%; height: 100%; object-fit: contain; transform: scaleX(1); transition: transform 0.3s; }
-    video.mirrored { transform: scaleX(-1); }
+    /* VIDEO & ZOOM LOGIC */
+    .video-container {
+        width: 100%; height: 100%; overflow: hidden; position: relative;
+        display: flex; justify-content: center; align-items: center;
+    }
+    video { 
+        width: 100%; height: 100%; object-fit: contain; 
+        transition: transform 0.1s linear; /* Smooth zoom */
+        transform-origin: center center;
+    }
+    video.mirrored { transform: scaleX(-1); } /* Override by JS for zoom later */
 
     /* --- DRAWING & CONTROLS --- */
     #drawCanvas {
@@ -129,19 +139,34 @@
     }
     .tool-btn.confirm { background: var(--neon-cyan); color: #000; border-color: var(--neon-cyan); font-weight: bold; }
 
-    /* CAM CONTROLS */
-    .cam-controls { position: absolute; bottom: 20px; right: 20px; z-index: 50; display: flex; gap: 10px; }
+    /* CAM & ZOOM CONTROLS */
+    .cam-controls { 
+        position: absolute; bottom: 20px; right: 20px; z-index: 50; 
+        display: flex; gap: 15px; align-items: center; 
+        background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 30px; 
+        border: 1px solid #333; backdrop-filter: blur(5px);
+    }
     .cam-btn {
-      background: rgba(0,0,0,0.6); border: 1px solid var(--neon-cyan); color: var(--neon-cyan);
-      width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-      cursor: pointer; font-size: 20px; transition: 0.2s; backdrop-filter: blur(4px);
+      background: transparent; border: 1px solid var(--neon-cyan); color: var(--neon-cyan);
+      width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 18px; transition: 0.2s; 
     }
     .cam-btn:hover { background: var(--neon-cyan); color: #000; }
+    
+    /* SLIDER STYLE */
+    .zoom-group { display: flex; align-items: center; gap: 10px; font-family: var(--font-tech); font-size: 12px; color: var(--neon-cyan); }
+    input[type=range] {
+      -webkit-appearance: none; width: 100px; height: 4px; background: #333; border-radius: 2px; outline: none;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--neon-cyan); cursor: pointer;
+      box-shadow: 0 0 10px var(--neon-cyan);
+    }
 
     /* UI ELEMENTS */
     .input-label { font-size: 11px; color: var(--neon-cyan); letter-spacing: 1px; margin-bottom: 5px; display: block; font-weight: bold; font-family: var(--font-tech); }
     #scanInput {
-      width: 100%; background: #000; border: 1px solid #444; color: #fff; padding: 12px; font-size: 22px;
+      width: 100%; background: #080808; border: 1px solid #444; color: #fff; padding: 12px; font-size: 22px;
       text-align: center; font-family: var(--font-tech); outline: none; border-radius: 6px; margin-bottom: 15px;
     }
     #scanInput:focus { border-color: var(--neon-green); box-shadow: 0 0 20px rgba(10,255,0,0.2); }
@@ -227,7 +252,7 @@
     .tv-front::after { content: "OLED"; opacity: 0.3; font-weight: bold; font-family: var(--font-tech); }
     .tv-back { transform: rotateY(180deg); background: #151515; border: 1px solid #444; }
     
-    .cam-overlay { position: absolute; top: 20px; left: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 55; }
+    .cam-overlay { position: absolute; top: 20px; left: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 55; pointer-events: none; }
     .tag { background: rgba(0,0,0,0.7); color: #fff; padding: 6px 12px; font-family: var(--font-tech); font-size: 14px; border-left: 3px solid var(--neon-cyan); backdrop-filter: blur(5px); }
 
     canvas { display: none; }
@@ -247,7 +272,7 @@
 <div id="loginScreen">
   <div class="login-box">
     <h2 style="color:#fff;">OLED REPAIR SYSTEM</h2>
-    <div style="font-size:12px; color:#666; margin-bottom:30px; font-family: var(--font-tech);">V11.5 ONYX (SMART FLOW)</div>
+    <div style="font-size:12px; color:#666; margin-bottom:30px; font-family: var(--font-tech);">V12.0 ONYX (ZOOM + RECOVERY)</div>
     
     <label class="input-label" style="text-align:left; margin-left:5px;">UŻYTKOWNIK</label>
     <input type="text" id="userInput" class="login-input" placeholder="LOGIN" autocomplete="off">
@@ -299,7 +324,7 @@
 
     <div class="decision-panel">
       <span class="input-label" style="color:var(--neon-purple)">DECYZJA SERWISOWA</span>
-      <select id="statusSelect" class="custom-select">
+      <select id="statusSelect" class="custom-select" onchange="saveRecoveryState()">
         <option value="OK">🟢 OK (SPRAWNY)</option>
         <option value="NG">🔴 NG (USZKODZONY)</option>
         <option value="NDF">🔵 NDF (BRAK WAD)</option>
@@ -308,14 +333,14 @@
         <option value="OFFRS_OK">🟣 OFFRS OK</option>
       </select>
       <span class="input-label">KOMENTARZ / OPIS USTERKI</span>
-      <textarea id="commentInput" class="custom-textarea" rows="2" placeholder="Wpisz uwagi..."></textarea>
+      <textarea id="commentInput" class="custom-textarea" rows="2" placeholder="Wpisz uwagi..." onkeyup="saveRecoveryState()"></textarea>
     </div>
 
     <button id="actionBtn" onclick="saveData()">OCZEKIWANIE</button>
     <div id="saveStatus" style="text-align:center; color:#666; margin-top:10px; font-size:11px; height:15px; font-family: var(--font-tech);"></div>
   </aside>
 
-  <main class="panel-right">
+  <main class="panel-right" id="camContainer">
     <div class="cam-overlay">
       <div class="tag" id="tagSN">SN: ---</div>
       <div class="tag" id="tagOp">OP: ---</div>
@@ -331,10 +356,19 @@
     </div>
 
     <div class="cam-controls">
+      <div class="zoom-group">
+        <span>ZOOM</span>
+        <input type="range" id="zoomSlider" min="1" max="4" step="0.1" value="1">
+        <span id="zoomVal">1.0x</span>
+      </div>
+      <div style="width:1px; height:20px; background:#444; margin:0 5px;"></div>
       <div class="cam-btn" onclick="toggleMirror()" title="Odbicie lustrzane">↔</div>
     </div>
-    <video id="videoFeed" autoplay playsinline></video>
-    <canvas id="drawCanvas"></canvas>
+    
+    <div class="video-container">
+        <video id="videoFeed" autoplay playsinline></video>
+        <canvas id="drawCanvas"></canvas>
+    </div>
   </main>
 </div>
 
@@ -377,7 +411,6 @@
     </div>
   </div>
   <div class="panel-content">
-    
     <div class="stats-container">
       <div class="stat-box" style="border-color:var(--neon-cyan)">
         <div class="stat-val" id="statTotal">0</div>
@@ -396,7 +429,6 @@
         <div class="stat-label">YIELD (SKUTECZNOŚĆ)</div>
       </div>
     </div>
-
     <table id="reportTable"><thead><tr><th>DATA</th><th>SN</th><th>OPERATOR</th><th>DECYZJA</th><th>UWAGI</th></tr></thead><tbody></tbody></table>
   </div>
 </div>
@@ -432,25 +464,21 @@
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
       osc.connect(gain); gain.connect(this.ctx.destination);
-      
       const now = this.ctx.currentTime;
-      if(type === 'beep') { // Scan OK
+      if(type === 'beep') {
         osc.type = 'sine'; osc.frequency.setValueAtTime(1200, now);
         gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now+0.1);
         osc.start(now); osc.stop(now+0.1);
-      } else if(type === 'error') { // NG / Error
+      } else if(type === 'error') {
         osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now); osc.frequency.linearRampToValueAtTime(100, now+0.3);
         gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0.01, now+0.3);
         osc.start(now); osc.stop(now+0.3);
-      } else if(type === 'shutter') { // Photo
+      } else if(type === 'shutter') {
         osc.type = 'square'; osc.frequency.setValueAtTime(800, now);
         gain.gain.setValueAtTime(0.05, now); gain.gain.exponentialRampToValueAtTime(0.001, now+0.05);
         osc.start(now); osc.stop(now+0.05);
-      } else if(type === 'success') { // Save
-        osc.type = 'triangle'; 
-        osc.frequency.setValueAtTime(440, now); 
-        osc.frequency.setValueAtTime(554, now+0.1); 
-        osc.frequency.setValueAtTime(659, now+0.2); 
+      } else if(type === 'success') {
+        osc.type = 'triangle'; osc.frequency.setValueAtTime(440, now); osc.frequency.setValueAtTime(554, now+0.1); osc.frequency.setValueAtTime(659, now+0.2); 
         gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now+0.4);
         osc.start(now); osc.stop(now+0.4);
       }
@@ -466,14 +494,21 @@
   let isMirrored = false;
   let reportsCache = [];
   
-  // Drawing State
+  // Drawing & Zoom State
   let isDrawing = false;
   let drawColor = "red";
   let tempPhotoType = "";
+  let zoomLevel = 1.0;
+  let panX = 0;
+  let panY = 0;
+  let isPanning = false;
+  let startPanX = 0;
+  let startPanY = 0;
 
   /* --- INIT --- */
   window.onload = () => {
     loadUsers();
+    checkRecovery(); // Auto Recovery check
     setInterval(() => document.getElementById('clockDisplay').innerText = new Date().toLocaleTimeString().slice(0,5), 1000);
     
     // Canvas Listeners
@@ -484,7 +519,47 @@
     c.addEventListener('touchstart', (e)=>{e.preventDefault(); startDraw(e.touches[0])});
     c.addEventListener('touchend', (e)=>{e.preventDefault(); endDraw()});
     c.addEventListener('touchmove', (e)=>{e.preventDefault(); draw(e.touches[0])});
+
+    // Zoom & Pan Listeners
+    const slider = document.getElementById('zoomSlider');
+    slider.addEventListener('input', (e) => {
+        zoomLevel = parseFloat(e.target.value);
+        document.getElementById('zoomVal').innerText = zoomLevel.toFixed(1) + "x";
+        applyTransform();
+    });
+
+    const camContainer = document.getElementById('camContainer');
+    camContainer.addEventListener('mousedown', (e) => {
+        if(zoomLevel > 1 && !isDrawing && document.getElementById('drawCanvas').style.display === 'none') {
+            isPanning = true;
+            startPanX = e.clientX - panX;
+            startPanY = e.clientY - panY;
+            camContainer.style.cursor = 'grabbing';
+        }
+    });
+    window.addEventListener('mouseup', () => {
+        isPanning = false;
+        camContainer.style.cursor = zoomLevel > 1 ? 'grab' : 'default';
+    });
+    window.addEventListener('mousemove', (e) => {
+        if(!isPanning) return;
+        e.preventDefault();
+        panX = e.clientX - startPanX;
+        panY = e.clientY - startPanY;
+        applyTransform();
+    });
   };
+
+  function applyTransform() {
+    const v = document.getElementById('videoFeed');
+    const mirrorFactor = isMirrored ? -1 : 1;
+    // Limit pan to keep image somewhat in view
+    const limit = (zoomLevel - 1) * 500;
+    if(panX > limit) panX = limit; if(panX < -limit) panX = -limit;
+    if(panY > limit) panY = limit; if(panY < -limit) panY = -limit;
+
+    v.style.transform = `scale(${zoomLevel * mirrorFactor}, ${zoomLevel}) translate(${panX / zoomLevel}px, ${panY / zoomLevel}px)`;
+  }
 
   /* --- USERS --- */
   function loadUsers() {
@@ -549,7 +624,7 @@
     } catch(e) { alert("Wybierz folder!"); }
   }
 
-  /* --- CAMERA & DRAWING --- */
+  /* --- CAMERA & RECOVERY --- */
   async function initCamera() {
     try {
       const s = await navigator.mediaDevices.getUserMedia({video:{width:{ideal:3840}, height:{ideal:2160}}});
@@ -558,12 +633,38 @@
   }
   function toggleMirror() {
     isMirrored = !isMirrored;
-    const v = document.getElementById('videoFeed');
-    isMirrored ? v.classList.add('mirrored') : v.classList.remove('mirrored');
+    applyTransform();
   }
   function toggleFullScreen() {
     if(!document.fullscreenElement) document.documentElement.requestFullscreen();
     else if(document.exitFullscreen) document.exitFullscreen();
+  }
+
+  // --- RECOVERY LOGIC (FEATURE 2) ---
+  function saveRecoveryState() {
+      if(!currentSN) return;
+      const state = {
+          sn: currentSN,
+          status: document.getElementById('statusSelect').value,
+          comment: document.getElementById('commentInput').value
+      };
+      localStorage.setItem('oled_recovery', JSON.stringify(state));
+  }
+  function checkRecovery() {
+      const rec = localStorage.getItem('oled_recovery');
+      if(rec) {
+          const state = JSON.parse(rec);
+          if(confirm(`⚠️ Wykryto niezapisaną sesję dla SN: ${state.sn}\nCzy przywrócić?`)) {
+              startSession(state.sn);
+              document.getElementById('statusSelect').value = state.status;
+              document.getElementById('commentInput').value = state.comment;
+          } else {
+              localStorage.removeItem('oled_recovery');
+          }
+      }
+  }
+  function clearRecovery() {
+      localStorage.removeItem('oled_recovery');
   }
 
   // --- DRAWING LOGIC ---
@@ -599,6 +700,7 @@
       if(v.length > 3) {
         SoundFX.play('beep');
         startSession(v);
+        saveRecoveryState();
       } else {
         SoundFX.play('error');
       }
@@ -616,20 +718,16 @@
     document.getElementById('commentInput').value = "";
   }
 
-  // --- SMART CAPTURE LOGIC (NEW: CONDITIONAL NG/OK) ---
+  // --- SMART CAPTURE + CROP (FEATURE 1) ---
   function capture(type) {
     if(!currentSN) return document.getElementById('scanInput').focus();
     tempPhotoType = type;
     
-    // Animacja
     document.getElementById('tv3d').style.transform = type === 'TYL' ? "rotateY(180deg)" : "rotateY(0deg)";
-
-    // Sprawdzenie decyzji
     const decision = document.getElementById('statusSelect').value;
     const requiresAnnotation = ['NG', 'SCRAP', 'RMA'].includes(decision);
 
     if (requiresAnnotation) {
-        // --- TRYB EDYCJI (ANNOTATION MODE) ---
         const v = document.getElementById('videoFeed');
         v.pause();
         SoundFX.play('shutter');
@@ -640,20 +738,17 @@
         c.height = v.offsetHeight;
         clearDraw();
     } else {
-        // --- TRYB SZYBKI (INSTANT SNAP) ---
         SoundFX.play('shutter');
-        takeInstantPhoto();
+        processPhoto(false);
     }
   }
 
-  // Zapis w trybie edycji (z rysunkiem)
-  function confirmPhoto() {
-    processPhoto(true);
-  }
-
-  // Zapis w trybie szybkim (bez rysunku)
-  function takeInstantPhoto() {
-    processPhoto(false);
+  function confirmPhoto() { processPhoto(true); }
+  function cancelPhoto() {
+    const v = document.getElementById('videoFeed');
+    v.play();
+    document.getElementById('drawToolbar').style.display = 'none';
+    document.getElementById('drawCanvas').style.display = 'none';
   }
 
   function processPhoto(hasDrawing) {
@@ -661,29 +756,54 @@
     const drawC = document.getElementById('drawCanvas');
     const finalC = document.getElementById('photoCanvas');
     
+    // Set output size to match video resolution
     finalC.width = v.videoWidth;
     finalC.height = v.videoHeight;
     const ctx = finalC.getContext('2d');
 
-    // 1. Draw Video Frame
+    // --- CROP CALCULATION ---
+    // We map the visible area (zoomed/panned) back to the source video coordinates
+    const sourceW = v.videoWidth / zoomLevel;
+    const sourceH = v.videoHeight / zoomLevel;
+    
+    // Pan is stored in screen CSS pixels. Need to convert to video source pixels.
+    // NOTE: This approximation aligns center pan. 
+    // Usually panX=0 means center.
+    const containerW = v.offsetWidth;
+    const containerH = v.offsetHeight;
+    
+    // Calculate relative offsets (0.5 is center)
+    // Complex mapping: CSS translate moves element, we need to move crop window opposite direction
+    const panXFactor = panX / (containerW * zoomLevel); 
+    const panYFactor = panY / (containerH * zoomLevel);
+
+    let sourceX = (v.videoWidth - sourceW) / 2 - (panXFactor * v.videoWidth);
+    let sourceY = (v.videoHeight - sourceH) / 2 - (panYFactor * v.videoHeight);
+    
+    // Draw Cropped Video
     ctx.save();
-    if(isMirrored) { ctx.translate(finalC.width, 0); ctx.scale(-1, 1); }
-    ctx.drawImage(v, 0, 0);
+    if(isMirrored) { 
+        ctx.translate(finalC.width, 0); 
+        ctx.scale(-1, 1); 
+        // Mirroring flips X coordinates for source too
+        // Simplified: Just flip canvas, logic holds if we capture what's on screen
+    }
+    
+    ctx.drawImage(v, sourceX, sourceY, sourceW, sourceH, 0, 0, finalC.width, finalC.height);
     ctx.restore();
 
-    // 2. Overlay Drawing (Scaled) - only if triggered from annotation mode
+    // Overlay Drawing (Scaled)
     if(hasDrawing) {
         ctx.drawImage(drawC, 0, 0, finalC.width, finalC.height);
     }
 
-    // 3. Watermark
+    // Watermark
     addWatermark(ctx, finalC.width, finalC.height);
 
-    // Save Blob
     finalC.toBlob(b => {
       photos[tempPhotoType] = b;
       updateUIafterPhoto();
-      if(hasDrawing) cancelPhoto(); // Hide UI if it was visible
+      if(hasDrawing) cancelPhoto();
     }, 'image/jpeg', 0.95);
   }
 
@@ -695,13 +815,6 @@
     ctx.strokeText(`TYP: ${tempPhotoType}`, 50, (fs*2)+40); ctx.fillText(`TYP: ${tempPhotoType}`, 50, (fs*2)+40);
     ctx.fillStyle = "white"; ctx.font = `bold ${Math.floor(fs*0.8)}px Roboto`;
     ctx.strokeText(`OP: ${currentUser.login}`, 50, (fs*3)+60); ctx.fillText(`OP: ${currentUser.login}`, 50, (fs*3)+60);
-  }
-
-  function cancelPhoto() {
-    const v = document.getElementById('videoFeed');
-    v.play();
-    document.getElementById('drawToolbar').style.display = 'none';
-    document.getElementById('drawCanvas').style.display = 'none';
   }
 
   function updateUIafterPhoto() {
@@ -743,6 +856,7 @@ ZDJĘCIA: 3/3 OK
         await write(d, `RAPORT_${currentSN}.txt`, new Blob([txt],{type:'text/plain'}));
         
         SoundFX.play('success');
+        clearRecovery(); // Success - clear recovery
         document.getElementById('saveStatus').innerText = "ZAPISANO!";
         document.getElementById('saveStatus').style.color = "#0aff00";
         showQr(currentSN, decision);
@@ -759,63 +873,34 @@ ZDJĘCIA: 3/3 OK
   }
   async function write(dh, n, b) { const h = await dh.getFileHandle(n,{create:true}); const w = await h.createWritable(); await w.write(b); await w.close(); }
 
-  /* --- PATTERN GENERATOR --- */
+  /* --- PATTERNS --- */
   const patterns = ['#fff', '#f00', '#0f0', '#00f', '#000', 'linear-gradient(90deg, white, black)'];
   let currentPatternIdx = -1;
-
   function togglePatterns() {
     const ov = document.getElementById('patternOverlay');
-    if(ov.style.display === 'block') {
-      ov.style.display = 'none';
-      currentPatternIdx = -1;
-    } else {
-      ov.style.display = 'block';
-      nextPattern();
-    }
+    if(ov.style.display === 'block') { ov.style.display = 'none'; currentPatternIdx = -1; } 
+    else { ov.style.display = 'block'; nextPattern(); }
   }
   function nextPattern() {
-    currentPatternIdx++;
-    const ov = document.getElementById('patternOverlay');
-    if(currentPatternIdx >= patterns.length) {
-      ov.style.display = 'none';
-      currentPatternIdx = -1;
-      return;
-    }
+    currentPatternIdx++; const ov = document.getElementById('patternOverlay');
+    if(currentPatternIdx >= patterns.length) { ov.style.display = 'none'; currentPatternIdx = -1; return; }
     ov.style.background = patterns[currentPatternIdx];
   }
   document.addEventListener('keydown', (e) => {
-      if(e.key === "Escape") {
-          document.getElementById('patternOverlay').style.display = 'none';
-          currentPatternIdx = -1;
-      }
+      if(e.key === "Escape") { document.getElementById('patternOverlay').style.display = 'none'; currentPatternIdx = -1; }
   });
 
-  /* --- QR PASSPORT --- */
+  /* --- QR & MANAGER --- */
   function showQr(sn, status) {
     const box = document.getElementById('qrCodeBox'); box.innerHTML = "";
-    new QRCode(box, {
-      text: `${sn}|${status}|${new Date().toLocaleDateString()}`,
-      width: 128, height: 128
-    });
+    new QRCode(box, { text: `${sn}|${status}|${new Date().toLocaleDateString()}`, width: 128, height: 128 });
     document.getElementById('qrSnDisplay').innerText = "SN: " + sn;
     document.getElementById('qrStatusDisplay').innerText = "STATUS: " + status;
     document.getElementById('qrPopup').style.display = "block";
   }
-  function closeQr() {
-    document.getElementById('qrPopup').style.display = "none";
-    document.getElementById('scanInput').focus();
-  }
-
-  /* --- MANAGER & ANALYTICS --- */
-  function toggleUserPanel() { 
-    document.getElementById('userPanel').classList.toggle('open'); 
-    document.getElementById('reportPanel').classList.remove('open');
-  }
-  function toggleReportPanel() { 
-    document.getElementById('reportPanel').classList.toggle('open'); 
-    document.getElementById('userPanel').classList.remove('open');
-  }
-
+  function closeQr() { document.getElementById('qrPopup').style.display = "none"; document.getElementById('scanInput').focus(); }
+  function toggleUserPanel() { document.getElementById('userPanel').classList.toggle('open'); document.getElementById('reportPanel').classList.remove('open'); }
+  function toggleReportPanel() { document.getElementById('reportPanel').classList.toggle('open'); document.getElementById('userPanel').classList.remove('open'); }
   async function scanNetwork() {
     if(!dirHandle) return alert("Brak sieci");
     const tb = document.querySelector('#reportTable tbody'); tb.innerHTML = "<tr><td colspan='5'>SKANOWANIE...</td></tr>";
@@ -828,9 +913,7 @@ ZDJĘCIA: 3/3 OK
             const sub = await dirHandle.getDirectoryHandle(sn);
             for await (const f of sub.values()) {
               if(f.name.includes('RAPORT')) {
-                const fl = await f.getFile();
-                const tx = await fl.text();
-                date = fl.lastModifiedDate.toLocaleString();
+                const fl = await f.getFile(); const tx = await fl.text(); date = fl.lastModifiedDate.toLocaleString();
                 const mOp = tx.match(/OPERATOR: (.*)/); if(mOp) op=mOp[1];
                 const mDec = tx.match(/DECYZJA: (.*)/); if(mDec) dec=mDec[1];
                 const mCom = tx.match(/UWAGI: (.*)/); if(mCom) com=mCom[1];
@@ -840,11 +923,9 @@ ZDJĘCIA: 3/3 OK
           reportsCache.push({date, sn, op, dec, com});
         }
       }
-      renderReportTable();
-      calculateStats();
+      renderReportTable(); calculateStats();
     } catch(e) { alert("Błąd skanowania"); }
   }
-
   function renderReportTable(filter = "") {
     const tb = document.querySelector('#reportTable tbody'); tb.innerHTML = "";
     reportsCache.forEach(r => {
@@ -856,37 +937,15 @@ ZDJĘCIA: 3/3 OK
       tb.innerHTML += `<tr><td>${r.date}</td><td>${r.sn}</td><td>${r.op}</td><td style="color:${color};font-weight:bold;">${r.dec}</td><td>${r.com}</td></tr>`;
     });
   }
-
-  function filterTable() {
-    const v = document.getElementById('searchDB').value.trim().toUpperCase();
-    renderReportTable(v);
-  }
-
+  function filterTable() { renderReportTable(document.getElementById('searchDB').value.trim().toUpperCase()); }
   function calculateStats() {
-    const total = reportsCache.length;
-    let ok = 0;
-    let ng = 0;
-    reportsCache.forEach(r => {
-      if(r.dec === 'OK' || r.dec === 'OFFRS_OK' || r.dec === 'NDF') ok++;
-      else if(r.dec === 'NG' || r.dec === 'SCRAP' || r.dec === 'RMA') ng++;
-    });
-    
-    document.getElementById('statTotal').innerText = total;
-    document.getElementById('statOK').innerText = ok;
-    document.getElementById('statNG').innerText = ng;
-    
-    let yieldRate = 0;
-    if(total > 0) yieldRate = ((ok / total) * 100).toFixed(1);
-    
-    const yieldEl = document.getElementById('statYield');
-    yieldEl.innerText = yieldRate + "%";
-    
-    // Dynamiczny kolor yield
-    if(yieldRate > 90) yieldEl.style.color = "var(--neon-green)";
-    else if(yieldRate > 70) yieldEl.style.color = "var(--neon-orange)";
-    else yieldEl.style.color = "var(--neon-red)";
+    const total = reportsCache.length; let ok = 0, ng = 0;
+    reportsCache.forEach(r => { if(['OK','OFFRS_OK','NDF'].includes(r.dec)) ok++; else if(['NG','SCRAP','RMA'].includes(r.dec)) ng++; });
+    document.getElementById('statTotal').innerText = total; document.getElementById('statOK').innerText = ok; document.getElementById('statNG').innerText = ng;
+    let yieldRate = 0; if(total > 0) yieldRate = ((ok / total) * 100).toFixed(1);
+    const yE = document.getElementById('statYield'); yE.innerText = yieldRate + "%";
+    yE.style.color = yieldRate > 90 ? "var(--neon-green)" : (yieldRate > 70 ? "var(--neon-orange)" : "var(--neon-red)");
   }
-
   function exportCSV() {
     if(!reportsCache.length) return alert("Pusto");
     let c = "DATA,SN,OPERATOR,DECYZJA,UWAGI\n";
