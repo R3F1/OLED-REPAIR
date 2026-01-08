@@ -637,12 +637,11 @@
   let CONFIG = {
     networkPath: String.raw`\\plgorfs001\pub\SERVICE\LCDR\LCDR\OLED OBM Panels\Zdjęcia z napraw OLED`,
     motd: "",
-    // CLOUDFLARE WORKER PROXY:
-    sheetUrl: "https://oledrepair.lukaszarmiajotpe.workers.dev/",
-    // DANE UŻYTKOWNIKÓW SĄ TERAZ POBIERANE Z CHMURY (GOOGLE SHEETS)
-    // Aby zalogować się pierwszy raz, wymagane jest połączenie z internetem.
+    // ↓↓↓ TUTAJ WKLEJ TEN NOWY ADRES Z CLOUDFLARE (nie ten z Google!) ↓↓↓
+    sheetUrl: "https://twoja-nazwa-workera.workers.dev", 
+    
     defaultUsers: [] 
-  };
+};
 
   /* --- AUDIO SYSTEM --- */
   const SoundFX = {
