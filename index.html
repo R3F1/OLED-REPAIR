@@ -1026,7 +1026,7 @@
   document.getElementById('scanInput').addEventListener('keydown', e => {
     if(e.key==='Enter') {
       const v = e.target.value.trim().toUpperCase();
-      // Walidacja: minimum 4 znaki ORAZ prefiks TBV lub TOV
+      // Walidacja prefiksów tylko dla SN Modułu
       if(v.length > 3 && (v.startsWith("TBV") || v.startsWith("TOV"))) { 
           SoundFX.play('beep'); startSession(v); saveRecoveryState();
           document.getElementById('snCheck').style.display = 'inline';
@@ -1038,6 +1038,27 @@
       }
     }
   });
+
+  document.getElementById('scanInputOC').addEventListener('keydown', e => {
+    if(e.key==='Enter') {
+        const v = e.target.value.trim().toUpperCase();
+        // Dla OC SN przywrócono Twoją oryginalną logikę (dowolny kod > 3 znaki)
+        if(v.length > 3) { 
+            currentOC = v; SoundFX.play('beep'); 
+            document.getElementById('ocCheck').style.display = 'inline';
+            
+            // POKAZANIE PRZYCISKU ZATWIERDZENIA
+            document.getElementById('scanStatusInfo').style.display = 'block';
+            document.getElementById('confirmIdentityBtn').style.display = 'block';
+            
+            checkOcRequirement(); saveRecoveryState(); 
+        } else {
+            SoundFX.play('error');
+            alert("BŁĘDNY OC! Numer musi mieć więcej niż 3 znaki.");
+        }
+    }
+  });
+
   function saveRecoveryState() {
       if(!currentSN) return;
       localStorage.setItem('oled_recovery', JSON.stringify({sn:currentSN, oc:currentOC, status:document.getElementById('statusSelect').value}));
