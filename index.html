@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR v12.6 (OC SUPPORT)</title>
+  <title>OLED REPAIR v12.7 (SMART OC)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -314,13 +314,13 @@
         <div><strong>OPERATOR:</strong> <span id="plOp">---</span></div>
         <div><strong>STATUS:</strong> <span id="plStatus" style="font-weight:bold; font-size:20pt;">---</span></div>
     </div>
-    <div class="pl-footer">OLED REPAIR SYSTEM v12.6 - PASSPORT</div>
+    <div class="pl-footer">OLED REPAIR SYSTEM v12.7 - PASSPORT</div>
 </div>
 
 <div id="loginScreen">
   <div class="login-box">
     <h2 style="color:#fff;">OLED REPAIR SYSTEM</h2>
-    <div style="font-size:12px; color:#666; margin-bottom:30px; font-family: var(--font-tech);">V12.6 ONYX (OC SUPPORT)</div>
+    <div style="font-size:12px; color:#666; margin-bottom:30px; font-family: var(--font-tech);">V12.7 ONYX (SMART OC)</div>
     
     <label class="input-label" style="text-align:left; margin-left:5px;">UŻYTKOWNIK</label>
     <input type="text" id="userInput" class="login-input" placeholder="LOGIN" autocomplete="off">
@@ -363,7 +363,7 @@
     <input type="text" id="scanInput" placeholder="SKANUJ MODUŁ..." autofocus>
 
     <span class="input-label" style="color:var(--neon-green)">2. SN OC (SZKŁO)</span>
-    <input type="text" id="scanInputOC" placeholder="OCZEKIWANIE NA MODUŁ..." disabled 
+    <input type="text" id="scanInputOC" placeholder="OCZEKIWANIE NA DECYZJĘ..." disabled 
            style="width: 100%; background: #080808; border: 1px solid #333; color: var(--neon-green); padding: 12px; font-size: 18px; text-align: center; font-family: var(--font-tech); outline: none; border-radius: 6px; margin-bottom: 15px;">
 
 
@@ -377,7 +377,7 @@
 
     <div class="decision-panel">
       <span class="input-label" style="color:var(--neon-purple)">DECYZJA SERWISOWA</span>
-      <select id="statusSelect" class="custom-select" onchange="saveRecoveryState()">
+      <select id="statusSelect" class="custom-select" onchange="checkOcRequirement(); saveRecoveryState();">
         <option value="OK">🟢 OK (SPRAWNY)</option>
         <option value="NG">🔴 NG (USZKODZONY)</option>
         <option value="NDF">🔵 NDF (BRAK WAD)</option>
@@ -543,7 +543,7 @@
   let currentUser = null;
   let dirHandle = null;
   let currentSN = "";
-  let currentOC = ""; /* NOWA ZMIENNA DLA OC */
+  let currentOC = ""; 
   let photos = { PRZOD: null, TYL: null, OBRAZ: null };
   let isMirrored = false;
   let reportsCache = [];
@@ -563,6 +563,7 @@
   window.onload = () => {
     loadUsers();
     checkRecovery();
+    checkOcRequirement(); // Initialize UI state
     setInterval(() => document.getElementById('clockDisplay').innerText = new Date().toLocaleTimeString().slice(0,5), 1000);
     
     const c = document.getElementById('drawCanvas');
@@ -690,11 +691,38 @@
     else if(document.exitFullscreen) document.exitFullscreen();
   }
 
+  /* --- SMART OC LOGIC --- */
+  function checkOcRequirement() {
+      const decision = document.getElementById('statusSelect').value;
+      const ocInput = document.getElementById('scanInputOC');
+      const mandatoryOC = ['OK', 'RMA'];
+      
+      // Jeśli SN nie jest zeskanowany, nie zmieniaj interfejsu za mocno (tylko kolor placeholder)
+      if(!currentSN) return;
+
+      if (mandatoryOC.includes(decision)) {
+          // Wymagane
+          ocInput.placeholder = "⚠️ SKANUJ OC (WYMAGANE!)";
+          if(!currentOC) {
+              ocInput.style.borderColor = "var(--neon-red)";
+              ocInput.style.boxShadow = "0 0 10px rgba(255, 0, 60, 0.3)";
+          } else {
+              ocInput.style.borderColor = "var(--neon-green)";
+              ocInput.style.boxShadow = "0 0 15px rgba(10,255,0,0.2)";
+          }
+      } else {
+          // Niewymagane
+          ocInput.placeholder = "OC OPCJONALNE (BRAK WYMOGU)";
+          ocInput.style.borderColor = "#333";
+          ocInput.style.boxShadow = "none";
+      }
+  }
+
   function saveRecoveryState() {
       if(!currentSN) return;
       const state = {
           sn: currentSN,
-          oc: currentOC, /* ZAPIS OC */
+          oc: currentOC,
           status: document.getElementById('statusSelect').value,
           comment: document.getElementById('commentInput').value
       };
@@ -707,16 +735,17 @@
           const state = JSON.parse(rec);
           if(confirm(`⚠️ Wykryto niezapisaną sesję dla SN: ${state.sn}\nCzy przywrócić?`)) {
               startSession(state.sn);
-              /* PRZYWRACANIE OC */
               if(state.oc) {
                   currentOC = state.oc;
                   const ocInput = document.getElementById('scanInputOC');
                   ocInput.value = currentOC;
-                  ocInput.disabled = false;
-                  ocInput.style.borderColor = "var(--neon-green)";
               }
               document.getElementById('statusSelect').value = state.status;
               document.getElementById('commentInput').value = state.comment;
+              
+              // Odblokuj pole OC po przywróceniu
+              document.getElementById('scanInputOC').disabled = false;
+              checkOcRequirement();
           } else {
               localStorage.removeItem('oled_recovery');
           }
@@ -762,10 +791,10 @@
         startSession(v);
         saveRecoveryState();
         
-        /* LOGIKA PO ZESKANOWANIU GŁÓWNEGO SN - ODBLOKUJ OC */
+        // Odblokuj OC i ustaw focus
         const ocInput = document.getElementById('scanInputOC');
         ocInput.disabled = false;
-        ocInput.placeholder = "SKANUJ OC...";
+        checkOcRequirement(); // Zaktualizuj wygląd zależnie od domyślnego statusu (OK)
         ocInput.focus();
         
       } else {
@@ -775,16 +804,16 @@
     }
   });
 
-  /* NOWA LOGIKA DLA OC SN */
   document.getElementById('scanInputOC').addEventListener('keydown', e => {
     if(e.key === 'Enter') {
         const v = e.target.value.trim().toUpperCase();
         if(v.length > 3) {
             currentOC = v;
             SoundFX.play('beep');
+            // Wizualne potwierdzenie
             e.target.style.borderColor = "var(--neon-green)";
             e.target.style.boxShadow = "0 0 15px rgba(10,255,0,0.2)";
-            saveRecoveryState(); // Aktualizujemy stan o OC
+            saveRecoveryState();
         } else {
             SoundFX.play('error');
             currentOC = "";
@@ -794,7 +823,7 @@
 
   function startSession(sn) {
     currentSN = sn; 
-    currentOC = ""; /* Reset OC */
+    currentOC = ""; 
     photos = { PRZOD: null, TYL: null, OBRAZ: null };
     
     document.getElementById('tagSN').innerText = "SN: " + sn;
@@ -812,6 +841,9 @@
     document.getElementById('actionBtn').classList.remove('active');
     document.getElementById('tv3d').style.transform = "rotateY(0deg)";
     document.getElementById('commentInput').value = "";
+    
+    // Domyślnie ustawiamy OK (więc OC będzie wymagane po skanie SN)
+    document.getElementById('statusSelect').value = "OK";
   }
 
   function capture(type) {
@@ -902,24 +934,32 @@
   async function saveData() {
     if(!document.getElementById('actionBtn').classList.contains('active')) return;
     
-    /* Walidacja OC */
-    if(!currentOC) {
-        alert("⚠️ BRAK NUMERU OC (SZKŁA)! Zeskanuj OC przed zapisem.");
+    /* --- WALIDACJA WARUNKOWA OC --- */
+    const decision = document.getElementById('statusSelect').value;
+    const mandatoryOC = ['OK', 'RMA'];
+    
+    // Jeśli status to OK lub RMA i brak OC -> BLOKUJ
+    if (mandatoryOC.includes(decision) && !currentOC) {
+        SoundFX.play('error');
+        alert(`⚠️ BŁĄD: Dla statusu ${decision} numer OC (Szkła) jest OBOWIĄZKOWY!\n\nWymagany demontaż, aby zeskanować naklejkę pod szkłem.`);
         document.getElementById('scanInputOC').focus();
+        document.getElementById('scanInputOC').style.borderColor = "var(--neon-red)";
         return;
     }
+    
+    // Jeśli status to NDF/NG/SCRAP - zapisujemy nawet bez OC (currentOC będzie puste)
+    /* ------------------------------ */
 
     document.getElementById('saveStatus').innerText = "ZAPISYWANIE...";
     
-    const decision = document.getElementById('statusSelect').value;
     const comment = document.getElementById('commentInput').value.replace(/\n/g, " ");
+    const displayOC = currentOC ? currentOC : "--- (BRAK/NIEWYMAGANE)";
     
-    /* ZAKTUALIZOWANA TREŚĆ RAPORTU */
     const txt = `
 RAPORT SERWISOWY OLED
 ---------------------
 MODUŁ SN: ${currentSN}
-OC SN:    ${currentOC}
+OC SN:    ${displayOC}
 DATA:     ${new Date().toLocaleString()}
 OPERATOR: ${currentUser.login}
 ---------------------
