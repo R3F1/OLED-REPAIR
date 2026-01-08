@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR v12.5 (PRINT LABEL PRO)</title>
+  <title>OLED REPAIR v12.6 (OC SUPPORT)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -168,7 +168,7 @@
       width: 100%; background: #080808; border: 1px solid #444; color: #fff; padding: 12px; font-size: 22px;
       text-align: center; font-family: var(--font-tech); outline: none; border-radius: 6px; margin-bottom: 15px;
     }
-    #scanInput:focus { border-color: var(--neon-green); box-shadow: 0 0 20px rgba(10,255,0,0.2); }
+    #scanInput:focus { border-color: var(--neon-cyan); box-shadow: 0 0 20px rgba(0, 243, 255, 0.2); }
     
     .checklist-btn {
       width: 100%; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); color: #888;
@@ -314,13 +314,13 @@
         <div><strong>OPERATOR:</strong> <span id="plOp">---</span></div>
         <div><strong>STATUS:</strong> <span id="plStatus" style="font-weight:bold; font-size:20pt;">---</span></div>
     </div>
-    <div class="pl-footer">OLED REPAIR SYSTEM v12.5 - PASSPORT</div>
+    <div class="pl-footer">OLED REPAIR SYSTEM v12.6 - PASSPORT</div>
 </div>
 
 <div id="loginScreen">
   <div class="login-box">
     <h2 style="color:#fff;">OLED REPAIR SYSTEM</h2>
-    <div style="font-size:12px; color:#666; margin-bottom:30px; font-family: var(--font-tech);">V12.5 ONYX (PRINT PRO)</div>
+    <div style="font-size:12px; color:#666; margin-bottom:30px; font-family: var(--font-tech);">V12.6 ONYX (OC SUPPORT)</div>
     
     <label class="input-label" style="text-align:left; margin-left:5px;">UŻYTKOWNIK</label>
     <input type="text" id="userInput" class="login-input" placeholder="LOGIN" autocomplete="off">
@@ -359,8 +359,13 @@
       </div>
     </div>
     
-    <span class="input-label">SKANER KODÓW KRESKOWYCH</span>
-    <input type="text" id="scanInput" placeholder="OCZEKIWANIE NA SKAN..." autofocus>
+    <span class="input-label">1. SN MODUŁU (SET)</span>
+    <input type="text" id="scanInput" placeholder="SKANUJ MODUŁ..." autofocus>
+
+    <span class="input-label" style="color:var(--neon-green)">2. SN OC (SZKŁO)</span>
+    <input type="text" id="scanInputOC" placeholder="OCZEKIWANIE NA MODUŁ..." disabled 
+           style="width: 100%; background: #080808; border: 1px solid #333; color: var(--neon-green); padding: 12px; font-size: 18px; text-align: center; font-family: var(--font-tech); outline: none; border-radius: 6px; margin-bottom: 15px;">
+
 
     <div id="checklist">
         <button class="checklist-btn" style="border-color:var(--neon-purple); color:var(--neon-purple);" onclick="togglePatterns()"><span>🖥️ TEST EKRANU (PATTERNS)</span> <span>⏯</span></button>
@@ -538,6 +543,7 @@
   let currentUser = null;
   let dirHandle = null;
   let currentSN = "";
+  let currentOC = ""; /* NOWA ZMIENNA DLA OC */
   let photos = { PRZOD: null, TYL: null, OBRAZ: null };
   let isMirrored = false;
   let reportsCache = [];
@@ -688,17 +694,27 @@
       if(!currentSN) return;
       const state = {
           sn: currentSN,
+          oc: currentOC, /* ZAPIS OC */
           status: document.getElementById('statusSelect').value,
           comment: document.getElementById('commentInput').value
       };
       localStorage.setItem('oled_recovery', JSON.stringify(state));
   }
+  
   function checkRecovery() {
       const rec = localStorage.getItem('oled_recovery');
       if(rec) {
           const state = JSON.parse(rec);
           if(confirm(`⚠️ Wykryto niezapisaną sesję dla SN: ${state.sn}\nCzy przywrócić?`)) {
               startSession(state.sn);
+              /* PRZYWRACANIE OC */
+              if(state.oc) {
+                  currentOC = state.oc;
+                  const ocInput = document.getElementById('scanInputOC');
+                  ocInput.value = currentOC;
+                  ocInput.disabled = false;
+                  ocInput.style.borderColor = "var(--neon-green)";
+              }
               document.getElementById('statusSelect').value = state.status;
               document.getElementById('commentInput').value = state.comment;
           } else {
@@ -706,6 +722,7 @@
           }
       }
   }
+  
   function clearRecovery() {
       localStorage.removeItem('oled_recovery');
   }
@@ -744,6 +761,13 @@
         SoundFX.play('beep');
         startSession(v);
         saveRecoveryState();
+        
+        /* LOGIKA PO ZESKANOWANIU GŁÓWNEGO SN - ODBLOKUJ OC */
+        const ocInput = document.getElementById('scanInputOC');
+        ocInput.disabled = false;
+        ocInput.placeholder = "SKANUJ OC...";
+        ocInput.focus();
+        
       } else {
         SoundFX.play('error');
       }
@@ -751,9 +775,38 @@
     }
   });
 
+  /* NOWA LOGIKA DLA OC SN */
+  document.getElementById('scanInputOC').addEventListener('keydown', e => {
+    if(e.key === 'Enter') {
+        const v = e.target.value.trim().toUpperCase();
+        if(v.length > 3) {
+            currentOC = v;
+            SoundFX.play('beep');
+            e.target.style.borderColor = "var(--neon-green)";
+            e.target.style.boxShadow = "0 0 15px rgba(10,255,0,0.2)";
+            saveRecoveryState(); // Aktualizujemy stan o OC
+        } else {
+            SoundFX.play('error');
+            currentOC = "";
+        }
+    }
+  });
+
   function startSession(sn) {
-    currentSN = sn; photos = { PRZOD: null, TYL: null, OBRAZ: null };
+    currentSN = sn; 
+    currentOC = ""; /* Reset OC */
+    photos = { PRZOD: null, TYL: null, OBRAZ: null };
+    
     document.getElementById('tagSN').innerText = "SN: " + sn;
+    
+    /* Reset inputu OC */
+    const ocInput = document.getElementById('scanInputOC');
+    ocInput.value = "";
+    ocInput.disabled = true;
+    ocInput.placeholder = "OCZEKIWANIE NA MODUŁ...";
+    ocInput.style.borderColor = "#333";
+    ocInput.style.boxShadow = "none";
+
     document.querySelectorAll('.checklist-btn').forEach(b => b.classList.remove('done'));
     document.getElementById('actionBtn').innerText = "OCZEKIWANIE (0/3)";
     document.getElementById('actionBtn').classList.remove('active');
@@ -848,21 +901,32 @@
 
   async function saveData() {
     if(!document.getElementById('actionBtn').classList.contains('active')) return;
+    
+    /* Walidacja OC */
+    if(!currentOC) {
+        alert("⚠️ BRAK NUMERU OC (SZKŁA)! Zeskanuj OC przed zapisem.");
+        document.getElementById('scanInputOC').focus();
+        return;
+    }
+
     document.getElementById('saveStatus').innerText = "ZAPISYWANIE...";
     
     const decision = document.getElementById('statusSelect').value;
     const comment = document.getElementById('commentInput').value.replace(/\n/g, " ");
+    
+    /* ZAKTUALIZOWANA TREŚĆ RAPORTU */
     const txt = `
 RAPORT SERWISOWY OLED
 ---------------------
-SN: ${currentSN}
-DATA: ${new Date().toLocaleString()}
+MODUŁ SN: ${currentSN}
+OC SN:    ${currentOC}
+DATA:     ${new Date().toLocaleString()}
 OPERATOR: ${currentUser.login}
 ---------------------
-DECYZJA: ${decision}
-UWAGI: ${comment}
+DECYZJA:  ${decision}
+UWAGI:    ${comment}
 ---------------------
-ZDJĘCIA: 3/3 OK
+ZDJĘCIA:  3/3 OK
 `.trim();
 
     if(dirHandle) {
@@ -878,8 +942,16 @@ ZDJĘCIA: 3/3 OK
         document.getElementById('saveStatus').innerText = "ZAPISANO!";
         document.getElementById('saveStatus').style.color = "#0aff00";
         showQr(currentSN, decision);
-        setTimeout(()=>{ currentSN=""; startSession(""); }, 1500);
+        
+        /* Reset zmiennych */
+        setTimeout(()=>{ 
+            currentSN=""; 
+            currentOC=""; 
+            startSession(""); 
+            document.getElementById('scanInput').focus(); 
+        }, 1500);
       } catch(e) { 
+          console.error(e);
           SoundFX.play('error');
           document.getElementById('saveStatus').innerText = "BŁĄD ZAPISU"; 
       }
