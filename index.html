@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR v12.8 (MANAGER EDITION)</title>
+  <title>OLED REPAIR v12.9 (ULTIMATE)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -61,6 +61,12 @@
     .login-btn:hover { background: #fff; box-shadow: 0 0 30px var(--neon-cyan); }
     .login-error { color: var(--neon-red); font-size: 12px; height: 20px; margin-top: 10px; font-weight: bold; font-family: var(--font-ui); }
 
+    /* Checkbox Style */
+    .remember-me {
+        display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px; font-size: 14px; color: #aaa;
+    }
+    .remember-me input { transform: scale(1.5); accent-color: var(--neon-cyan); cursor: pointer; }
+
     /* --- NETWORK GUARD --- */
     #networkGuard {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -79,6 +85,11 @@
       width: 100%; padding: 20px; background: var(--neon-red); color: #fff; font-weight: bold;
       border: none; cursor: pointer; font-family: var(--font-tech); font-size: 18px; margin-top: 20px;
     }
+    .offline-btn {
+        width: 100%; padding: 15px; background: transparent; color: var(--neon-orange); border: 1px solid var(--neon-orange);
+        font-family: var(--font-tech); cursor: pointer; margin-top: 10px; font-weight: bold; transition: 0.3s;
+    }
+    .offline-btn:hover { background: var(--neon-orange); color: #000; }
 
     /* --- HEADER --- */
     header {
@@ -92,8 +103,14 @@
     .operator-badge { background: #1a1a1a; padding: 6px 15px; border-radius: 4px; border: 1px solid #444; color: var(--neon-cyan); transition:0.3s; font-weight: bold; }
     .operator-badge.admin { border-color: var(--neon-gold); color: var(--neon-gold); box-shadow: 0 0 15px rgba(255, 215, 0, 0.1); }
     .operator-badge.coord { border-color: var(--neon-purple); color: var(--neon-purple); box-shadow: 0 0 15px rgba(188, 19, 254, 0.2); }
-    /* Nowy styl dla Kierownika */
     .operator-badge.manager { border-color: #fff; color: #fff; background: var(--neon-red); box-shadow: 0 0 20px var(--neon-red); }
+
+    /* LOGOUT BTN */
+    .logout-btn {
+        background: transparent; border: 1px solid #444; color: var(--neon-red); padding: 5px 10px; 
+        font-family: var(--font-tech); font-size: 12px; cursor: pointer; border-radius: 4px; transition: 0.3s;
+    }
+    .logout-btn:hover { background: var(--neon-red); color: #fff; }
 
     /* --- DASHBOARD (OPERATOR) --- */
     .dashboard {
@@ -111,7 +128,7 @@
     }
     .panel-right:active { cursor: grabbing; }
 
-    /* --- MANAGER DASHBOARD (NEW) --- */
+    /* --- MANAGER DASHBOARD --- */
     #managerDash {
         display: none; /* Hidden by default */
         flex: 1; padding: 30px; flex-direction: column; overflow-y: auto;
@@ -147,7 +164,7 @@
     /* Classes for hiding/showing modes */
     body.mode-manager .dashboard { display: none !important; }
     body.mode-manager #managerDash { display: flex !important; }
-    body.mode-manager .cam-controls { display: none !important; } /* Hide cam controls */
+    body.mode-manager .cam-controls { display: none !important; } 
 
     
     /* VIDEO & ZOOM LOGIC */
@@ -289,7 +306,7 @@
       display: none; /* Hidden by default */
     }
 
-    /* PRINT STYLES - KLUCZOWE DLA ETYKIETY */
+    /* PRINT STYLES */
     @media print {
         @page { size: auto; margin: 0mm; }
         body * { visibility: hidden; } /* Hide everything */
@@ -311,13 +328,10 @@
             z-index: 9999;
         }
 
-        /* Label Internal Styling */
         .pl-header { font-size: 24pt; font-weight: bold; border-bottom: 2px solid #000; width: 100%; text-align: center; padding-bottom: 5mm; }
         .pl-qr { margin: 5mm 0; }
         .pl-info { width: 100%; text-align: left; font-size: 14pt; line-height: 1.5; }
         .pl-footer { font-size: 10pt; width: 100%; text-align: center; border-top: 1px solid #000; padding-top: 2mm; margin-top: auto; }
-        
-        /* Hide popup UI */
         #qrPopup { display: none !important; }
     }
 
@@ -355,18 +369,23 @@
         <div><strong>OPERATOR:</strong> <span id="plOp">---</span></div>
         <div><strong>STATUS:</strong> <span id="plStatus" style="font-weight:bold; font-size:20pt;">---</span></div>
     </div>
-    <div class="pl-footer">OLED REPAIR SYSTEM v12.8 - PASSPORT</div>
+    <div class="pl-footer">OLED REPAIR SYSTEM v12.9 - PASSPORT</div>
 </div>
 
 <div id="loginScreen">
   <div class="login-box">
     <h2 style="color:#fff;">OLED REPAIR SYSTEM</h2>
-    <div style="font-size:12px; color:#666; margin-bottom:30px; font-family: var(--font-tech);">V12.8 (MANAGER EDITION)</div>
+    <div style="font-size:12px; color:#666; margin-bottom:30px; font-family: var(--font-tech);">V12.9 (ULTIMATE)</div>
     
     <label class="input-label" style="text-align:left; margin-left:5px;">UŻYTKOWNIK</label>
     <input type="text" id="userInput" class="login-input" placeholder="LOGIN" autocomplete="off">
     <label class="input-label" style="text-align:left; margin-left:5px; color:var(--neon-red);">HASŁO</label>
     <input type="password" id="passInput" class="login-input" placeholder="••••••••">
+    
+    <div class="remember-me">
+        <input type="checkbox" id="rememberCheck"> <label for="rememberCheck">ZAPAMIĘTAJ MNIE</label>
+    </div>
+
     <div id="loginError" class="login-error"></div>
     <button class="login-btn" onclick="attemptLogin()">ROZPOCZNIJ ZMIANĘ</button>
   </div>
@@ -379,6 +398,7 @@
     <div class="input-label" style="color:#aaa;">CEL:</div>
     <div class="path-box">\\plgorfs001\pub\SERVICE\LCDR\LCDR\OLED OBM Panels\Zdjęcia z napraw OLED</div>
     <button class="guard-btn" onclick="connectNetwork()">📡 POŁĄCZ Z SERWEREM</button>
+    <button class="offline-btn" onclick="startOfflineMode()">📂 PRACA OFFLINE (ZIP)</button>
   </div>
 </div>
 
@@ -387,6 +407,7 @@
   <div class="operator-info">
     <button class="bar-btn" onclick="toggleFullScreen()" title="Kiosk Mode">⛶</button>
     <div class="operator-badge" id="operatorBadge">---</div>
+    <button class="logout-btn" onclick="logout()">WYLOGUJ</button>
     <div id="clockDisplay">00:00</div>
   </div>
 </header>
@@ -481,7 +502,7 @@
     </div>
 
     <div class="mgr-grid">
-        <div class="mgr-card" style="border-color:var(--neon-cyan)::before{background:var(--neon-cyan)}">
+        <div class="mgr-card" style="border-color:var(--neon-cyan)">
             <div class="mgr-label">WYKONANE NAPRAWY</div>
             <div class="mgr-val" id="mgrTotal">0</div>
         </div>
@@ -512,7 +533,7 @@
                 </tr>
             </thead>
             <tbody>
-                <tr><td colspan="6" style="text-align:center; padding:30px; color:#555;">Kliknij "POŁĄCZ Z SERWEREM" aby pobrać dane</td></tr>
+                <tr><td colspan="6" style="text-align:center; padding:30px; color:#555;">Kliknij "ODŚWIEŻ DANE" aby pobrać z serwera</td></tr>
             </tbody>
         </table>
     </div>
@@ -642,7 +663,7 @@
   let photos = { PRZOD: null, TYL: null, OBRAZ: null };
   let isMirrored = false;
   let reportsCache = [];
-  let managerFilterMode = 'TODAY'; // 'GLOBAL' or 'TODAY'
+  let managerFilterMode = 'TODAY'; 
   
   // Drawing & Zoom State
   let isDrawing = false;
@@ -658,6 +679,7 @@
   /* --- INIT --- */
   window.onload = () => {
     loadUsers();
+    checkSavedLogin();
     checkRecovery();
     checkOcRequirement();
     setInterval(() => document.getElementById('clockDisplay').innerText = new Date().toLocaleTimeString().slice(0,5), 1000);
@@ -708,18 +730,41 @@
     v.style.transform = `scale(${zoomLevel * mirrorFactor}, ${zoomLevel}) translate(${panX / zoomLevel}px, ${panY / zoomLevel}px)`;
   }
 
-  /* --- USERS --- */
+  /* --- USERS & LOGIN --- */
   function loadUsers() {
     const stored = localStorage.getItem('oled_users');
     users = stored ? JSON.parse(stored) : CONFIG.defaultUsers;
   }
   function saveUsers() { localStorage.setItem('oled_users', JSON.stringify(users)); renderUserTable(); }
+  
+  function checkSavedLogin() {
+      const saved = localStorage.getItem('oled_saved_creds');
+      if(saved) {
+          try {
+              const creds = JSON.parse(saved);
+              document.getElementById('userInput').value = creds.login;
+              document.getElementById('passInput').value = creds.pass;
+              document.getElementById('rememberCheck').checked = true;
+          } catch(e) {}
+      }
+  }
+
   function attemptLogin() {
     const l = document.getElementById('userInput').value.trim().toUpperCase();
     const p = document.getElementById('passInput').value.trim();
+    const remember = document.getElementById('rememberCheck').checked;
+
     const u = users.find(user => user.login === l && user.pass === p);
     if (u) {
       currentUser = u;
+      
+      // Handle Remember Me
+      if(remember) {
+          localStorage.setItem('oled_saved_creds', JSON.stringify({login:l, pass:p}));
+      } else {
+          localStorage.removeItem('oled_saved_creds');
+      }
+
       document.getElementById('loginScreen').style.opacity = '0';
       setTimeout(() => {
         document.getElementById('loginScreen').style.display = 'none';
@@ -732,26 +777,49 @@
       document.getElementById('loginError').innerText = "BŁĘDNY LOGIN LUB HASŁO"; 
     }
   }
+
+  function logout() {
+      if(confirm("Czy na pewno chcesz się wylogować?")) {
+          // Reset State
+          currentUser = null;
+          dirHandle = null;
+          currentSN = "";
+          document.body.className = ""; // Remove manager class
+          
+          // Reset UI
+          document.getElementById('loginScreen').style.display = 'flex';
+          setTimeout(() => document.getElementById('loginScreen').style.opacity = '1', 50);
+          
+          document.getElementById('mainDashboard').style.opacity = '0';
+          document.getElementById('networkGuard').style.display = 'none';
+          document.getElementById('managerDash').style.display = 'none';
+          document.getElementById('userPanel').classList.remove('open');
+          document.getElementById('reportPanel').classList.remove('open');
+          
+          // Clear inputs if not remembered
+          if(!document.getElementById('rememberCheck').checked) {
+              document.getElementById('userInput').value = "";
+              document.getElementById('passInput').value = "";
+          }
+      }
+  }
+
   function setupInterface() {
     const b = document.getElementById('operatorBadge');
     b.innerText = currentUser.login;
     document.getElementById('tagOp').innerText = "OP: " + currentUser.login;
     b.className = "operator-badge"; 
     
-    // Reset body class
     document.body.className = "";
 
     // Manager Logic
     if(currentUser.role === 'KIEROWNIK') {
         b.classList.add('manager');
-        document.body.classList.add('mode-manager'); // CSS handles UI switching
-        document.getElementById('dbBtn').style.display = 'none'; // Managers have their own panel
+        document.body.classList.add('mode-manager'); 
+        document.getElementById('dbBtn').style.display = 'none';
     } else {
-        // Operator Logic
         if(currentUser.role === 'ADMIN') { b.classList.add('admin'); document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'inline-block'); renderUserTable(); }
         if(currentUser.role === 'KOORDYNATOR') b.classList.add('coord');
-        
-        // Ensure camera starts only for operators
         initCamera();
     }
   }
@@ -774,7 +842,7 @@
     });
   }
 
-  /* --- NETWORK --- */
+  /* --- NETWORK & OFFLINE --- */
   async function connectNetwork() {
     try {
       await navigator.clipboard.writeText(CONFIG.networkPath);
@@ -784,20 +852,30 @@
       document.getElementById('connStatus').innerHTML = "🟢 ONLINE";
       document.getElementById('connStatus').style.color = "var(--neon-green)";
       
-      // If Manager, dont start camera, maybe scan immediately?
       if(currentUser.role !== 'KIEROWNIK') {
           initCamera();
           document.getElementById('scanInput').focus();
       } else {
-          // Auto scan for managers convenience
           setTimeout(scanNetwork, 500); 
       }
     } catch(e) { alert("Wybierz folder!"); }
   }
 
+  function startOfflineMode() {
+      dirHandle = null; // Explicitly null
+      document.getElementById('networkGuard').style.display = 'none';
+      document.getElementById('connStatus').innerHTML = "🟡 OFFLINE (ZIP)";
+      document.getElementById('connStatus').style.color = "var(--neon-orange)";
+      
+      if(currentUser.role !== 'KIEROWNIK') {
+          initCamera();
+          document.getElementById('scanInput').focus();
+      }
+  }
+
   /* --- CAMERA & RECOVERY --- */
   async function initCamera() {
-    if(currentUser.role === 'KIEROWNIK') return; // Double check
+    if(currentUser.role === 'KIEROWNIK') return; 
     try {
       const s = await navigator.mediaDevices.getUserMedia({video:{width:{ideal:3840}, height:{ideal:2160}}});
       document.getElementById('videoFeed').srcObject = s;
@@ -1067,6 +1145,7 @@ UWAGI:    ${comment}
 ZDJĘCIA:  3/3 OK
 `.trim();
 
+    // IF CONNECTED
     if(dirHandle) {
       try {
         const d = await dirHandle.getDirectoryHandle(currentSN, {create:true});
@@ -1076,27 +1155,49 @@ ZDJĘCIA:  3/3 OK
         await write(d, `RAPORT_${currentSN}.txt`, new Blob([txt],{type:'text/plain'}));
         
         SoundFX.play('success');
-        clearRecovery();
-        document.getElementById('saveStatus').innerText = "ZAPISANO!";
-        document.getElementById('saveStatus').style.color = "#0aff00";
-        showQr(currentSN, decision);
-        setTimeout(()=>{ 
-            currentSN=""; 
-            currentOC=""; 
-            startSession(""); 
-            document.getElementById('scanInput').focus(); 
-        }, 1500);
+        finishSave(decision);
       } catch(e) { 
           console.error(e);
           SoundFX.play('error');
-          document.getElementById('saveStatus').innerText = "BŁĄD ZAPISU"; 
+          document.getElementById('saveStatus').innerText = "BŁĄD ZAPISU SIECIOWEGO"; 
       }
-    } else {
-      const z = new JSZip(); const f = z.folder(currentSN);
-      f.file("raport.txt", txt); f.file("1.jpg", photos.PRZOD);
-      z.generateAsync({type:"blob"}).then(c=>saveAs(c, `${currentSN}.zip`));
+    } 
+    // IF OFFLINE (ZIP)
+    else {
+      try {
+          const z = new JSZip(); 
+          const f = z.folder(currentSN);
+          f.file(`RAPORT_${currentSN}.txt`, txt); 
+          f.file(`${currentSN}_PRZOD.jpg`, photos.PRZOD);
+          f.file(`${currentSN}_TYL.jpg`, photos.TYL);
+          f.file(`${currentSN}_OBRAZ.jpg`, photos.OBRAZ);
+          
+          const content = await z.generateAsync({type:"blob"});
+          saveAs(content, `${currentSN}.zip`);
+          
+          SoundFX.play('success');
+          finishSave(decision);
+      } catch(e) {
+          console.error(e);
+          SoundFX.play('error');
+          document.getElementById('saveStatus').innerText = "BŁĄD GENEROWANIA ZIP";
+      }
     }
   }
+  
+  function finishSave(decision) {
+    clearRecovery();
+    document.getElementById('saveStatus').innerText = "ZAPISANO!";
+    document.getElementById('saveStatus').style.color = "#0aff00";
+    showQr(currentSN, decision);
+    setTimeout(()=>{ 
+        currentSN=""; 
+        currentOC=""; 
+        startSession(""); 
+        document.getElementById('scanInput').focus(); 
+    }, 1500);
+  }
+
   async function write(dh, n, b) { const h = await dh.getFileHandle(n,{create:true}); const w = await h.createWritable(); await w.write(b); await w.close(); }
 
   /* --- PATTERNS --- */
@@ -1141,9 +1242,13 @@ ZDJĘCIA:  3/3 OK
   
   /* --- DATABASE & REPORTING --- */
   async function scanNetwork() {
-    if(!dirHandle) return alert("Brak sieci - Połącz najpierw!");
+    if(!dirHandle) {
+        if(document.getElementById('managerDash').style.display === 'flex') {
+            document.querySelector('#mgrTable tbody').innerHTML = "<tr><td colspan='6' style='text-align:center;color:orange;'>TRYB OFFLINE - BRAK DOSTĘPU DO SERWERA</td></tr>";
+        }
+        return alert("Funkcja niedostępna w trybie OFFLINE (ZIP)");
+    }
     
-    // Set loading
     const mgrTbody = document.querySelector('#mgrTable tbody');
     if(mgrTbody) mgrTbody.innerHTML = "<tr><td colspan='6' style='text-align:center;'>POBIERANIE DANYCH...</td></tr>";
     
@@ -1175,10 +1280,9 @@ ZDJĘCIA:  3/3 OK
         }
       }
       
-      // Update both views
-      renderReportTable(); // Operator view
-      renderManagerView(); // Manager view
-      calculateStats(); // Operator stats
+      renderReportTable();
+      renderManagerView();
+      calculateStats();
       
     } catch(e) { 
         console.error(e);
@@ -1210,7 +1314,6 @@ ZDJĘCIA:  3/3 OK
           filtered = reportsCache;
       }
 
-      // Sort by date desc
       filtered.sort((a,b) => (b.rawDate || 0) - (a.rawDate || 0));
 
       if(filtered.length === 0) {
@@ -1234,7 +1337,6 @@ ZDJĘCIA:  3/3 OK
             </tr>`;
       });
 
-      // Calculate Manager Stats
       const total = filtered.length;
       let ok = 0, ng = 0;
       filtered.forEach(r => { if(['OK','OFFRS_OK','NDF'].includes(r.dec)) ok++; else if(['NG','SCRAP','RMA'].includes(r.dec)) ng++; });
