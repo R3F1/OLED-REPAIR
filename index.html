@@ -152,6 +152,10 @@
     .data-table td { padding: 10px; border-bottom: 1px solid #222; }
     .data-table tr:hover { background: rgba(255,255,255,0.05); }
 
+    /* FOLDER BTN STYLE */
+    .folder-btn { background: transparent; border: 1px solid #555; color: var(--neon-cyan); padding: 5px 10px; border-radius: 4px; text-decoration: none; font-size: 11px; font-family: var(--font-tech); transition: 0.2s; cursor: pointer; display: inline-block; }
+    .folder-btn:hover { background: var(--neon-cyan); color: #000; box-shadow: 0 0 10px var(--neon-cyan); }
+
     /* CAM & UI */
     .video-container { width: 100%; height: 100%; overflow: hidden; position: relative; display: flex; justify-content: center; align-items: center; }
     video { width: 100%; height: 100%; object-fit: contain; transition: transform 0.1s linear; transform-origin: center center; }
@@ -463,6 +467,14 @@
     <div class="mgr-header">
         <div class="mgr-title">
             </div>
+        
+        <div style="display:flex; align-items:center; gap:10px; background:#1a1a1a; padding:5px 15px; border-radius:30px; border:1px solid #444; margin-right:20px;">
+            <span style="font-size:16px;">🔍</span>
+            <input type="text" id="mgrSearchSn" placeholder="Szukaj SN..." 
+                   style="background:transparent; border:none; color:#fff; font-family:var(--font-tech); font-size:14px; outline:none; width:150px; text-transform:uppercase;"
+                   onkeyup="if(event.key === 'Enter') runManagerSearch()">
+            <button class="mgr-btn" style="padding:5px 10px; font-size:11px;" onclick="runManagerSearch()">SZUKAJ</button>
+        </div>
         <div class="mgr-filters">
             <button class="mgr-btn active" id="fToday" onclick="updateLeaderStats('TODAY')">DZISIAJ</button>
             <button class="mgr-btn" id="fYesterday" onclick="updateLeaderStats('YESTERDAY')">WCZORAJ</button>
@@ -505,8 +517,8 @@
             <h4>DZIENNIK ZDARZEŃ</h4>
             <div style="overflow:auto;">
                 <table class="data-table">
-                    <thead><tr><th>DATA</th><th>SN MODUŁU</th><th>SN OC</th><th>OP</th><th>DECYZJA</th><th>UWAGI</th></tr></thead>
-                    <tbody id="mgrLogBody"><tr><td colspan="6" style="text-align:center">Połącz się z serwerem, aby pobrać dane...</td></tr></tbody>
+                    <thead><tr><th>DATA</th><th>SN MODUŁU</th><th>SN OC</th><th>OP</th><th>DECYZJA</th><th>UWAGI</th><th>AKCJA</th></tr></thead>
+                    <tbody id="mgrLogBody"><tr><td colspan="7" style="text-align:center">Połącz się z serwerem, aby pobrać dane...</td></tr></tbody>
                 </table>
             </div>
         </div>
@@ -1365,7 +1377,7 @@
   async function fetchCloudflareData() {
       // Wskaźniki ładowania
       const statusEl = document.getElementById('mgrLogBody');
-      if(statusEl) statusEl.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--neon-cyan)">🔄 Pobieranie danych z chmury (Google Sheets)...</td></tr>';
+      if(statusEl) statusEl.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--neon-cyan)">🔄 Pobieranie danych z chmury (Google Sheets)...</td></tr>';
       
       const connStatus = document.getElementById('connStatus');
       if(connStatus) {
@@ -1403,7 +1415,7 @@
 
       } catch(e) {
           console.error(e);
-          if(statusEl) statusEl.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--neon-red)">⚠️ Błąd połączenia z bazą danych! Sprawdź internet.</td></tr>';
+          if(statusEl) statusEl.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--neon-red)">⚠️ Błąd połączenia z bazą danych! Sprawdź internet.</td></tr>';
           if(connStatus) {
             connStatus.innerHTML = "🔴 BŁĄD SIECI";
             connStatus.style.color = "var(--neon-red)";
@@ -1411,28 +1423,61 @@
       }
   }
 
-  function updateManagerView() {
+  /* --- MANAGER SEARCH & PHOTOS LINK --- */
+
+  function runManagerSearch() {
+      const query = document.getElementById('mgrSearchSn').value.trim().toUpperCase();
+      if(!query) {
+          alert("Wpisz numer SN!");
+          return;
+      }
+      
+      // Wyłączamy aktywne filtry daty wizualnie
+      document.querySelectorAll('.mgr-btn').forEach(b => b.classList.remove('active'));
+      
+      // Filtrujemy dane
+      const results = reportsCache.filter(r => r.sn.includes(query) || (r.oc && r.oc.includes(query)));
+      
+      // Aktualizujemy tabelę przekazując wyniki ręcznie
+      updateManagerView(results);
+  }
+
+  function updateManagerView(customData = null) {
       const tbody = document.getElementById('mgrLogBody');
       if(!tbody) return;
       tbody.innerHTML = "";
       
       let total = 0, ok = 0, ng = 0;
 
-      // Filtrowanie daty (TODAY/YESTERDAY/ALL/MONTH)
-      let filteredData = reportsCache;
-      
-      const today = new Date().toDateString();
-      const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-      const yStr = yesterday.toDateString();
-      const now = new Date();
+      // Jeżeli przekazano customData (wyniki wyszukiwania), użyj ich. 
+      // W przeciwnym razie użyj standardowych filtrów daty.
+      let filteredData = [];
 
-      if(typeof leaderMode !== 'undefined') {
-          if(leaderMode === 'TODAY') filteredData = reportsCache.filter(r => r.rawDate && r.rawDate.toDateString() === today);
-          else if(leaderMode === 'YESTERDAY') filteredData = reportsCache.filter(r => r.rawDate && r.rawDate.toDateString() === yStr);
-          else if(leaderMode === 'MONTH') filteredData = reportsCache.filter(r => r.rawDate && r.rawDate.getMonth() === now.getMonth() && r.rawDate.getFullYear() === now.getFullYear());
+      if (customData) {
+          filteredData = customData;
+      } else {
+          // Standardowa logika filtrów (bez zmian)
+          const today = new Date().toDateString();
+          const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+          const yStr = yesterday.toDateString();
+          const now = new Date();
+
+          if(typeof leaderMode !== 'undefined') {
+              if(leaderMode === 'TODAY') filteredData = reportsCache.filter(r => r.rawDate && r.rawDate.toDateString() === today);
+              else if(leaderMode === 'YESTERDAY') filteredData = reportsCache.filter(r => r.rawDate && r.rawDate.toDateString() === yStr);
+              else if(leaderMode === 'MONTH') filteredData = reportsCache.filter(r => r.rawDate && r.rawDate.getMonth() === now.getMonth() && r.rawDate.getFullYear() === now.getFullYear());
+              else filteredData = reportsCache; // ALL
+          }
       }
 
-      // Generowanie tabeli
+      // Generowanie tabeli z nową kolumną LINKU
+      if(filteredData.length === 0) {
+           tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px;">BRAK WYNIKÓW</td></tr>';
+           return;
+      }
+
+      const baseFolderPath = String.raw`\\plgorfs001\pub\SERVICE\LCDR\LCDR\OLED OBM Panels\Zdjęcia z napraw OLED`;
+
       filteredData.forEach(r => {
           const tr = document.createElement('tr');
           
@@ -1443,6 +1488,11 @@
           else if(r.dec === 'NG' || r.dec === 'RMA' || r.dec === 'SCRAP') colorStyle = 'var(--neon-red)';
           else if(r.dec === 'NDF') colorStyle = 'var(--neon-cyan)';
 
+          // Tworzenie ścieżki do folderu
+          const cleanPath = baseFolderPath + "\\" + r.sn;
+          // Escapowanie slashy dla JS
+          const jsPath = cleanPath.replace(/\\/g, '\\\\');
+
           tr.innerHTML = `
             <td>${r.rawDate ? r.rawDate.toLocaleString() : '---'}</td>
             <td>${r.sn}</td>
@@ -1450,6 +1500,11 @@
             <td>${r.op}</td>
             <td style="color:${colorStyle}; font-weight:bold;">${decText}</td>
             <td style="font-size:11px; color:#888;">${r.com || ''}</td>
+            <td>
+                <a href="${cleanPath}" target="_blank" onclick="navigator.clipboard.writeText('${jsPath}'); alert('Skopiowano ścieżkę do schowka:\\n' + '${jsPath}');" class="folder-btn" title="Kopiuj ścieżkę do schowka">
+                   📂 KOPIUJ ŚCIEŻKĘ
+                </a>
+            </td>
           `;
           tbody.appendChild(tr);
 
@@ -1458,15 +1513,15 @@
           if(['OK','OFFRS_OK','NDF'].includes(r.dec)) ok++; else ng++;
       });
 
-      // Aktualizacja kafelków statystyk w panelu Managera
-      const mTotal = document.getElementById('mgrTotal'); if(mTotal) mTotal.innerText = total;
-      const mOK = document.getElementById('mgrOK'); if(mOK) mOK.innerText = ok;
-      const mNG = document.getElementById('mgrNG'); if(mNG) mNG.innerText = ng;
-      const mYield = document.getElementById('mgrYield'); 
-      if(mYield) mYield.innerText = total > 0 ? ((ok/total)*100).toFixed(1) + "%" : "0%";
-
-      // Aktualizacja rankingu
-      updateRankingTable(filteredData);
+      // Aktualizacja kafelków tylko jeśli nie szukamy (żeby nie psuć statystyk dnia wyszukiwaniem pojedynczego SN)
+      if (!customData) {
+          const mTotal = document.getElementById('mgrTotal'); if(mTotal) mTotal.innerText = total;
+          const mOK = document.getElementById('mgrOK'); if(mOK) mOK.innerText = ok;
+          const mNG = document.getElementById('mgrNG'); if(mNG) mNG.innerText = ng;
+          const mYield = document.getElementById('mgrYield'); 
+          if(mYield) mYield.innerText = total > 0 ? ((ok/total)*100).toFixed(1) + "%" : "0%";
+          updateRankingTable(filteredData);
+      }
   }
 
   function updateRankingTable(data) {
