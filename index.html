@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR v1.1 (MONTHLY REPORTS)</title>
+  <title>OLED REPAIR v1.2 (RMA LEADER)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -67,6 +67,7 @@
     .operator-badge { background: #1a1a1a; padding: 6px 15px; border-radius: 4px; border: 1px solid #444; color: var(--neon-cyan); transition:0.3s; font-weight: bold; }
     .operator-badge.admin { border-color: var(--neon-gold); color: var(--neon-gold); box-shadow: 0 0 15px rgba(255, 215, 0, 0.1); }
     .operator-badge.coord { border-color: var(--neon-purple); color: var(--neon-purple); box-shadow: 0 0 15px rgba(188, 19, 254, 0.2); }
+    .operator-badge.rma-leader { border-color: var(--neon-orange); color: var(--neon-orange); box-shadow: 0 0 15px rgba(255, 157, 0, 0.3); }
     .operator-badge.manager { border-color: #fff; color: #fff; background: var(--neon-red); box-shadow: 0 0 20px var(--neon-red); }
     .logout-btn { background: transparent; border: 1px solid #444; color: var(--neon-red); padding: 5px 10px; font-family: var(--font-tech); font-size: 12px; cursor: pointer; border-radius: 4px; transition: 0.3s; }
     .logout-btn:hover { background: var(--neon-red); color: #fff; }
@@ -155,6 +156,11 @@
     /* FOLDER BTN STYLE */
     .folder-btn { background: transparent; border: 1px solid #555; color: var(--neon-cyan); padding: 5px 10px; border-radius: 4px; text-decoration: none; font-size: 11px; font-family: var(--font-tech); transition: 0.2s; cursor: pointer; display: inline-block; }
     .folder-btn:hover { background: var(--neon-cyan); color: #000; box-shadow: 0 0 10px var(--neon-cyan); }
+    
+    /* RMA ACTION BUTTONS */
+    .rma-btn { background: #222; border: 1px solid #555; color: #fff; padding: 3px 8px; font-size: 10px; font-family: var(--font-tech); cursor: pointer; margin-right: 5px; transition: 0.2s; border-radius: 3px; }
+    .rma-btn:hover { border-color: var(--neon-orange); color: var(--neon-orange); }
+    .rma-btn.active { background: var(--neon-orange); color: #000; border-color: var(--neon-orange); font-weight: bold; }
 
     /* CAM & UI */
     .video-container { width: 100%; height: 100%; overflow: hidden; position: relative; display: flex; justify-content: center; align-items: center; }
@@ -242,7 +248,7 @@
 <div id="loginScreen">
   <div class="login-box">
     <h2 style="color:#fff;">OLED REPAIR SYSTEM</h2>
-    <div style="font-size:12px; color:#666; font-family: var(--font-tech);">v1.1 (MONTHLY REPORTS)</div>
+    <div style="font-size:12px; color:#666; font-family: var(--font-tech);">v1.2 (RMA LEADER)</div>
     <div id="syncStatus" class="sync-status">Ładowanie użytkowników...</div>
     
     <label class="input-label" style="text-align:left; margin-left:5px; margin-top:20px;">UŻYTKOWNIK</label>
@@ -397,7 +403,7 @@
     <div class="admin-container">
         <div class="admin-status-bar">
             <div class="status-item"><div class="status-dot ok"></div> SYSTEM: ONLINE</div>
-            <div class="status-item">VER: 1.1</div>
+            <div class="status-item">VER: 1.2 RMA</div>
             <div class="status-item">CPU: <span id="simCpu">12%</span></div>
             <div class="status-item">MEM: <span id="simMem">2.4GB</span></div>
         </div>
@@ -415,6 +421,7 @@
                         <option value="OPERATOR">OPERATOR</option>
                         <option value="KOORDYNATOR">KOORDYNATOR</option>
                         <option value="KIEROWNIK">KIEROWNIK</option>
+                        <option value="RMA_LEADER">LIDER RMA</option>
                         <option value="ADMIN">ADMINISTRATOR</option>
                       </select>
                       <button onclick="addUser()" class="cfg-btn">DODAJ</button>
@@ -798,7 +805,10 @@
                    let r = cols[2].replace(/^"|"$/g, '').trim().toUpperCase();
                    if (r === 'ADMINISTRATOR') r = 'ADMIN';
                    if (r === 'OPERATOR') r = 'OPERATOR';
-                   if(l && p && ['OPERATOR','ADMIN','KIEROWNIK','KOORDYNATOR'].includes(r)) {
+                   // Obsługa ról RMA
+                   if (r === 'LIDER RMA' || r === 'RMA LEADER' || r === 'RMA') r = 'RMA_LEADER';
+                   
+                   if(l && p && ['OPERATOR','ADMIN','KIEROWNIK','KOORDYNATOR', 'RMA_LEADER'].includes(r)) {
                        newUsers.push({login:l, pass:p, role:r});
                    }
               }
@@ -890,13 +900,18 @@
     // DODANE: Auto-refresh co 5 minut (300000 ms)
     setInterval(fetchCloudflareData, 300000);
 
-    if(currentUser.role === 'KIEROWNIK' || currentUser.role === 'KOORDYNATOR') {
+    if(currentUser.role === 'KIEROWNIK' || currentUser.role === 'KOORDYNATOR' || currentUser.role === 'RMA_LEADER') {
         const mgrTitle = document.querySelector('.mgr-title');
         const btnHtml = '<button class="mgr-connect-btn" onclick="fetchCloudflareData()">📡 POŁĄCZ Z BAZĄ (CLOUD)</button>';
+        
         if (currentUser.role === 'KOORDYNATOR') {
             b.classList.add('coord');
             document.body.classList.add('mode-manager', 'mode-coord'); 
             mgrTitle.innerHTML = 'PANEL KOORDYNATORA ' + btnHtml; 
+        } else if (currentUser.role === 'RMA_LEADER') {
+            b.classList.add('rma-leader');
+            document.body.classList.add('mode-manager');
+            mgrTitle.innerHTML = '<span style="color:var(--neon-orange)">PANEL LIDER RMA</span> ' + btnHtml;
         } else {
             b.classList.add('manager');
             document.body.classList.add('mode-manager');
@@ -925,7 +940,7 @@
       document.getElementById('scanInput').placeholder = "SKANUJ MODUŁ...";
       document.getElementById('scanInput').focus();
       document.getElementById('networkGuard').style.display = 'none';
-      if(currentUser.role === 'KIEROWNIK' || currentUser.role === 'KOORDYNATOR') setTimeout(scanNetwork, 500); 
+      if(currentUser.role === 'KIEROWNIK' || currentUser.role === 'KOORDYNATOR' || currentUser.role === 'RMA_LEADER') setTimeout(scanNetwork, 500); 
       if(currentUser.role === 'OPERATOR') { initCamera(); document.getElementById('scanInput').focus(); scanNetworkForOperator(); }
     } catch(e) { alert("Anulowano wybór folderu."); }
   }
@@ -1393,14 +1408,15 @@
           const data = await res.json();
           
           // 2. Mapujemy dane na format aplikacji (reportsCache)
-          // Dane z Google przychodzą jako: {timestamp, sn, oc, dec, op, com}
+          // Zaktualizowano o pole 'rma_sub'
           reportsCache = data.map(item => ({
               rawDate: new Date(item.timestamp),
               sn: item.sn,
               oc: item.oc,
               op: item.op,
               dec: item.dec,
-              com: item.com
+              com: item.com,
+              rma_sub: item.rma_sub || null
           }));
 
           // 3. Odświeżamy widoki
@@ -1442,6 +1458,35 @@
       updateManagerView(results);
   }
 
+  // --- NOWA FUNKCJA ZMIANY STATUSU RMA ---
+  async function setRmaStatus(sn, subStatus) {
+      if(!confirm(`Czy na pewno oznaczyć ${sn} jako ${subStatus}?`)) return;
+
+      // 1. Aktualizacja lokalna (dla natychmiastowego efektu)
+      const record = reportsCache.find(r => r.sn === sn);
+      if(record) {
+          record.rma_sub = subStatus;
+          updateManagerView(); // Odśwież widok
+      }
+
+      // 2. Wysłanie do bazy (Cloudflare)
+      // Wymaga, aby Twój Worker obsługiwał typ akcji 'UPDATE_RMA'. Jeśli nie, dane znikną po odświeżeniu.
+      try {
+          await fetch(CONFIG.reportUrl, {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                  type: "UPDATE_RMA",
+                  sn: sn,
+                  rma_sub: subStatus,
+                  op: currentUser.login
+              })
+          });
+      } catch(e) {
+          console.error("Błąd zapisu statusu RMA:", e);
+          alert("Błąd zapisu online! Zmiana widoczna tylko lokalnie.");
+      }
+  }
+
   function updateManagerView(customData = null) {
       const tbody = document.getElementById('mgrLogBody');
       if(!tbody) return;
@@ -1470,13 +1515,14 @@
           }
       }
 
-      // Generowanie tabeli z nową kolumną LINKU
+      // Generowanie tabeli z nową kolumną LINKU i RMA ACTION
       if(filteredData.length === 0) {
            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px;">BRAK WYNIKÓW</td></tr>';
            return;
       }
 
       const baseFolderPath = String.raw`\\plgorfs001\pub\SERVICE\LCDR\LCDR\OLED OBM Panels\Zdjęcia z napraw OLED`;
+      const isRmaLeader = currentUser && currentUser.role === 'RMA_LEADER';
 
       filteredData.forEach(r => {
           const tr = document.createElement('tr');
@@ -1488,10 +1534,34 @@
           else if(r.dec === 'NG' || r.dec === 'RMA' || r.dec === 'SCRAP') colorStyle = 'var(--neon-red)';
           else if(r.dec === 'NDF') colorStyle = 'var(--neon-cyan)';
 
+          // Logika wyświetlania sub-statusu RMA
+          if (r.dec === 'RMA' && r.rma_sub) {
+              decText += ` <span style="color:var(--neon-orange)">(${r.rma_sub})</span>`;
+          }
+
           // Tworzenie ścieżki do folderu
           const cleanPath = baseFolderPath + "\\" + r.sn;
           // Escapowanie slashy dla JS
           const jsPath = cleanPath.replace(/\\/g, '\\\\');
+
+          // Budowanie kolumny akcji
+          let actionHtml = `<a href="${cleanPath}" target="_blank" onclick="navigator.clipboard.writeText('${jsPath}'); alert('Skopiowano ścieżkę do schowka:\\n' + '${jsPath}');" class="folder-btn" title="Kopiuj ścieżkę do schowka">📂</a>`;
+          
+          // Dodatkowe przyciski dla Lidera RMA
+          if (isRmaLeader && r.dec === 'RMA') {
+              const activeSid = r.rma_sub === 'SID' ? 'active' : '';
+              const activeCid = r.rma_sub === 'CID' ? 'active' : '';
+              const activeNdf = r.rma_sub === 'NDF' ? 'active' : '';
+              
+              actionHtml = `
+                <div style="display:flex; align-items:center;">
+                    <button class="rma-btn ${activeSid}" onclick="setRmaStatus('${r.sn}', 'SID')">SID</button>
+                    <button class="rma-btn ${activeCid}" onclick="setRmaStatus('${r.sn}', 'CID')">CID</button>
+                    <button class="rma-btn ${activeNdf}" onclick="setRmaStatus('${r.sn}', 'NDF')">NDF</button>
+                    ${actionHtml}
+                </div>
+              `;
+          }
 
           tr.innerHTML = `
             <td>${r.rawDate ? r.rawDate.toLocaleString() : '---'}</td>
@@ -1500,11 +1570,7 @@
             <td>${r.op}</td>
             <td style="color:${colorStyle}; font-weight:bold;">${decText}</td>
             <td style="font-size:11px; color:#888;">${r.com || ''}</td>
-            <td>
-                <a href="${cleanPath}" target="_blank" onclick="navigator.clipboard.writeText('${jsPath}'); alert('Skopiowano ścieżkę do schowka:\\n' + '${jsPath}');" class="folder-btn" title="Kopiuj ścieżkę do schowka">
-                   📂 KOPIUJ ŚCIEŻKĘ
-                </a>
-            </td>
+            <td>${actionHtml}</td>
           `;
           tbody.appendChild(tr);
 
