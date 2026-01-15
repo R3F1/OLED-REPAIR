@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR v1.2 (RMA LEADER)</title>
+  <title>OLED REPAIR v1.3 (RMA LEADER + COPY)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -153,6 +153,10 @@
     .data-table td { padding: 10px; border-bottom: 1px solid #222; }
     .data-table tr:hover { background: rgba(255,255,255,0.05); }
 
+    /* SELECTABLE SN STYLE */
+    .selectable-text { user-select: text !important; cursor: pointer; transition: 0.2s; }
+    .selectable-text:hover { color: var(--neon-cyan); text-shadow: 0 0 5px var(--neon-cyan); }
+
     /* FOLDER BTN STYLE */
     .folder-btn { background: transparent; border: 1px solid #555; color: var(--neon-cyan); padding: 5px 10px; border-radius: 4px; text-decoration: none; font-size: 11px; font-family: var(--font-tech); transition: 0.2s; cursor: pointer; display: inline-block; }
     .folder-btn:hover { background: var(--neon-cyan); color: #000; box-shadow: 0 0 10px var(--neon-cyan); }
@@ -248,7 +252,7 @@
 <div id="loginScreen">
   <div class="login-box">
     <h2 style="color:#fff;">OLED REPAIR SYSTEM</h2>
-    <div style="font-size:12px; color:#666; font-family: var(--font-tech);">v1.2 (RMA LEADER)</div>
+    <div style="font-size:12px; color:#666; font-family: var(--font-tech);">v1.3 (RMA LEADER + COPY)</div>
     <div id="syncStatus" class="sync-status">Ładowanie użytkowników...</div>
     
     <label class="input-label" style="text-align:left; margin-left:5px; margin-top:20px;">UŻYTKOWNIK</label>
@@ -403,7 +407,7 @@
     <div class="admin-container">
         <div class="admin-status-bar">
             <div class="status-item"><div class="status-dot ok"></div> SYSTEM: ONLINE</div>
-            <div class="status-item">VER: 1.2 RMA</div>
+            <div class="status-item">VER: 1.3 RMA</div>
             <div class="status-item">CPU: <span id="simCpu">12%</span></div>
             <div class="status-item">MEM: <span id="simMem">2.4GB</span></div>
         </div>
@@ -1563,10 +1567,11 @@
               `;
           }
 
+          // TUTAJ ZMIANA - KLIKNIĘCIE KOPIUJE SN I OC
           tr.innerHTML = `
             <td>${r.rawDate ? r.rawDate.toLocaleString() : '---'}</td>
-            <td>${r.sn}</td>
-            <td>${r.oc}</td>
+            <td class="selectable-text" onclick="navigator.clipboard.writeText('${r.sn}'); alert('Skopiowano SN: ' + '${r.sn}')" title="Kliknij aby skopiować">${r.sn}</td>
+            <td class="selectable-text" onclick="navigator.clipboard.writeText('${r.oc}'); alert('Skopiowano OC: ' + '${r.oc}')" title="Kliknij aby skopiować">${r.oc}</td>
             <td>${r.op}</td>
             <td style="color:${colorStyle}; font-weight:bold;">${decText}</td>
             <td style="font-size:11px; color:#888;">${r.com || ''}</td>
