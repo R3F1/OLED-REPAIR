@@ -902,7 +902,7 @@
                    // Obsługa ról RMA
                    if (r === 'LIDER RMA' || r === 'RMA LEADER' || r === 'RMA') r = 'RMA_LEADER';
                    
-                   if(l && p && ['OPERATOR','ADMIN','KIEROWNIK','KOORDYNATOR', 'RMA_LEADER'].includes(r)) {
+                   if(l && p && ['OPERATOR','ADMIN','KIEROWNIK','KOORDYNATOR', 'RMA_LEADER', 'FFL'].includes(r)) {
                        newUsers.push({login:l, pass:p, role:r});
                    }
               }
