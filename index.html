@@ -231,6 +231,37 @@
     }
     canvas { display: none; }
     #patternOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 99999; display: none; cursor: pointer; }
+    /* --- MODUŁ FFL (JAKOŚĆ I ANALIZA) --- */
+    body.mode-ffl .dashboard { display: none !important; }
+    body.mode-ffl #fflDash { display: flex !important; }
+    
+    #fflDash { display: none; flex: 1; padding: 30px; gap: 20px; overflow: hidden; height: calc(100vh - 70px); }
+    
+    .ffl-left-panel { flex: 0 0 420px; background: rgba(15, 10, 20, 0.95); border: 1px solid var(--neon-purple); border-radius: 12px; padding: 25px; display: flex; flex-direction: column; overflow-y: auto; box-shadow: 0 0 40px rgba(188, 19, 254, 0.1); }
+    .ffl-right-panel { flex: 1; display: flex; flex-direction: column; gap: 20px; overflow: hidden; }
+    
+    .ffl-header { font-family: var(--font-tech); color: var(--neon-purple); font-size: 26px; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #333; text-align: center; text-shadow: 0 0 15px rgba(188, 19, 254, 0.4); }
+    
+    .ffl-label { font-size: 11px; color: #aaa; font-family: var(--font-tech); display: block; margin-bottom: 8px; font-weight: bold; }
+    .ffl-input { width: 100%; padding: 15px; background: #050505; border: 1px solid #444; color: #fff; font-family: var(--font-tech); font-size: 18px; border-radius: 6px; outline: none; transition: 0.3s; text-align: center; }
+    .ffl-input:focus { border-color: var(--neon-purple); box-shadow: 0 0 20px rgba(188, 19, 254, 0.2); }
+    
+    .ffl-fixed-status { background: rgba(188, 19, 254, 0.1); padding: 15px; border: 1px solid var(--neon-purple); color: var(--neon-purple); font-weight: bold; text-align: center; font-family: var(--font-tech); border-radius: 6px; font-size: 18px; }
+    
+    .ffl-camera-box { flex: 1; background: #000; border: 2px solid #333; border-radius: 12px; position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center; }
+    .ffl-camera-box video { width: 100%; height: 100%; object-fit: contain; }
+    
+    .ffl-upload-zone { position: relative; border: 1px dashed #666; background: #111; padding: 15px; text-align: center; border-radius: 6px; margin-top: 10px; cursor: pointer; transition: 0.3s; }
+    .ffl-upload-zone:hover { border-color: var(--neon-purple); background: rgba(188, 19, 254, 0.05); }
+    .ffl-upload-zone input { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+    
+    .ffl-btn { width: 100%; padding: 18px; background: var(--neon-purple); color: #fff; font-weight: bold; border: none; font-family: var(--font-tech); cursor: pointer; border-radius: 6px; font-size: 16px; transition: 0.3s; margin-top: auto; }
+    .ffl-btn:hover { background: #d05eff; box-shadow: 0 0 25px var(--neon-purple); }
+    
+    .ffl-list-box { flex: 1; background: rgba(20, 20, 20, 0.8); border: 1px solid #333; border-radius: 12px; padding: 20px; overflow-y: auto; }
+    .ffl-table { width: 100%; border-collapse: collapse; font-family: var(--font-tech); font-size: 13px; }
+    .ffl-table th { text-align: left; color: var(--neon-purple); border-bottom: 1px solid #444; padding: 12px; background: #111; position: sticky; top: 0; }
+    .ffl-table td { padding: 12px; border-bottom: 1px solid #222; color: #ccc; }
   </style>
 </head>
 <body>
@@ -587,6 +618,65 @@
 </div>
 
 <canvas id="photoCanvas"></canvas>
+
+<div id="fflDash">
+    <aside class="ffl-left-panel">
+        <div class="ffl-header">ANALIZA FFL</div>
+        
+        <div style="margin-bottom: 15px;">
+            <label class="ffl-label">1. SN MODUŁU (SET)</label>
+            <input type="text" id="fflSn" class="ffl-input" placeholder="SKANUJ SN..." oninput="this.value = this.value.toUpperCase()">
+        </div>
+        
+        <div style="margin-bottom: 15px;">
+            <label class="ffl-label">2. SN OC (SZKŁO)</label>
+            <input type="text" id="fflOc" class="ffl-input" placeholder="SKANUJ OC..." oninput="this.value = this.value.toUpperCase()">
+        </div>
+
+        <div style="margin-bottom: 15px;">
+            <label class="ffl-label">STATUS DECYZJI</label>
+            <div class="ffl-fixed-status">RMA DO VF</div>
+        </div>
+        
+        <div style="margin-bottom: 15px;">
+            <label class="ffl-label">DOKUMENTACJA (KAMERA / PLIKI)</label>
+            <div style="display:flex; gap:5px; margin-bottom:5px;">
+                <button class="bar-btn" onclick="fflCapture('PRZOD')" style="flex:1;">FOTO: PRZÓD</button>
+                <button class="bar-btn" onclick="fflCapture('TYL')" style="flex:1;">FOTO: TYŁ</button>
+            </div>
+            <div class="ffl-upload-zone">
+                <span style="font-size:11px; color:#888;">📂 KLIKNIJ ABY WGRAĆ PLIKI RĘCZNIE</span>
+                <input type="file" id="fflFiles" multiple accept="image/*" onchange="fflHandleFiles(this)">
+            </div>
+            <div id="fflFileCount" style="font-size:11px; color:var(--neon-purple); margin-top:5px; text-align:center;">Wybrano zdjęć: 0</div>
+        </div>
+
+        <div style="margin-bottom: 15px;">
+            <label class="ffl-label">UWAGI ANALITYCZNE</label>
+            <textarea id="fflComment" class="custom-textarea" rows="3" placeholder="Wpisz opis wady..."></textarea>
+        </div>
+
+        <button class="ffl-btn" onclick="saveFFLData()">ZAPISZ DO VF</button>
+    </aside>
+
+    <main class="ffl-right-panel">
+        <div class="ffl-camera-box">
+             <video id="fflVideo" autoplay playsinline muted></video>
+             <canvas id="fflCanvas" style="display:none;"></canvas>
+        </div>
+        
+        <div class="ffl-list-box">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:10px;">
+                <span style="font-family:var(--font-tech); color:#fff;">DZIENNIK RMA DO VF (TYLKO FFL)</span>
+                <button class="bar-btn" onclick="fetchCloudflareData()">🔄 ODŚWIEŻ</button>
+            </div>
+            <table class="ffl-table">
+                <thead><tr><th>DATA</th><th>SN</th><th>OC</th><th>UWAGI</th><th>PLIKI</th></tr></thead>
+                <tbody id="fflTableBody"></tbody>
+            </table>
+        </div>
+    </main>
+</div>
 
 <script>
   /* --- CONFIG --- */
@@ -1649,7 +1739,140 @@
           </tr>`;
       });
   }
+/* --- FFL MODULE LOGIC --- */
+let fflSessionPhotos = []; 
 
+// Integracja z logowaniem: nadpisujemy funkcję setupInterface dla FFL
+const _origSetupInterface = setupInterface;
+setupInterface = function() {
+    if(currentUser && currentUser.role === 'FFL') {
+        const badge = document.getElementById('operatorBadge');
+        badge.innerText = currentUser.login;
+        badge.style.borderColor = "var(--neon-purple)";
+        badge.style.color = "var(--neon-purple)";
+        
+        document.body.className = "mode-ffl";
+        document.getElementById('mainDashboard').style.display = 'none';
+        document.getElementById('adminDash').style.display = 'none';
+        document.getElementById('managerDash').style.display = 'none';
+        document.getElementById('fflDash').style.display = 'flex';
+        
+        initFFLCamera();
+        fetchCloudflareData(); 
+    } else {
+        _origSetupInterface();
+    }
+};
+
+// Aktualizacja tabeli FFL po pobraniu danych z Cloudflare
+const _origUpdateManagerView = updateManagerView;
+updateManagerView = function(customData = null) {
+    _origUpdateManagerView(customData);
+    if(currentUser && currentUser.role === 'FFL') {
+        const tbody = document.getElementById('fflTableBody');
+        if(!tbody) return;
+        
+        // Filtrowanie: tylko status RMA_VF (dedykowany dla FFL)
+        const fflData = reportsCache.filter(r => r.dec === "RMA_VF");
+        tbody.innerHTML = fflData.length ? "" : '<tr><td colspan="5" style="text-align:center; padding:20px;">Brak wpisów RMA DO VF</td></tr>';
+        
+        fflData.forEach(r => {
+            const row = document.createElement('tr');
+            const path = CONFIG.networkPath + "\\" + r.sn;
+            row.innerHTML = `
+                <td>${r.rawDate ? r.rawDate.toLocaleString() : '---'}</td>
+                <td style="color:var(--neon-purple); font-weight:bold;">${r.sn}</td>
+                <td>${r.oc || '---'}</td>
+                <td style="font-size:11px; color:#888;">${r.com || ''}</td>
+                <td><button class="folder-btn" onclick="navigator.clipboard.writeText('${path.replace(/\\/g, '\\\\')}'); alert('Skopiowano ścieżkę!');">📂 PATH</button></td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+};
+
+async function initFFLCamera() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        document.getElementById('fflVideo').srcObject = stream;
+    } catch(e) { console.error("FFL Camera Error:", e); }
+}
+
+function fflCapture(type) {
+    const video = document.getElementById('fflVideo');
+    const canvas = document.getElementById('fflCanvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0);
+    
+    canvas.toBlob(blob => {
+        blob.name = `FFL_${type}_${Date.now()}.jpg`;
+        fflSessionPhotos.push(blob);
+        document.getElementById('fflFileCount').innerText = `Wybrano zdjęć: ${fflSessionPhotos.length}`;
+        SoundFX.play('shutter');
+    }, 'image/jpeg', 0.9);
+}
+
+function fflHandleFiles(input) {
+    if(input.files) {
+        Array.from(input.files).forEach(file => fflSessionPhotos.push(file));
+        document.getElementById('fflFileCount').innerText = `Wybrano zdjęć: ${fflSessionPhotos.length}`;
+    }
+}
+
+async function saveFFLData() {
+    const sn = document.getElementById('fflSn').value.trim();
+    if(!sn || fflSessionPhotos.length === 0) return alert("BŁĄD: Podaj SN i dodaj zdjęcia!");
+
+    const statusBtn = document.querySelector('.ffl-btn');
+    statusBtn.innerText = "ZAPISYWANIE...";
+    
+    const timestamp = new Date().toLocaleString();
+    const comment = document.getElementById('fflComment').value;
+    const oc = document.getElementById('fflOc').value;
+
+    // 1. Zapis lokalny (jeśli folder wybrany)
+    if(dirHandle) {
+        try {
+            const folder = await dirHandle.getDirectoryHandle(sn, {create:true});
+            const report = await folder.getFileHandle(`FFL_ANALYSIS.txt`, {create:true});
+            const writer = await report.createWritable();
+            await writer.write(`FFL ANALYSIS\nDATA: ${timestamp}\nSN: ${sn}\nOC: ${oc}\nOP: ${currentUser.login}\nUWAGI: ${comment}`);
+            await writer.close();
+
+            for(const [idx, file] of fflSessionPhotos.entries()) {
+                const fh = await folder.getFileHandle(file.name || `FFL_PHOTO_${idx}.jpg`, {create:true});
+                const fw = await fh.createWritable();
+                await fw.write(file);
+                await fw.close();
+            }
+        } catch(e) { console.warn("Local save failed", e); }
+    }
+
+    // 2. Wysłanie do Cloudflare (z dedykowanym statusem RMA_VF)
+    try {
+        await fetch(CONFIG.reportUrl, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                timestamp: timestamp, sn: sn, oc: oc || "---",
+                op: currentUser.login, dec: "RMA_VF", com: comment
+            })
+        });
+        SoundFX.play('success');
+        alert("Zapisano pomyślnie status RMA DO VF");
+        
+        // Reset formularza
+        document.getElementById('fflSn').value = "";
+        document.getElementById('fflOc').value = "";
+        document.getElementById('fflComment').value = "";
+        fflSessionPhotos = [];
+        document.getElementById('fflFileCount').innerText = "Wybrano zdjęć: 0";
+        fetchCloudflareData();
+    } catch(e) { alert("Błąd wysyłania do bazy danych!"); }
+    statusBtn.innerText = "ZAPISZ DO VF";
+}
+  
 </script>
 </body>
 </html>
