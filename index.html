@@ -1131,29 +1131,40 @@
       }
   }
 
-  async function initCamera() {
+async function initCamera() {
     if(currentUser.role !== 'OPERATOR') return;
     try {
-      // ZMIANA: WYMUSZENIE WYSOKIEJ ROZDZIELCZOŚCI (4K / 1080p)
-      const s = await navigator.mediaDevices.getUserMedia({ 
-          video: { 
-              width: { ideal: 3840 }, 
-              height: { ideal: 2160 } 
-          } 
-      }); 
-      const video = document.getElementById('videoFeed');
-      video.srcObject = s;
-      video.play();
+        // Wymuszamy wysoką jakość: min 1080p, ideal 4K
+        const constraints = { 
+            video: { 
+                width: { min: 1920, ideal: 3840 }, 
+                height: { min: 1080, ideal: 2160 },
+                facingMode: "environment", // Używa głównej kamery w tabletach/telefonach
+                frameRate: { ideal: 30 }
+            } 
+        };
+        
+        const s = await navigator.mediaDevices.getUserMedia(constraints); 
+        const video = document.getElementById('videoFeed');
+        video.srcObject = s;
+        video.play();
+        
+        // Wyświetlenie aktualnej rozdzielczości w konsoli (F12) do testów
+        const track = s.getVideoTracks()[0];
+        console.log("Operator Camera Resolution: " + track.getSettings().width + "x" + track.getSettings().height);
+        
     } catch(e) {
-        console.log("Kamera 4K niedostępna, próba standardowa...");
+        console.warn("Kamera 4K/HD niedostępna, próba trybu automatycznego...");
         try {
              const s2 = await navigator.mediaDevices.getUserMedia({ video: true });
              const video = document.getElementById('videoFeed');
              video.srcObject = s2;
              video.play();
-        } catch(err) {}
+        } catch(err) {
+            console.error("Błąd kamery operatora:", err);
+        }
     }
-  }
+}
 
   function updatePhotoProgress() {
       if(photos.PRZOD) document.getElementById('btnFront').classList.add('done');
