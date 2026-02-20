@@ -1134,34 +1134,61 @@
 async function initCamera() {
     if(currentUser.role !== 'OPERATOR') return;
     try {
-        // Wymuszamy wysoką jakość: min 1080p, ideal 4K
+        // ULTRA HD (4K) CONFIGURATION
         const constraints = { 
             video: { 
-                width: { min: 1920, ideal: 3840 }, 
-                height: { min: 1080, ideal: 2160 },
-                facingMode: "environment", // Używa głównej kamery w tabletach/telefonach
-                frameRate: { ideal: 30 }
+                width: { ideal: 3840 },  // Prosi o 4K
+                height: { ideal: 2160 }, // Prosi o 4K
+                aspectRatio: { ideal: 1.7777777778 }, // Preferuje format 16:9
+                frameRate: { ideal: 30, max: 60 },    // Płynność
+                focusMode: "continuous" // Próba wymuszenia ciągłego autofocusa (jeśli przeglądarka wspiera)
             } 
         };
         
+        // Zatrzymujemy poprzednie strumienie, jeśli istnieją
+        const oldVideo = document.getElementById('videoFeed');
+        if (oldVideo.srcObject) {
+            oldVideo.srcObject.getTracks().forEach(track => track.stop());
+        }
+
         const s = await navigator.mediaDevices.getUserMedia(constraints); 
         const video = document.getElementById('videoFeed');
         video.srcObject = s;
         video.play();
         
-        // Wyświetlenie aktualnej rozdzielczości w konsoli (F12) do testów
+        // Weryfikacja i wyświetlenie rzeczywistej rozdzielczości na ekranie
         const track = s.getVideoTracks()[0];
-        console.log("Operator Camera Resolution: " + track.getSettings().width + "x" + track.getSettings().height);
+        const settings = track.getSettings();
+        const actualRes = (settings.width || '???') + "x" + (settings.height || '???');
+        
+        console.log("Uruchomiono kamerę w rozdzielczości: " + actualRes);
+        
+        // Dodajemy informację o rozdzielczości obok suwaka Zoomu (dla pewności)
+        const zoomValDisplay = document.getElementById('zoomVal');
+        if(zoomValDisplay) {
+            zoomValDisplay.innerHTML = `1.0x <span style="font-size:10px; color:var(--neon-gold)">[${actualRes}]</span>`;
+        }
+
+        // Próba wymuszenia maksymalnych ustawień sprzętowych
+        try {
+            await track.applyConstraints({ 
+                advanced: [{ width: 3840, height: 2160 }, { focusMode: "continuous" }] 
+            });
+        } catch(err) {
+            console.log("Przeglądarka nie obsługuje zaawansowanych constraintów, używam standardowych.");
+        }
         
     } catch(e) {
-        console.warn("Kamera 4K/HD niedostępna, próba trybu automatycznego...");
+        console.warn("Kamera 4K niedostępna lub błąd dostępu. Próba fallback...", e);
         try {
-             const s2 = await navigator.mediaDevices.getUserMedia({ video: true });
+             // Fallback do standardowego HD jeśli 4K zawiedzie
+             const s2 = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1920 }, height: { ideal: 1080 } } });
              const video = document.getElementById('videoFeed');
              video.srcObject = s2;
              video.play();
         } catch(err) {
-            console.error("Błąd kamery operatora:", err);
+            console.error("KRYTYCZNY BŁĄD KAMERY:", err);
+            alert("Nie udało się uruchomić kamery. Sprawdź uprawnienia lub połączenie USB.");
         }
     }
 }
@@ -1202,28 +1229,36 @@ async function initCamera() {
   function processPhoto() {
       const v = document.getElementById('videoFeed');
       const finalC = document.getElementById('photoCanvas'); 
+      
+      // Ustawiamy canvas dokładnie na rozmiar źródła wideo (bez skalowania CSS)
       finalC.width = v.videoWidth; 
       finalC.height = v.videoHeight;
+      
       const ctx = finalC.getContext('2d');
       
+      // WYŁĄCZENIE WYGŁADZANIA (Dla maksymalnej ostrości pikseli)
+      ctx.imageSmoothingEnabled = false; 
+
       // Obsługa lustra
       if(isMirrored) { 
           ctx.translate(finalC.width, 0); 
           ctx.scale(-1, 1); 
       }
       
-      // Rysowanie wideo
-      ctx.drawImage(v, 0, 0);
+      // Rysowanie wideo w pełnej rozdzielczości
+      ctx.drawImage(v, 0, 0, finalC.width, finalC.height);
 
-      // Reset transformacji dla rysunków i tekstu, jeśli było lustro
+      // Reset transformacji dla rysunków i tekstu
       if(isMirrored) {
           ctx.setTransform(1, 0, 0, 1, 0, 0); 
       }
       
       // Rysowanie overlay (rysunków użytkownika)
-      ctx.drawImage(document.getElementById('drawCanvas'), 0, 0, finalC.width, finalC.height);
+      // Skalujemy rysunki z podglądu do pełnej rozdzielczości zdjęcia
+      const drawC = document.getElementById('drawCanvas');
+      ctx.drawImage(drawC, 0, 0, finalC.width, finalC.height);
 
-      // ZMIANA: WYPALANIE PEŁNYCH DANYCH RAPORTU NA ZDJĘCIU
+      // WYPALANIE DANYCH RAPORTU NA ZDJĘCIU (Skalowane dynamicznie do 4K)
       const now = new Date();
       const dateStr = now.toLocaleDateString() + " " + now.toLocaleTimeString();
       const op = currentUser ? currentUser.login : "---";
@@ -1237,7 +1272,8 @@ async function initCamera() {
           `DATA: ${dateStr}`
       ];
       
-      const fs = Math.floor(finalC.height / 35); // Dopasowanie czcionki
+      // Czcionka skalowana względem wysokości (np. dla 4K będzie większa niż dla HD)
+      const fs = Math.floor(finalC.height / 35); 
       ctx.font = `bold ${fs}px Roboto`;
       ctx.fillStyle = "#0aff00";
       ctx.shadowColor = "black";
@@ -1253,11 +1289,12 @@ async function initCamera() {
           y += fs + 10;
       });
 
+      // ZAPIS Z MAKSYMALNĄ JAKOŚCIĄ (1.0 zamiast 0.9)
       finalC.toBlob(b => { 
           photos[tempPhotoType] = b; 
           updatePhotoProgress(); 
           cancelPhoto(); 
-      }, 'image/jpeg', 0.9);
+      }, 'image/jpeg', 1.0); 
   }
 
   function checkOcRequirement() {
