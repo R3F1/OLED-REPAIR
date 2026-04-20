@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR v2.0 (by Łukasz Gruszczyński)</title>
+  <title>OLED REPAIR v1.3 (by Łukasz Gruszczyński)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -12,39 +12,24 @@
   <style>
     /* --- STYLES --- */
     :root {
-      /* GŁÓWNE TŁO I PANELE (Profesjonalny, głęboki granat/grafit) */
-      --bg-deep: #0f172a; 
-      --panel-glass: rgba(30, 41, 59, 0.95);
-      
-      /* AKCENTY (Stonowane, matowe kolory zamiast "bijących po oczach" neonów) */
-      --neon-cyan: #3b82f6;   /* Zaufany niebieski (przyciski, akcje) */
-      --neon-green: #10b981;  /* Matowa zieleń (Status OK, Sukces) */
-      --neon-red: #ef4444;    /* Koralowa czerwień (Status NG, Błąd) */
-      --neon-gold: #f59e0b;   /* Bursztynowy (Ostrzeżenia, Admin) */
-      --neon-purple: #8b5cf6; /* Fiolet (Koordynator, analizy) */
-      --neon-orange: #f97316; /* Pomarańcz (Lider RMA) */
-      
-      /* TYPOGRAFIA */
+      --bg-deep: #050505;
+      --panel-glass: rgba(20, 25, 35, 0.95);
+      --neon-cyan: #00f3ff;
+      --neon-green: #0aff00;
+      --neon-red: #ff003c;
+      --neon-gold: #ffd700;
+      --neon-purple: #bc13fe;
+      --neon-orange: #ff9d00;
       --font-ui: 'Roboto', sans-serif;
-      /* Zmiana na monospace dla font-tech - numery seryjne będą ułożone równo jak w Excelu */
-      --font-tech: 'Oxanium', monospace; 
+      --font-tech: 'Oxanium', cursive;
     }
-    
     * { box-sizing: border-box; user-select: none; }
-    
     body {
-      margin: 0; 
-      background-color: var(--bg-deep); 
-      color: #f8fafc; /* Złamana biel dla mniejszego kontrastu i zmęczenia oczu */
-      font-family: var(--font-ui); 
-      height: 100vh; 
-      overflow: hidden;
-      display: flex; 
-      flex-direction: column;
-      /* Subtelniejsza, elegancka siatka w tle */
-      background-image: linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      margin: 0; background-color: var(--bg-deep); color: #fff;
+      font-family: var(--font-ui); height: 100vh; overflow: hidden;
+      display: flex; flex-direction: column;
+      background-image: linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
       background-size: 50px 50px;
-    }
     }
 
     /* LOGIN SCREEN */
