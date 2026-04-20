@@ -1921,6 +1921,106 @@ async function saveFFLData() {
     statusBtn.innerText = "ZAPISZ DO VF";
 }
   
+  <script>
+  // 1. DYNAMICZNE ŁADOWANIE BIBLIOTEKI jsPDF (bez ruszania sekcji <head>)
+  (function() {
+      if (!window.jspdf) {
+          const script = document.createElement('script');
+          script.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+          document.head.appendChild(script);
+      }
+
+      // 2. DYNAMICZNE DODANIE PRZYCISKU PDF (bez ruszania Twojego HTML)
+      setTimeout(() => {
+          const saveBtn = document.querySelector('.ffl-btn');
+          if (saveBtn && !document.getElementById('autoPdfBtn')) {
+              const pdfBtn = document.createElement('button');
+              pdfBtn.id = "autoPdfBtn";
+              pdfBtn.className = "bar-btn";
+              pdfBtn.innerHTML = "📄 GENERUJ RAPORT PDF";
+              pdfBtn.style.cssText = "width: 100%; padding: 15px; margin-bottom: 15px; border-color: var(--neon-cyan); color: var(--neon-cyan); font-weight: bold; font-family: var(--font-tech); cursor: pointer; transition: 0.3s; background: transparent;";
+              pdfBtn.onmouseover = () => { pdfBtn.style.background = "var(--neon-cyan)"; pdfBtn.style.color = "#000"; };
+              pdfBtn.onmouseout = () => { pdfBtn.style.background = "transparent"; pdfBtn.style.color = "var(--neon-cyan)"; };
+              pdfBtn.onclick = generateFFLPDF;
+              saveBtn.parentNode.insertBefore(pdfBtn, saveBtn);
+          }
+      }, 1000); 
+  })();
+
+  // 3. GLOBALNE SKRÓTY KLAWISZOWE (HOTKEYS) DLA OPERATORA
+  window.addEventListener('keydown', function(e) {
+      if (!currentUser || currentUser.role !== 'OPERATOR' || !currentSN) return;
+      switch(e.key) {
+          case 'F1': e.preventDefault(); if(!document.getElementById('btnFront').classList.contains('locked')) capture('PRZOD'); break;
+          case 'F2': e.preventDefault(); if(!document.getElementById('btnBack').classList.contains('locked')) capture('TYL'); break;
+          case 'F3': e.preventDefault(); if(!document.getElementById('btnImage').classList.contains('locked')) capture('OBRAZ'); break;
+          case 'F4': e.preventDefault(); if(document.getElementById('actionBtn').classList.contains('active')) saveData(); break;
+          case 'Escape': if(document.getElementById('drawToolbar').style.display === 'block') cancelPhoto(); break;
+      }
+  });
+
+  // 4. LOGIKA GENEROWANIA PDF
+  function blobToBase64(blob) {
+      return new Promise((resolve, _) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
+      });
+  }
+
+  async function generateFFLPDF() {
+      const sn = document.getElementById('fflSn').value.trim();
+      if (!sn) return alert("Podaj numer SN przed wygenerowaniem raportu!");
+      if (!window.jspdf) return alert("Biblioteka PDF jeszcze się ładuje, spróbuj za sekundę.");
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF(); 
+      const oc = document.getElementById('fflOc').value.trim() || '---';
+      const comment = document.getElementById('fflComment').value || 'Brak uwag analitycznych.';
+      const timestamp = new Date().toLocaleString();
+
+      // Nagłówek
+      doc.setFontSize(22); doc.setTextColor(139, 92, 246);
+      doc.text("RAPORT INSPEKCJI FFL (RMA DO VF)", 20, 20);
+      
+      // Tekst
+      doc.setFontSize(12); doc.setTextColor(0, 0, 0);
+      doc.text(`Data inspekcji: ${timestamp}`, 20, 35);
+      doc.text(`Operator / Analityk: ${currentUser ? currentUser.login : 'Nieznany'}`, 20, 45);
+      
+      doc.setFont(undefined, 'bold');
+      doc.text(`Numer SN (SET): ${sn}`, 20, 60);
+      doc.text(`Numer OC (PANEL): ${oc}`, 20, 70);
+      doc.setFont(undefined, 'normal');
+
+      doc.text("Wykryte wady / Uwagi:", 20, 85);
+      doc.setFontSize(10);
+      const splitLines = doc.splitTextToSize(comment, 170);
+      doc.text(splitLines, 20, 92);
+
+      // Zdjęcia
+      let yOffset = 92 + (splitLines.length * 5) + 10; 
+      if (typeof fflSessionPhotos !== 'undefined' && fflSessionPhotos.length > 0) {
+          doc.setFontSize(12); doc.setFont(undefined, 'bold');
+          doc.text("Dokumentacja zdjęciowa:", 20, yOffset);
+          yOffset += 10;
+          for (let i = 0; i < fflSessionPhotos.length; i++) {
+              if (yOffset > 200) { doc.addPage(); yOffset = 20; }
+              try {
+                  const base64Img = await blobToBase64(fflSessionPhotos[i]);
+                  doc.addImage(base64Img, 'JPEG', 20, yOffset, 170, 95);
+                  yOffset += 105; 
+              } catch (e) { console.error("Błąd generowania zdjęcia w PDF", e); }
+          }
+      } else {
+          doc.setFontSize(10); doc.setTextColor(150, 150, 150);
+          doc.text("Brak załączonych zdjęć w sesji.", 20, yOffset);
+      }
+      
+      // Pobieranie
+      doc.save(`Raport_FFL_${sn}.pdf`);
+      if(typeof SoundFX !== 'undefined') SoundFX.play('success'); 
+  }
 </script>
 </body>
 </html>
