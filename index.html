@@ -174,10 +174,14 @@
     .color-btn { width: 25px; height: 25px; border-radius: 50%; border: 2px solid #fff; cursor: pointer; display: inline-block; margin: 0 5px; }
     .tool-btn { background: transparent; border: 1px solid #aaa; color: #fff; padding: 5px 12px; cursor: pointer; font-family: var(--font-tech); font-size: 12px; margin-left: 10px; border-radius: 4px; }
     .tool-btn.confirm { background: var(--neon-cyan); color: #000; border-color: var(--neon-cyan); font-weight: bold; }
-    .cam-controls { position: absolute; bottom: 20px; right: 20px; z-index: 50; display: flex; gap: 15px; align-items: center; background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 30px; border: 1px solid #333; backdrop-filter: blur(5px); }
-    .cam-btn { background: transparent; border: 1px solid var(--neon-cyan); color: var(--neon-cyan); width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; transition: 0.2s; }
-    .cam-btn:hover { background: var(--neon-cyan); color: #000; }
-    .zoom-group { display: flex; align-items: center; gap: 10px; font-family: var(--font-tech); font-size: 12px; color: var(--neon-cyan); }
+    .cam-controls { position: absolute; bottom: 20px; right: 20px; z-index: 70; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: flex-end; max-width: calc(100% - 40px); background: rgba(0,0,0,0.78); padding: 10px 14px; border-radius: 18px; border: 1px solid #333; backdrop-filter: blur(8px); box-shadow: 0 8px 30px rgba(0,0,0,0.45); }
+    .cam-btn { background: transparent; border: 1px solid var(--neon-cyan); color: var(--neon-cyan); min-width: 36px; height: 36px; padding: 0 11px; border-radius: 18px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; font-family: var(--font-tech); transition: 0.2s; white-space: nowrap; }
+    .cam-btn:hover, .cam-btn.active { background: var(--neon-cyan); color: #000; box-shadow: 0 0 14px rgba(0,243,255,0.45); }
+    .cam-btn.reset { border-color: var(--neon-gold); color: var(--neon-gold); }
+    .cam-btn.reset:hover { background: var(--neon-gold); color: #000; box-shadow: 0 0 14px rgba(255,215,0,0.45); }
+    .cam-btn.zoom-step { width: 30px; min-width: 30px; height: 30px; padding: 0; font-size: 18px; }
+    .zoom-group { display: flex; align-items: center; gap: 8px; font-family: var(--font-tech); font-size: 12px; color: var(--neon-cyan); }
+    .camera-resolution { color: var(--neon-gold); font-size: 10px; min-width: 72px; text-align: center; }
     input[type=range] { -webkit-appearance: none; width: 100px; height: 4px; background: #333; border-radius: 2px; outline: none; }
     input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--neon-cyan); cursor: pointer; box-shadow: 0 0 10px var(--neon-cyan); }
     .input-label { font-size: 11px; color: var(--neon-cyan); letter-spacing: 1px; margin-bottom: 5px; display: block; font-weight: bold; font-family: var(--font-tech); }
@@ -202,6 +206,7 @@
     .quick-defects { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
     .defect-tag { font-family: var(--font-tech); font-size: 11px; padding: 4px 8px; border: 1px solid #444; color: #888; border-radius: 4px; cursor: pointer; transition: 0.2s; }
     .defect-tag:hover { border-color: var(--neon-cyan); color: var(--neon-cyan); }
+    .defect-tag.active { border-color: var(--neon-green); color: #000; background: var(--neon-green); box-shadow: 0 0 10px rgba(10,255,0,0.25); font-weight: 700; }
     .recent-list { margin-top: 15px; border-top: 1px solid #333; padding-top: 10px; max-height: 100px; overflow-y: auto; }
     .recent-item { display: flex; justify-content: space-between; font-size: 12px; color: #666; padding: 4px 0; border-bottom: 1px dashed #222; }
     .recent-item span:last-child { font-weight: bold; }
@@ -388,15 +393,20 @@
       
       <span class="input-label">KOMENTARZ / SZYBKIE WADY</span>
       <div class="quick-defects">
-          <div class="defect-tag" onclick="addDefect('RYSA NA MATRYCY')">RYSA</div>
-          <div class="defect-tag" onclick="addDefect('BAD PIXEL')">PIXEL</div>
-          <div class="defect-tag" onclick="addDefect('PĘKNIĘCIE')">PĘKNIĘCIE</div>
-          <div class="defect-tag" onclick="addDefect('LINIA PIONOWA')">LINIA |</div>
-          <div class="defect-tag" onclick="addDefect('LINIA POZIOMA')">LINIA —</div>
-          <div class="defect-tag" onclick="addDefect('BRAK OBRAZU')">NO IMAGE</div>
+          <div class="defect-tag" data-defect="RYSA NA MATRYCY" onclick="addDefect('RYSA NA MATRYCY', this)">RYSA</div>
+          <div class="defect-tag" data-defect="BAD PIXEL" onclick="addDefect('BAD PIXEL', this)">PIXEL</div>
+          <div class="defect-tag" data-defect="PĘKNIĘCIE" onclick="addDefect('PĘKNIĘCIE', this)">PĘKNIĘCIE</div>
+          <div class="defect-tag" data-defect="LINIA PIONOWA" onclick="addDefect('LINIA PIONOWA', this)">LINIA |</div>
+          <div class="defect-tag" data-defect="LINIA POZIOMA" onclick="addDefect('LINIA POZIOMA', this)">LINIA —</div>
+          <div class="defect-tag" data-defect="BRAK OBRAZU" onclick="addDefect('BRAK OBRAZU', this)">NO IMAGE</div>
+          <div class="defect-tag" data-defect="IMAGE STICKING" onclick="addDefect('IMAGE STICKING', this)">IMAGE STICKING</div>
+          <div class="defect-tag" data-defect="BC DEFORM" onclick="addDefect('BC DEFORM', this)">BC DEFORM</div>
+          <div class="defect-tag" data-defect="BC SCRATCH" onclick="addDefect('BC SCRATCH', this)">BC SCRATCH</div>
+          <div class="defect-tag" data-defect="DP CLUSTER" onclick="addDefect('DP CLUSTER', this)">DP CLUSTER</div>
+          <div class="defect-tag" data-defect="BP CLUSTER" onclick="addDefect('BP CLUSTER', this)">BP CLUSTER</div>
       </div>
       
-      <textarea id="commentInput" class="custom-textarea" rows="2" placeholder="Wpisz uwagi..." onkeyup="saveRecoveryState()"></textarea>
+      <textarea id="commentInput" class="custom-textarea" rows="2" placeholder="Wpisz uwagi..." oninput="syncDefectTags(); saveRecoveryState()"></textarea>
     </div>
 
     <div class="recent-list" id="recentList"></div>
@@ -418,14 +428,18 @@
       <button class="tool-btn confirm" onclick="confirmPhoto()">ZAPISZ</button>
       <button class="tool-btn" onclick="cancelPhoto()">ANULUJ</button>
     </div>
-    <div class="cam-controls">
+    <div class="cam-controls" onclick="event.stopPropagation()">
       <div class="zoom-group">
         <span>ZOOM</span>
+        <button type="button" class="cam-btn zoom-step" onclick="adjustZoom(-0.1)" title="Pomniejsz">−</button>
         <input type="range" id="zoomSlider" min="1" max="4" step="0.1" value="1">
+        <button type="button" class="cam-btn zoom-step" onclick="adjustZoom(0.1)" title="Powiększ">+</button>
         <span id="zoomVal">1.0x</span>
+        <span id="cameraRes" class="camera-resolution">---x---</span>
       </div>
-      <div style="width:1px; height:20px; background:#444; margin:0 5px;"></div>
-      <div class="cam-btn" onclick="toggleMirror()" title="Odbicie lustrzane">↔</div>
+      <div style="width:1px; height:24px; background:#444; margin:0 3px;"></div>
+      <button type="button" class="cam-btn reset" onclick="resetCameraView()" title="Zoom 1.0x i pozycja centralna">⟲ ZERO</button>
+      <button type="button" id="mirrorBtn" class="cam-btn" onclick="toggleMirror()" title="Odbicie lustrzane">↔ LUSTRO</button>
     </div>
     <div class="video-container">
         <video id="videoFeed" autoplay playsinline></video>
@@ -736,6 +750,7 @@
   let tempPhotoType = "";
   let zoomLevel = 1.0;
   let panX = 0; let panY = 0;
+  let cameraResolution = "---x---";
   let isPanning = false; let startPanX = 0; let startPanY = 0;
   
   let sessionStartTime = null;
@@ -775,21 +790,39 @@
     c.addEventListener('touchmove', (e)=>{e.preventDefault(); draw(e.touches[0])});
 
     const slider = document.getElementById('zoomSlider');
-    slider.addEventListener('input', (e) => { zoomLevel = parseFloat(e.target.value); applyTransform(); });
+    slider.addEventListener('input', (e) => setZoom(parseFloat(e.target.value)));
 
     const camContainer = document.getElementById('camContainer');
     camContainer.addEventListener('mousedown', (e) => {
-        if(zoomLevel > 1 && !isDrawing && document.getElementById('drawCanvas').style.display === 'none') {
-            isPanning = true; startPanX = e.clientX - panX; startPanY = e.clientY - panY;
+        if(e.target.closest('.cam-controls') || e.target.closest('.draw-toolbar')) return;
+        const drawHidden = getComputedStyle(document.getElementById('drawCanvas')).display === 'none';
+        if(zoomLevel > 1 && !isDrawing && drawHidden) {
+            isPanning = true;
+            startPanX = e.clientX - panX;
+            startPanY = e.clientY - panY;
             camContainer.style.cursor = 'grabbing';
         }
     });
-    window.addEventListener('mouseup', () => { isPanning = false; camContainer.style.cursor = zoomLevel > 1 ? 'grab' : 'default'; });
+    camContainer.addEventListener('wheel', (e) => {
+        if(e.target.closest('.cam-controls') || getComputedStyle(document.getElementById('drawCanvas')).display !== 'none') return;
+        e.preventDefault();
+        adjustZoom(e.deltaY < 0 ? 0.1 : -0.1);
+    }, { passive: false });
+    camContainer.addEventListener('dblclick', (e) => {
+        if(!e.target.closest('.cam-controls') && !e.target.closest('.draw-toolbar')) resetCameraView();
+    });
+    window.addEventListener('mouseup', () => {
+        isPanning = false;
+        camContainer.style.cursor = zoomLevel > 1 ? 'grab' : 'default';
+    });
     window.addEventListener('mousemove', (e) => {
-        if(!isPanning) return; e.preventDefault();
-        panX = e.clientX - startPanX; panY = e.clientY - startPanY;
+        if(!isPanning) return;
+        e.preventDefault();
+        panX = e.clientX - startPanX;
+        panY = e.clientY - startPanY;
         applyTransform();
     });
+    window.addEventListener('resize', applyTransform);
   };
 
   /* --- FUNKCJA SZYBKIEGO LOGOWANIA --- */
@@ -829,11 +862,26 @@
       document.getElementById('sessionTimer').innerText = `⏱️ ${m}:${s}`;
   }
 
-  function addDefect(text) {
+  function addDefect(text, sourceEl = null) {
       const field = document.getElementById('commentInput');
-      if(field.value) field.value += ", " + text;
-      else field.value = text;
+      const values = field.value.split(',').map(v => v.trim()).filter(Boolean);
+      const index = values.indexOf(text);
+      if(index >= 0) values.splice(index, 1);
+      else values.push(text);
+      field.value = values.join(', ');
+      syncDefectTags();
       saveRecoveryState();
+  }
+
+  function syncDefectTags() {
+      const field = document.getElementById('commentInput');
+      if(!field) return;
+      const values = field.value.split(',').map(v => v.trim()).filter(Boolean);
+      document.querySelectorAll('.defect-tag[data-defect]').forEach(tag => {
+          const active = values.includes(tag.dataset.defect);
+          tag.classList.toggle('active', active);
+          tag.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
   }
 
   function logSystem(msg) {
@@ -847,10 +895,71 @@
       term.scrollTop = term.scrollHeight;
   }
 
+  function getCameraMetrics() {
+      const video = document.getElementById('videoFeed');
+      const container = document.querySelector('#camContainer .video-container');
+      if(!video || !container) return null;
+      const rect = container.getBoundingClientRect();
+      const cw = Math.max(1, rect.width);
+      const ch = Math.max(1, rect.height);
+      const vw = Math.max(1, video.videoWidth || 16);
+      const vh = Math.max(1, video.videoHeight || 9);
+      const fitScale = Math.min(cw / vw, ch / vh);
+      return { video, container, cw, ch, vw, vh, fitW: vw * fitScale, fitH: vh * fitScale };
+  }
+
+  function clampCameraPan() {
+      const m = getCameraMetrics();
+      if(!m) return;
+      const maxX = Math.max(0, (m.fitW * zoomLevel - m.cw) / 2);
+      const maxY = Math.max(0, (m.fitH * zoomLevel - m.ch) / 2);
+      panX = Math.max(-maxX, Math.min(maxX, panX));
+      panY = Math.max(-maxY, Math.min(maxY, panY));
+  }
+
+  function updateCameraReadout() {
+      const slider = document.getElementById('zoomSlider');
+      const zoomVal = document.getElementById('zoomVal');
+      const cameraRes = document.getElementById('cameraRes');
+      const mirrorBtn = document.getElementById('mirrorBtn');
+      if(slider) slider.value = zoomLevel.toFixed(1);
+      if(zoomVal) zoomVal.textContent = `${zoomLevel.toFixed(1)}x`;
+      if(cameraRes) cameraRes.textContent = cameraResolution;
+      if(mirrorBtn) mirrorBtn.classList.toggle('active', isMirrored);
+  }
+
   function applyTransform() {
-    const v = document.getElementById('videoFeed');
-    const mirrorFactor = isMirrored ? -1 : 1;
-    v.style.transform = `scale(${zoomLevel * mirrorFactor}, ${zoomLevel}) translate(${panX / zoomLevel}px, ${panY / zoomLevel}px)`;
+      const v = document.getElementById('videoFeed');
+      if(!v) return;
+      clampCameraPan();
+      const mirrorFactor = isMirrored ? -1 : 1;
+      v.style.transformOrigin = 'center center';
+      v.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel * mirrorFactor}, ${zoomLevel})`;
+      const camContainer = document.getElementById('camContainer');
+      if(camContainer) camContainer.style.cursor = zoomLevel > 1 ? 'grab' : 'default';
+      updateCameraReadout();
+  }
+
+  function setZoom(value) {
+      zoomLevel = Math.max(1, Math.min(4, Math.round(value * 10) / 10));
+      if(zoomLevel === 1) { panX = 0; panY = 0; }
+      applyTransform();
+  }
+
+  function adjustZoom(delta) {
+      setZoom(zoomLevel + delta);
+  }
+
+  function resetCameraView() {
+      zoomLevel = 1;
+      panX = 0;
+      panY = 0;
+      applyTransform();
+  }
+
+  function toggleMirror() {
+      isMirrored = !isMirrored;
+      applyTransform();
   }
 
   function loadConfig() {
@@ -1133,62 +1242,53 @@
 
 async function initCamera() {
     if(currentUser.role !== 'OPERATOR') return;
-    try {
-        // ULTRA HD (4K) CONFIGURATION
-        const constraints = { 
-            video: { 
-                width: { ideal: 3840 },  // Prosi o 4K
-                height: { ideal: 2160 }, // Prosi o 4K
-                aspectRatio: { ideal: 1.7777777778 }, // Preferuje format 16:9
-                frameRate: { ideal: 30, max: 60 },    // Płynność
-                focusMode: "continuous" // Próba wymuszenia ciągłego autofocusa (jeśli przeglądarka wspiera)
-            } 
-        };
-        
-        // Zatrzymujemy poprzednie strumienie, jeśli istnieją
-        const oldVideo = document.getElementById('videoFeed');
-        if (oldVideo.srcObject) {
-            oldVideo.srcObject.getTracks().forEach(track => track.stop());
+
+    const video = document.getElementById('videoFeed');
+
+    async function attachStream(stream) {
+        if(video.srcObject) video.srcObject.getTracks().forEach(track => track.stop());
+        video.srcObject = stream;
+        await video.play();
+
+        const track = stream.getVideoTracks()[0];
+        try {
+            const caps = typeof track.getCapabilities === 'function' ? track.getCapabilities() : {};
+            const advanced = {};
+            if(Array.isArray(caps.focusMode) && caps.focusMode.includes('continuous')) advanced.focusMode = 'continuous';
+            if(Object.keys(advanced).length) await track.applyConstraints({ advanced: [advanced] });
+        } catch(err) {
+            console.log('Kamera nie obsługuje dodatkowych ustawień autofocusa.', err);
         }
 
-        const s = await navigator.mediaDevices.getUserMedia(constraints); 
-        const video = document.getElementById('videoFeed');
-        video.srcObject = s;
-        video.play();
-        
-        // Weryfikacja i wyświetlenie rzeczywistej rozdzielczości na ekranie
-        const track = s.getVideoTracks()[0];
         const settings = track.getSettings();
-        const actualRes = (settings.width || '???') + "x" + (settings.height || '???');
-        
-        console.log("Uruchomiono kamerę w rozdzielczości: " + actualRes);
-        
-        // Dodajemy informację o rozdzielczości obok suwaka Zoomu (dla pewności)
-        const zoomValDisplay = document.getElementById('zoomVal');
-        if(zoomValDisplay) {
-            zoomValDisplay.innerHTML = `1.0x <span style="font-size:10px; color:var(--neon-gold)">[${actualRes}]</span>`;
-        }
+        cameraResolution = `${settings.width || video.videoWidth || '???'}x${settings.height || video.videoHeight || '???'}`;
+        console.log('Uruchomiono kamerę w rozdzielczości: ' + cameraResolution);
+        resetCameraView();
+    }
 
-        // Próba wymuszenia maksymalnych ustawień sprzętowych
-        try {
-            await track.applyConstraints({ 
-                advanced: [{ width: 3840, height: 2160 }, { focusMode: "continuous" }] 
-            });
-        } catch(err) {
-            console.log("Przeglądarka nie obsługuje zaawansowanych constraintów, używam standardowych.");
-        }
-        
+    try {
+        const constraints = {
+            video: {
+                width: { ideal: 3840 },
+                height: { ideal: 2160 },
+                aspectRatio: { ideal: 1.7777777778 },
+                frameRate: { ideal: 30, max: 60 }
+            }
+        };
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        await attachStream(stream);
     } catch(e) {
-        console.warn("Kamera 4K niedostępna lub błąd dostępu. Próba fallback...", e);
+        console.warn('Kamera 4K niedostępna lub błąd dostępu. Próba fallback...', e);
         try {
-             // Fallback do standardowego HD jeśli 4K zawiedzie
-             const s2 = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1920 }, height: { ideal: 1080 } } });
-             const video = document.getElementById('videoFeed');
-             video.srcObject = s2;
-             video.play();
+            const fallback = await navigator.mediaDevices.getUserMedia({
+                video: { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } }
+            });
+            await attachStream(fallback);
         } catch(err) {
-            console.error("KRYTYCZNY BŁĄD KAMERY:", err);
-            alert("Nie udało się uruchomić kamery. Sprawdź uprawnienia lub połączenie USB.");
+            cameraResolution = 'BRAK KAMERY';
+            updateCameraReadout();
+            console.error('KRYTYCZNY BŁĄD KAMERY:', err);
+            alert('Nie udało się uruchomić kamery. Sprawdź uprawnienia lub połączenie USB.');
         }
     }
 }
@@ -1223,78 +1323,101 @@ async function initCamera() {
     document.getElementById('actionBtn').classList.remove('active');
     document.getElementById('statusSelect').value = "OK";
     document.getElementById('commentInput').value = "";
+    syncDefectTags();
+    resetCameraView();
+    clearDraw();
     sessionStartTime = new Date();
   }
 
   function processPhoto() {
       const v = document.getElementById('videoFeed');
-      const finalC = document.getElementById('photoCanvas'); 
-      
-      // Ustawiamy canvas dokładnie na rozmiar źródła wideo (bez skalowania CSS)
-      finalC.width = v.videoWidth; 
-      finalC.height = v.videoHeight;
-      
+      const finalC = document.getElementById('photoCanvas');
+      const metrics = getCameraMetrics();
+
+      if(!metrics || !v.videoWidth || !v.videoHeight) {
+          alert('Kamera nie jest jeszcze gotowa. Poczekaj chwilę i spróbuj ponownie.');
+          return;
+      }
+
+      // Canvas ma proporcje dokładnie takie jak widoczny panel kamery.
+      // Dzięki temu zapis odwzorowuje zoom, przesunięcie, lustro i ewentualne pasy.
+      const viewAspect = metrics.cw / metrics.ch;
+      const sourceAspect = metrics.vw / metrics.vh;
+      let outW, outH;
+      if(viewAspect >= sourceAspect) {
+          outW = metrics.vw;
+          outH = Math.max(1, Math.round(outW / viewAspect));
+      } else {
+          outH = metrics.vh;
+          outW = Math.max(1, Math.round(outH * viewAspect));
+      }
+
+      finalC.width = outW;
+      finalC.height = outH;
       const ctx = finalC.getContext('2d');
-      
-      // WYŁĄCZENIE WYGŁADZANIA (Dla maksymalnej ostrości pikseli)
-      ctx.imageSmoothingEnabled = false; 
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, outW, outH);
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, outW, outH);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
 
-      // Obsługa lustra
-      if(isMirrored) { 
-          ctx.translate(finalC.width, 0); 
-          ctx.scale(-1, 1); 
-      }
-      
-      // Rysowanie wideo w pełnej rozdzielczości
-      ctx.drawImage(v, 0, 0, finalC.width, finalC.height);
+      // Odtworzenie dokładnie tej samej geometrii co w podglądzie object-fit: contain.
+      const fitScale = Math.min(outW / metrics.vw, outH / metrics.vh);
+      const baseW = metrics.vw * fitScale;
+      const baseH = metrics.vh * fitScale;
+      const scaleX = outW / metrics.cw;
+      const scaleY = outH / metrics.ch;
+      const centerX = outW / 2 + panX * scaleX;
+      const centerY = outH / 2 + panY * scaleY;
+      const drawW = baseW * zoomLevel;
+      const drawH = baseH * zoomLevel;
 
-      // Reset transformacji dla rysunków i tekstu
-      if(isMirrored) {
-          ctx.setTransform(1, 0, 0, 1, 0, 0); 
-      }
-      
-      // Rysowanie overlay (rysunków użytkownika)
-      // Skalujemy rysunki z podglądu do pełnej rozdzielczości zdjęcia
+      ctx.save();
+      ctx.translate(centerX, centerY);
+      ctx.scale(isMirrored ? -1 : 1, 1);
+      ctx.drawImage(v, -drawW / 2, -drawH / 2, drawW, drawH);
+      ctx.restore();
+
+      // Rysunek operatora jest nanoszony w układzie ekranu, więc nie jest ponownie odbijany.
       const drawC = document.getElementById('drawCanvas');
-      ctx.drawImage(drawC, 0, 0, finalC.width, finalC.height);
+      if(drawC && drawC.width && drawC.height) ctx.drawImage(drawC, 0, 0, outW, outH);
 
-      // WYPALANIE DANYCH RAPORTU NA ZDJĘCIU (Skalowane dynamicznie do 4K)
       const now = new Date();
-      const dateStr = now.toLocaleDateString() + " " + now.toLocaleTimeString();
-      const op = currentUser ? currentUser.login : "---";
+      const dateStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
+      const op = currentUser ? currentUser.login : '---';
       const dec = document.getElementById('statusSelect').value;
-      
       const lines = [
           `SN: ${currentSN}`,
-          `OC: ${currentOC || "---"}`,
+          `OC: ${currentOC || '---'}`,
           `OP: ${op}`,
           `DEC: ${dec}`,
           `DATA: ${dateStr}`
       ];
-      
-      // Czcionka skalowana względem wysokości (np. dla 4K będzie większa niż dla HD)
-      const fs = Math.floor(finalC.height / 35); 
+
+      const fs = Math.max(22, Math.floor(finalC.height / 35));
       ctx.font = `bold ${fs}px Roboto`;
-      ctx.fillStyle = "#0aff00";
-      ctx.shadowColor = "black";
+      ctx.fillStyle = '#0aff00';
+      ctx.shadowColor = 'black';
       ctx.shadowBlur = 4;
       ctx.shadowOffsetX = 2;
       ctx.shadowOffsetY = 2;
-      
       let y = fs + 20;
       const x = 30;
-      
       lines.forEach(line => {
           ctx.fillText(line, x, y);
           y += fs + 10;
       });
 
-      // ZAPIS Z MAKSYMALNĄ JAKOŚCIĄ (1.0 zamiast 0.9)
-      finalC.toBlob(b => { 
-          photos[tempPhotoType] = b; 
-          updatePhotoProgress(); 
-          cancelPhoto(); 
-      }, 'image/jpeg', 1.0); 
+      finalC.toBlob(blob => {
+          if(!blob) {
+              alert('Nie udało się utworzyć zdjęcia. Spróbuj ponownie.');
+              return;
+          }
+          photos[tempPhotoType] = blob;
+          updatePhotoProgress();
+          cancelPhoto(true);
+      }, 'image/jpeg', 0.98);
   }
 
   function checkOcRequirement() {
@@ -1309,26 +1432,39 @@ async function initCamera() {
       }
   }
 
+  function prepareDrawCanvas() {
+      const c = document.getElementById('drawCanvas');
+      const container = document.querySelector('#camContainer .video-container');
+      c.width = Math.max(1, Math.round(container.clientWidth));
+      c.height = Math.max(1, Math.round(container.clientHeight));
+      c.getContext('2d').clearRect(0, 0, c.width, c.height);
+  }
+
   function capture(type) {
-      if(!currentSN || !isScanConfirmed) { 
-          alert("NAJPIERW ZESKANUJ SN, OC I ZATWIERDŹ DANE!"); 
-          return; 
+      if(!currentSN || !isScanConfirmed) {
+          alert('NAJPIERW ZESKANUJ SN, OC I ZATWIERDŹ DANE!');
+          return;
       }
       tempPhotoType = type;
       const dec = document.getElementById('statusSelect').value;
-      if(['OK', 'NDF', 'OFFRS_OK'].includes(dec)) { processPhoto(); SoundFX.play('shutter'); return; }
-      const v = document.getElementById('videoFeed'); v.pause();
-      document.getElementById('drawToolbar').style.display='block';
-      document.getElementById('drawCanvas').style.display='block';
-      const c = document.getElementById('drawCanvas'); c.width=v.offsetWidth; c.height=v.offsetHeight;
-      const ctx = c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height);
+      prepareDrawCanvas();
+      if(['OK', 'NDF', 'OFFRS_OK'].includes(dec)) {
+          processPhoto();
+          SoundFX.play('shutter');
+          return;
+      }
+      const v = document.getElementById('videoFeed');
+      v.pause();
+      document.getElementById('drawToolbar').style.display = 'block';
+      document.getElementById('drawCanvas').style.display = 'block';
   }
 
   function confirmPhoto() { processPhoto(); }
-  function cancelPhoto() {
+  function cancelPhoto(clearCanvas = true) {
       document.getElementById('videoFeed').play();
-      document.getElementById('drawToolbar').style.display='none';
-      document.getElementById('drawCanvas').style.display='none';
+      document.getElementById('drawToolbar').style.display = 'none';
+      document.getElementById('drawCanvas').style.display = 'none';
+      if(clearCanvas) clearDraw();
   }
 
   document.getElementById('scanInput').addEventListener('keydown', e => {
@@ -1449,6 +1585,9 @@ async function initCamera() {
           document.getElementById('scanInputOC').value = "";
           document.getElementById('scanInputOC').disabled = true;
           document.getElementById('commentInput').value = "";
+          syncDefectTags();
+          resetCameraView();
+          clearDraw();
           document.getElementById('statusSelect').value = "OK";
           document.getElementById('snCheck').style.display = 'none';
           document.getElementById('ocCheck').style.display = 'none';
