@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>OLED REPAIR v1.3 (by Łukasz Gruszczyński)</title>
+  <title>OLED REPAIR 2.0 (by Łukasz Gruszczyński)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -267,9 +267,444 @@
     .ffl-table { width: 100%; border-collapse: collapse; font-family: var(--font-tech); font-size: 13px; }
     .ffl-table th { text-align: left; color: var(--neon-purple); border-bottom: 1px solid #444; padding: 12px; background: #111; position: sticky; top: 0; }
     .ffl-table td { padding: 12px; border-bottom: 1px solid #222; color: #ccc; }
+
+
+    /* =========================================================
+       OLED REPAIR 2.0 — NEW PRODUCTION UI
+       Warstwa wizualna. Integracja danych pozostaje bez zmian.
+       ========================================================= */
+    :root {
+      --bg-deep: #07090d;
+      --surface-0: #0a0d12;
+      --surface-1: #0f141b;
+      --surface-2: #151b24;
+      --surface-3: #1b2330;
+      --line: #263142;
+      --line-soft: rgba(255,255,255,.075);
+      --text: #f4f7fb;
+      --muted: #8f9bad;
+      --muted-2: #667286;
+      --neon-cyan: #42d7f5;
+      --neon-green: #42d88a;
+      --neon-red: #ff647c;
+      --neon-gold: #f5c45a;
+      --neon-purple: #a78bfa;
+      --neon-orange: #f59e5b;
+      --radius-lg: 16px;
+      --radius-md: 11px;
+      --shadow: 0 18px 55px rgba(0,0,0,.35);
+    }
+
+    * { scrollbar-width: thin; scrollbar-color: #344054 transparent; }
+    *::-webkit-scrollbar { width: 8px; height: 8px; }
+    *::-webkit-scrollbar-thumb { background: #344054; border-radius: 20px; }
+    *::-webkit-scrollbar-track { background: transparent; }
+
+    body {
+      background:
+        radial-gradient(circle at 50% -25%, rgba(66,215,245,.10), transparent 38%),
+        linear-gradient(180deg, #080b10 0%, #06080c 100%);
+      background-size: auto;
+      color: var(--text);
+    }
+    body::before {
+      content: ""; position: fixed; inset: 0; pointer-events: none; opacity: .16;
+      background-image: linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+
+    header {
+      height: 66px; min-height: 66px; padding: 0 22px;
+      background: rgba(8,11,16,.92); border-bottom: 1px solid var(--line-soft);
+      backdrop-filter: blur(16px); box-shadow: 0 8px 30px rgba(0,0,0,.18); z-index: 300;
+    }
+    .brand-wrap { display:flex; align-items:center; gap:13px; min-width: 330px; }
+    .brand-mark {
+      width: 38px; height: 38px; border-radius: 10px; display:grid; place-items:center;
+      border: 1px solid rgba(66,215,245,.35); background: linear-gradient(145deg, rgba(66,215,245,.17), rgba(66,215,245,.03));
+      color: var(--neon-cyan); font-family: var(--font-tech); font-weight: 700; box-shadow: inset 0 0 18px rgba(66,215,245,.08);
+    }
+    .brand { font-size: 18px; letter-spacing: .8px; line-height:1.1; }
+    .brand span { text-shadow:none; }
+    .brand-sub { margin-top:4px; color:var(--muted-2); font-size:10px; letter-spacing:1.5px; font-family:var(--font-tech); }
+    .header-center { display:flex; align-items:center; gap:8px; color:var(--muted); font-family:var(--font-tech); font-size:11px; }
+    .header-pill { border:1px solid var(--line); background:rgba(255,255,255,.025); padding:7px 10px; border-radius:999px; }
+    .operator-info { gap:10px; }
+    .operator-badge { border-radius:999px; padding:7px 13px; background:var(--surface-2); border-color:var(--line); box-shadow:none !important; }
+    .logout-btn, .bar-btn { border-radius:8px; padding:8px 11px; background:var(--surface-1); }
+    .logout-btn:hover { box-shadow:none; }
+    #clockDisplay { min-width:52px; text-align:right; font-size:16px; color:#d9e1ec; }
+
+    #motdBar { background:rgba(255,100,124,.10); color:#ff9aaa; border-bottom-color:rgba(255,100,124,.25); animation:none; }
+
+    .dashboard.operator-layout {
+      grid-template-columns: minmax(285px, 320px) minmax(480px, 1fr) minmax(320px, 365px);
+      gap: 14px; padding: 14px 14px 50px; min-height:0; overflow:hidden;
+    }
+    .operator-column, .decision-column {
+      min-height:0; overflow-y:auto; background:transparent; padding:0 3px 0 0;
+      display:flex; flex-direction:column; gap:12px;
+    }
+    .ui-card {
+      background: linear-gradient(180deg, rgba(20,27,37,.95), rgba(13,18,25,.97));
+      border:1px solid var(--line-soft); border-radius:var(--radius-lg); box-shadow:var(--shadow);
+      padding:15px;
+    }
+    .ui-card.compact { padding:12px 14px; }
+    .section-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:12px; }
+    .section-kicker { color:var(--neon-cyan); font-family:var(--font-tech); font-size:9px; letter-spacing:1.7px; text-transform:uppercase; }
+    .section-title { margin-top:3px; font-size:15px; font-weight:700; color:#f6f8fb; }
+    .section-meta { color:var(--muted-2); font-family:var(--font-tech); font-size:10px; white-space:nowrap; }
+
+    #opConnectBtn { margin:0; padding:12px; border-radius:10px; box-shadow:none; background:linear-gradient(180deg, #53def8, #32bcd8); }
+    #opConnectBtn:hover { box-shadow:0 8px 25px rgba(66,215,245,.22); }
+
+    .target-box { margin:0; padding:0; background:transparent; border:0; box-shadow:none; }
+    .target-header { color:var(--muted); margin-bottom:8px; }
+    .progress-track { height:8px; background:#090c11; border-color:var(--line); }
+    .progress-fill { box-shadow:none; background:linear-gradient(90deg, var(--neon-cyan), var(--neon-green)); }
+    .target-box.reached { animation:none; border:0; box-shadow:none; }
+
+    .workflow-list { display:flex; flex-direction:column; gap:7px; }
+    .workflow-step { display:grid; grid-template-columns:28px 1fr auto; gap:9px; align-items:center; padding:8px 9px; border:1px solid transparent; border-radius:9px; color:var(--muted); transition:.2s; }
+    .workflow-step .step-index { width:25px; height:25px; border-radius:8px; display:grid; place-items:center; background:#0a0e14; border:1px solid var(--line); font:700 10px var(--font-tech); }
+    .workflow-step .step-name { font-size:12px; font-weight:600; }
+    .workflow-step .step-state { font:600 9px var(--font-tech); color:var(--muted-2); }
+    .workflow-step.active { background:rgba(66,215,245,.075); border-color:rgba(66,215,245,.22); color:#eaffff; }
+    .workflow-step.active .step-index { color:var(--neon-cyan); border-color:rgba(66,215,245,.45); }
+    .workflow-step.done { color:#dff9ec; }
+    .workflow-step.done .step-index { background:rgba(66,216,138,.12); color:var(--neon-green); border-color:rgba(66,216,138,.35); }
+    .workflow-step.done .step-state { color:var(--neon-green); }
+
+    .scan-block { display:flex; flex-direction:column; gap:8px; }
+    .scan-label-row { display:flex; justify-content:space-between; align-items:center; }
+    .scan-label { font:600 10px var(--font-tech); color:var(--muted); letter-spacing:1px; }
+    .scan-check { font-size:12px !important; margin:0 !important; }
+    #scanInput, #scanInputOC {
+      width:100% !important; margin:0 !important; min-height:48px; padding:11px 12px !important;
+      background:#090d13 !important; border:1px solid var(--line) !important; border-radius:10px !important;
+      color:#f8fbff !important; text-align:left !important; font-size:17px !important; letter-spacing:.7px;
+    }
+    #scanInput:focus, #scanInputOC:focus { border-color:rgba(66,215,245,.65) !important; box-shadow:0 0 0 3px rgba(66,215,245,.10) !important; }
+    #scanInputOC { color:#bff4d9 !important; }
+    .scan-actions { display:flex; gap:8px; }
+    .confirm-identity-btn, .skip-oc-btn { margin:0; min-height:42px; border-radius:9px; animation:none; box-shadow:none; }
+    .skip-oc-btn { display:none; width:100%; border:1px solid var(--line); background:var(--surface-2); color:#d4dbe5; font:600 11px var(--font-tech); cursor:pointer; }
+    .scan-status-info { margin:0; border:1px solid rgba(66,216,138,.25); background:rgba(66,216,138,.07); padding:8px; border-radius:8px; }
+
+    .photo-actions { display:grid; gap:8px; }
+    .checklist-btn {
+      min-height:46px; margin:0; padding:10px 11px; border-radius:10px; background:#0b1017;
+      border-color:var(--line); color:#c6cfdb; align-items:center;
+    }
+    .checklist-btn:hover { background:#121923; border-color:#415069; }
+    .checklist-btn.done { background:rgba(66,216,138,.08); border-color:rgba(66,216,138,.35); color:var(--neon-green); }
+    .checklist-btn.locked { opacity:.38; }
+    .photo-action-copy { display:flex; flex-direction:column; gap:3px; }
+    .photo-action-copy strong { font-size:12px; }
+    .photo-action-copy small { color:var(--muted-2); font-size:9px; font-family:var(--font-tech); }
+    .sheet-link { min-height:38px; background:transparent; border-style:dashed; }
+
+    .panel-right.camera-stage {
+      min-height:0; border:1px solid var(--line-soft); border-radius:18px; background:#030507;
+      box-shadow:var(--shadow); overflow:hidden;
+    }
+    .camera-topbar { position:absolute; top:12px; left:12px; right:12px; z-index:52; display:flex; justify-content:space-between; pointer-events:none; }
+    .camera-tags { display:flex; gap:7px; }
+    .camera-tag { background:rgba(5,8,12,.78); border:1px solid rgba(255,255,255,.12); backdrop-filter:blur(12px); color:#dbe4ef; border-radius:8px; padding:7px 9px; font:600 10px var(--font-tech); }
+    .camera-help { color:#8793a5; background:rgba(5,8,12,.72); border:1px solid rgba(255,255,255,.09); border-radius:8px; padding:7px 9px; font:500 9px var(--font-tech); }
+    .video-container { background:radial-gradient(circle, #10151d 0%, #020304 70%); }
+    video { transition:transform .08s linear; }
+    .camera-crop-frame { position:absolute; inset:8%; z-index:8; border:1px solid rgba(255,255,255,.20); border-radius:4px; pointer-events:none; box-shadow:none; }
+    .camera-crop-frame::before, .camera-crop-frame::after { content:""; position:absolute; background:rgba(255,255,255,.17); }
+    .camera-crop-frame::before { left:50%; top:0; bottom:0; width:1px; }
+    .camera-crop-frame::after { top:50%; left:0; right:0; height:1px; }
+    .camera-grid { position:absolute; inset:0; z-index:9; pointer-events:none; display:none; background-image:linear-gradient(rgba(255,255,255,.15) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.15) 1px,transparent 1px); background-size:33.333% 33.333%; }
+    .camera-grid.visible { display:block; }
+    .cam-controls {
+      left:50%; right:auto; bottom:14px; transform:translateX(-50%); max-width:calc(100% - 24px);
+      gap:7px; padding:8px 10px; border-radius:12px; border-color:rgba(255,255,255,.13);
+      background:rgba(7,10,14,.88); box-shadow:0 10px 30px rgba(0,0,0,.30); flex-wrap:nowrap;
+    }
+    .zoom-group { gap:7px; }
+    .cam-btn { width:auto; min-width:34px; height:34px; padding:0 9px; border-radius:8px; border-color:#334154; color:#c7d2df; font-size:11px; font-family:var(--font-tech); }
+    .cam-btn:hover, .cam-btn.active { background:rgba(66,215,245,.12); color:var(--neon-cyan); border-color:rgba(66,215,245,.55); }
+    .cam-btn.zoom-step { min-width:32px; padding:0; font-size:18px; }
+    .camera-resolution { color:var(--muted-2); background:#0a0e14; padding:5px 7px; border-radius:6px; }
+    #zoomSlider { width:100px; }
+    .draw-toolbar { top:70px; border-radius:12px; padding:9px 12px; border-color:rgba(66,215,245,.4); }
+
+    .decision-column .ui-card { box-shadow:var(--shadow); }
+    .decision-panel { border:0; margin:0; padding:0; }
+    .custom-select, .custom-textarea { background:#090d13; border-color:var(--line); border-radius:10px; }
+    .custom-select { min-height:45px; margin-bottom:12px; }
+    .custom-textarea { min-height:86px; resize:vertical; margin:0; }
+    .custom-textarea:focus { box-shadow:0 0 0 3px rgba(66,215,245,.09); }
+    .defect-category { margin-top:11px; }
+    .defect-category-title { margin-bottom:7px; font:600 9px var(--font-tech); letter-spacing:1.2px; color:var(--muted-2); }
+    .quick-defects { gap:6px; margin:0; }
+    .defect-tag { padding:7px 8px; border-color:var(--line); color:#aeb9c8; border-radius:7px; background:#0a0e14; font-size:9px; }
+    .defect-tag:hover { background:#111923; }
+    .defect-tag.active { color:#061016; background:var(--neon-cyan); border-color:var(--neon-cyan); font-weight:700; box-shadow:none; }
+
+    .preview-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
+    .photo-preview { position:relative; aspect-ratio:4/3; border-radius:9px; overflow:hidden; border:1px solid var(--line); background:#090d13; }
+    .photo-preview img { width:100%; height:100%; object-fit:cover; display:none; }
+    .photo-preview.has-photo img { display:block; }
+    .preview-empty { position:absolute; inset:0; display:grid; place-items:center; color:#566174; font:600 9px var(--font-tech); text-align:center; padding:5px; }
+    .photo-preview.has-photo .preview-empty { display:none; }
+    .preview-label { position:absolute; left:5px; bottom:5px; z-index:2; padding:4px 6px; border-radius:5px; background:rgba(0,0,0,.72); font:700 8px var(--font-tech); }
+    .photo-preview.has-photo { border-color:rgba(66,216,138,.32); }
+
+    .save-card {
+      position:sticky; bottom:0; z-index:40; overflow:hidden;
+      border-color:rgba(255,255,255,.10); background:rgba(13,18,25,.97);
+      backdrop-filter:blur(16px); transition:border-color .25s, box-shadow .25s, transform .25s;
+    }
+    .save-card::before { content:""; position:absolute; inset:0 auto 0 0; width:3px; background:#354052; transition:.25s; }
+    .save-card.ready { border-color:rgba(66,216,138,.55); box-shadow:0 0 0 1px rgba(66,216,138,.12),0 12px 38px rgba(66,216,138,.20); }
+    .save-card.ready::before { background:var(--neon-green); box-shadow:0 0 16px var(--neon-green); }
+    .save-card.saving { border-color:rgba(66,215,245,.5); }
+    .save-card.saving::before { background:var(--neon-cyan); }
+    .save-readiness { display:grid; grid-template-columns:38px 1fr; gap:10px; align-items:center; margin-bottom:10px; }
+    .save-ready-icon { width:36px; height:36px; border-radius:10px; display:grid; place-items:center; background:#090d13; border:1px solid var(--line); color:#7f8a9b; font:700 15px var(--font-tech); transition:.25s; }
+    .save-card.ready .save-ready-icon { color:#06150d; background:var(--neon-green); border-color:var(--neon-green); box-shadow:0 0 18px rgba(66,216,138,.35); }
+    .save-ready-title { color:#eef3f9; font-size:12px; font-weight:700; }
+    .save-ready-detail { margin-top:3px; color:var(--muted-2); font:600 9px var(--font-tech); line-height:1.35; }
+    .save-card.ready .save-ready-title { color:#dffff0; }
+    .save-card.ready .save-ready-detail { color:#81e8b0; }
+    .readiness-chips { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:5px; margin-bottom:10px; }
+    .readiness-chip { min-width:0; padding:6px 4px; border-radius:7px; background:#090d13; border:1px solid var(--line); color:#606c7c; text-align:center; font:700 8px var(--font-tech); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .readiness-chip.done { color:var(--neon-green); border-color:rgba(66,216,138,.30); background:rgba(66,216,138,.07); }
+    .readiness-chip.missing { color:#e6a6b5; border-color:rgba(255,79,122,.25); background:rgba(255,79,122,.05); }
+    #actionBtn {
+      min-height:56px; border-radius:11px; margin:0; width:100%; border:1px solid #2b3442;
+      background:linear-gradient(180deg,#151b24,#0c1118); color:#6f7a89; cursor:not-allowed;
+      font:700 13px var(--font-tech); letter-spacing:.8px; transition:transform .18s,box-shadow .22s,background .22s,color .22s,border-color .22s;
+    }
+    #actionBtn.active {
+      cursor:pointer; color:#03120a; border-color:#5ee99b;
+      background:linear-gradient(180deg,#68eda7,#36c879);
+      box-shadow:0 0 0 1px rgba(66,216,138,.20),0 12px 34px rgba(66,216,138,.28);
+      animation:readySavePulse 1.8s ease-in-out infinite;
+    }
+    #actionBtn.active:hover { transform:translateY(-1px); background:linear-gradient(180deg,#87f3ba,#45d88a); box-shadow:0 0 0 1px rgba(66,216,138,.35),0 16px 42px rgba(66,216,138,.36); }
+    #actionBtn.active:active { transform:translateY(1px) scale(.995); }
+    #actionBtn:disabled { pointer-events:none; }
+    @keyframes readySavePulse { 0%,100%{box-shadow:0 0 0 1px rgba(66,216,138,.16),0 10px 28px rgba(66,216,138,.18)} 50%{box-shadow:0 0 0 3px rgba(66,216,138,.08),0 14px 40px rgba(66,216,138,.38)} }
+    #saveStatus { margin:7px 0 0 !important; min-height:13px; text-align:center; font:600 9px var(--font-tech); color:var(--muted-2); }
+    .checklist-btn.next-action { opacity:1; color:#dffbff; border-color:rgba(66,215,245,.55); background:rgba(66,215,245,.10); box-shadow:0 0 0 1px rgba(66,215,245,.08),0 8px 24px rgba(66,215,245,.12); animation:nextActionPulse 1.8s ease-in-out infinite; }
+    .checklist-btn.next-action .photo-action-copy small { color:#8ddff0; }
+    @keyframes nextActionPulse { 0%,100%{border-color:rgba(66,215,245,.38)} 50%{border-color:rgba(66,215,245,.85)} }
+    .photo-preview { cursor:pointer; }
+    .photo-preview::after { content:"POWTÓRZ"; position:absolute; right:5px; top:5px; z-index:3; display:none; padding:4px 6px; border-radius:5px; background:rgba(0,0,0,.74); color:#dce7f3; font:700 7px var(--font-tech); }
+    .photo-preview.has-photo:hover::after { display:block; }
+    .recent-list { margin:0; padding:0; border:0; max-height:110px; }
+    .recent-item { padding:7px 2px; color:#8c98a9; }
+
+    .bar-bottom { height:36px; padding:0 14px; background:rgba(7,10,14,.95); border-top-color:var(--line-soft); backdrop-filter:blur(10px); }
+    #connStatus { font:600 10px var(--font-tech); }
+
+    /* LOGIN 2.0 */
+    #loginScreen { background:radial-gradient(circle at 50% 35%, rgba(66,215,245,.11), transparent 35%), #06080c; }
+    .login-box { width:420px; padding:34px; background:rgba(13,18,25,.93); border:1px solid var(--line); border-radius:18px; box-shadow:0 30px 80px rgba(0,0,0,.45); }
+    .login-input { border-radius:10px; border-color:var(--line); background:#090d13; }
+    .login-btn { border-radius:10px; background:linear-gradient(180deg,#53def8,#33bfdc); }
+    .quick-admin-btn { border-radius:9px; border-color:#4b5261; color:#aeb7c5; }
+
+    /* ADMIN 2.0 */
+    #adminDash { padding:18px 22px 58px; background:transparent; align-items:stretch; }
+    .admin-container { max-width:none; gap:14px; }
+    .admin-status-bar { margin:0; background:var(--surface-1); border-color:var(--line-soft); border-radius:13px; padding:12px 15px; }
+    .admin-shell { display:grid; grid-template-columns:210px minmax(0,1fr); gap:14px; min-height:0; flex:1; }
+    .admin-nav { background:var(--surface-1); border:1px solid var(--line-soft); border-radius:var(--radius-lg); padding:10px; display:flex; flex-direction:column; gap:5px; box-shadow:var(--shadow); }
+    .admin-tab-btn { width:100%; text-align:left; padding:11px 12px; border:1px solid transparent; background:transparent; color:var(--muted); border-radius:9px; font:600 11px var(--font-tech); cursor:pointer; }
+    .admin-tab-btn:hover { color:#fff; background:rgba(255,255,255,.035); }
+    .admin-tab-btn.active { color:var(--neon-cyan); background:rgba(66,215,245,.09); border-color:rgba(66,215,245,.18); }
+    .admin-view { min-height:0; }
+    .admin-section { display:none; height:100%; }
+    .admin-section.active { display:block; }
+    .admin-panel-box { height:100%; background:var(--surface-1); border-color:var(--line-soft); border-radius:var(--radius-lg); box-shadow:var(--shadow); }
+    .admin-panel-box.highlight { border-color:var(--line-soft); box-shadow:var(--shadow); }
+    .admin-h { color:#f4f7fb; border-bottom-color:var(--line-soft); }
+    .cfg-input { background:#090d13; border-color:var(--line); border-radius:9px; }
+    .cfg-btn { background:#151c26; border-color:#334054; border-radius:8px; }
+    .cfg-btn:hover { box-shadow:none; }
+    .admin-terminal { height:calc(100vh - 245px); border-radius:10px; border-color:var(--line); }
+
+    /* MANAGER 2.0 */
+    #managerDash { padding:18px 22px 55px; gap:14px; background:transparent; }
+    .mgr-header { background:var(--surface-1); border:1px solid var(--line-soft); border-radius:var(--radius-lg); padding:15px; box-shadow:var(--shadow); flex-wrap:wrap; gap:12px; }
+    .mgr-title { font-size:22px; text-shadow:none; min-width:250px; }
+    .mgr-connect-btn { box-shadow:none; border-radius:9px; font-size:10px; padding:9px 12px; }
+    .manager-toolbar { display:flex; flex:1; justify-content:flex-end; align-items:center; gap:8px; flex-wrap:wrap; }
+    .manager-search { display:flex; align-items:center; gap:7px; background:#0a0e14; padding:6px 8px; border-radius:9px; border:1px solid var(--line); }
+    .manager-search input { background:transparent; border:0; outline:0; color:#fff; font-family:var(--font-tech); width:150px; }
+    .mgr-filters { width:100%; display:flex; flex-wrap:wrap; gap:7px; background:transparent; border:0; padding:0; }
+    .mgr-btn { padding:8px 11px; border-radius:8px; font-size:10px; background:#0d1219; border-color:var(--line); }
+    .mgr-btn.active { box-shadow:none; background:rgba(66,215,245,.14); color:var(--neon-cyan); border-color:rgba(66,215,245,.35); }
+    .manager-select { min-height:34px; background:#0d1219; color:#c8d1dd; border:1px solid var(--line); border-radius:8px; padding:0 10px; font:600 10px var(--font-tech); outline:none; }
+    .mgr-stats-row { gap:12px; margin:0; }
+    .mgr-card { padding:17px; border-color:var(--line-soft) !important; background:var(--surface-1); border-radius:14px; box-shadow:var(--shadow); text-align:left; }
+    .mgr-card .val { font-size:34px; }
+    .mgr-content-grid { grid-template-columns:300px minmax(0,1fr); gap:12px; margin:0; min-height:0; }
+    .mgr-panel { background:var(--surface-1); border-color:var(--line-soft); border-radius:14px; box-shadow:var(--shadow); min-height:0; }
+    .mgr-panel h4 { color:#dce4ee; border-bottom-color:var(--line-soft); }
+    .data-table th { background:#0c1118; color:#8996a8; }
+    .data-table tr:hover { background:rgba(66,215,245,.035); }
+    .folder-btn { border-radius:7px; }
+
+    /* FFL follows the same visual language */
+    #fflDash { padding:18px 22px 55px; gap:14px; }
+    .ffl-left-panel, .ffl-camera-box, .ffl-list-box { background:var(--surface-1); border-color:var(--line-soft); border-radius:var(--radius-lg); box-shadow:var(--shadow); }
+    .ffl-header { text-shadow:none; }
+
+    @media (max-width: 1450px) {
+      .dashboard.operator-layout { grid-template-columns:280px minmax(430px,1fr) 320px; gap:10px; padding-left:10px; padding-right:10px; }
+      .ui-card { padding:12px; }
+      .cam-controls { transform:translateX(-50%) scale(.92); transform-origin:bottom center; }
+    }
+    @media (max-width: 1180px) {
+      body { overflow:auto; }
+      .dashboard.operator-layout { grid-template-columns:300px minmax(500px,1fr); overflow:auto; }
+      .decision-column { grid-column:1 / -1; display:grid; grid-template-columns:1fr 1fr; overflow:visible; }
+      .panel-right.camera-stage { min-height:620px; }
+      .bar-bottom { position:sticky; }
+    }
+
+
+    /* OLED REPAIR 2.0 — EDIT MODE, EXTRA PHOTOS, BREAK REMINDER & MOTION */
+    .ui-card, .camera-stage, .workflow-step, .photo-preview {
+      will-change: transform, opacity;
+    }
+    body.ui-ready .ui-card,
+    body.ui-ready .camera-stage {
+      animation: uiPanelEnter .42s cubic-bezier(.2,.8,.2,1) both;
+    }
+    body.ui-ready .decision-column .ui-card:nth-child(2) { animation-delay:.04s; }
+    body.ui-ready .decision-column .ui-card:nth-child(3) { animation-delay:.08s; }
+    body.ui-ready .decision-column .ui-card:nth-child(4) { animation-delay:.12s; }
+    body.ui-ready .operator-column .ui-card:nth-child(2) { animation-delay:.04s; }
+    body.ui-ready .operator-column .ui-card:nth-child(3) { animation-delay:.08s; }
+    body.ui-ready .operator-column .ui-card:nth-child(4) { animation-delay:.12s; }
+    @keyframes uiPanelEnter {
+      from { opacity:0; transform:translateY(8px) scale(.995); }
+      to { opacity:1; transform:none; }
+    }
+    .brand-mark { animation: brandBreath 4s ease-in-out infinite; }
+    @keyframes brandBreath {
+      0%,100% { box-shadow:inset 0 0 18px rgba(66,215,245,.08),0 0 0 rgba(66,215,245,0); }
+      50% { box-shadow:inset 0 0 22px rgba(66,215,245,.16),0 0 20px rgba(66,215,245,.10); }
+    }
+
+    .edit-mode-banner {
+      display:none; align-items:center; justify-content:space-between; gap:10px;
+      padding:10px 12px; border-radius:11px; border:1px solid rgba(255,183,77,.42);
+      background:linear-gradient(180deg,rgba(255,183,77,.12),rgba(255,183,77,.055));
+      color:#ffd39a; box-shadow:0 10px 26px rgba(0,0,0,.18);
+    }
+    .edit-mode-banner.active { display:flex; animation:editBannerIn .3s ease both; }
+    @keyframes editBannerIn { from{opacity:0;transform:translateY(-5px)} to{opacity:1;transform:none} }
+    .edit-mode-copy { min-width:0; }
+    .edit-mode-title { font:700 10px var(--font-tech); letter-spacing:.8px; }
+    .edit-mode-detail { margin-top:3px; color:#c7a77e; font-size:9px; line-height:1.35; }
+    .edit-cancel-btn {
+      flex:0 0 auto; border:1px solid rgba(255,183,77,.36); background:#0d1117; color:#ffd39a;
+      border-radius:8px; padding:7px 9px; cursor:pointer; font:700 8px var(--font-tech);
+    }
+    .edit-cancel-btn:hover { background:rgba(255,183,77,.12); }
+    .save-card.editing { border-color:rgba(255,183,77,.42); }
+    .save-card.editing::before { background:var(--neon-orange); box-shadow:0 0 16px rgba(255,157,0,.7); }
+    .save-card.editing.ready { border-color:rgba(66,216,138,.58); }
+
+    .extra-photo-tools {
+      margin-top:9px; display:flex; align-items:center; justify-content:space-between; gap:8px;
+      padding-top:9px; border-top:1px solid var(--line-soft);
+    }
+    .extra-photo-btn {
+      border:1px dashed rgba(66,215,245,.38); background:rgba(66,215,245,.055); color:#9feaf7;
+      border-radius:8px; padding:8px 10px; cursor:pointer; font:700 8px var(--font-tech); letter-spacing:.4px;
+    }
+    .extra-photo-btn:hover { background:rgba(66,215,245,.11); border-color:rgba(66,215,245,.65); }
+    .extra-photo-count { color:var(--muted-2); font:700 8px var(--font-tech); }
+    .extra-photo-strip { display:flex; gap:6px; overflow-x:auto; margin-top:8px; padding-bottom:2px; }
+    .extra-photo-thumb {
+      position:relative; flex:0 0 62px; height:44px; border-radius:7px; overflow:hidden;
+      border:1px solid rgba(66,215,245,.24); background:#080c12;
+    }
+    .extra-photo-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+    .extra-photo-thumb span {
+      position:absolute; right:3px; bottom:3px; padding:2px 4px; border-radius:4px;
+      background:rgba(0,0,0,.72); color:#d9edf2; font:700 6px var(--font-tech);
+    }
+
+    .recent-list { max-height:190px; overflow-y:auto; }
+    .recent-item-v2 {
+      display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; align-items:center;
+      padding:8px 0; border-bottom:1px solid var(--line-soft);
+      animation:recentIn .25s ease both;
+    }
+    @keyframes recentIn { from{opacity:0;transform:translateX(5px)} to{opacity:1;transform:none} }
+    .recent-main { min-width:0; }
+    .recent-sn { color:#dfe8f2; font:700 9px var(--font-tech); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .recent-meta { margin-top:3px; color:var(--muted-2); font-size:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .recent-actions { display:flex; align-items:center; gap:5px; }
+    .recent-status { padding:4px 6px; border-radius:6px; background:#0a0f15; border:1px solid var(--line); font:700 7px var(--font-tech); }
+    .recent-edit-btn {
+      border:1px solid rgba(66,215,245,.32); background:rgba(66,215,245,.06); color:#9feaf7;
+      border-radius:7px; padding:6px 7px; cursor:pointer; font:700 7px var(--font-tech);
+    }
+    .recent-edit-btn:hover { background:rgba(66,215,245,.13); border-color:rgba(66,215,245,.58); }
+    .recent-correction { color:var(--neon-orange); }
+
+    .break-reminder-overlay {
+      position:fixed; inset:0; z-index:120000; display:none; place-items:center;
+      background:rgba(1,4,8,.72); backdrop-filter:blur(10px);
+    }
+    .break-reminder-overlay.visible { display:grid; animation:breakFade .28s ease both; }
+    @keyframes breakFade { from{opacity:0} to{opacity:1} }
+    .break-reminder-card {
+      width:min(440px,calc(100vw - 32px)); padding:28px; border-radius:20px; text-align:center;
+      background:linear-gradient(180deg,#151d28,#0c1118); border:1px solid rgba(66,215,245,.34);
+      box-shadow:0 35px 100px rgba(0,0,0,.58),0 0 45px rgba(66,215,245,.10);
+      animation:breakCardIn .38s cubic-bezier(.2,.8,.2,1) both;
+    }
+    @keyframes breakCardIn { from{opacity:0;transform:translateY(14px) scale(.97)} to{opacity:1;transform:none} }
+    .break-icon {
+      width:70px; height:70px; margin:0 auto 16px; display:grid; place-items:center; border-radius:20px;
+      background:rgba(66,215,245,.11); border:1px solid rgba(66,215,245,.30); color:var(--neon-cyan);
+      font:700 28px var(--font-tech); animation:breakPulse 1.8s ease-in-out infinite;
+    }
+    @keyframes breakPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.045)} }
+    .break-title { color:#f4f8fb; font:700 24px var(--font-tech); }
+    .break-time { margin-top:6px; color:var(--neon-cyan); font:700 12px var(--font-tech); letter-spacing:1.2px; }
+    .break-copy { margin:15px 0 20px; color:#9aa7b8; font-size:13px; line-height:1.55; }
+    .break-dismiss {
+      width:100%; min-height:48px; border:0; border-radius:11px; cursor:pointer;
+      background:linear-gradient(180deg,#58def6,#34bfdc); color:#041015;
+      font:700 12px var(--font-tech); letter-spacing:.8px;
+    }
+    .break-dismiss:hover { filter:brightness(1.08); }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration:.001ms !important; animation-iteration-count:1 !important; scroll-behavior:auto !important; }
+    }
+
   </style>
 </head>
 <body>
+
+
+<div id="breakReminder" class="break-reminder-overlay" role="dialog" aria-modal="true" aria-labelledby="breakReminderTitle">
+  <div class="break-reminder-card">
+    <div class="break-icon">II</div>
+    <div class="break-title" id="breakReminderTitle">CZAS NA PRZERWĘ</div>
+    <div class="break-time">CODZIENNIE • 09:25</div>
+    <div class="break-copy">Zabezpiecz aktualną sztukę, odłóż skaner i zrób zaplanowaną przerwę.</div>
+    <button class="break-dismiss" onclick="dismissBreakReminder()">OK — ROZUMIEM</button>
+  </div>
+</div>
+
 
 <div id="patternOverlay" onclick="nextPattern()"></div>
 
@@ -282,13 +717,13 @@
         <div><strong>OPERATOR:</strong> <span id="plOp">---</span></div>
         <div><strong>STATUS:</strong> <span id="plStatus" style="font-weight:bold; font-size:20pt;">---</span></div>
     </div>
-    <div class="pl-footer">OLED REPAIR SYSTEM v1.1 - By Łukasz Gruszczyński</div>
+    <div class="pl-footer">OLED REPAIR 2.0 - By Łukasz Gruszczyński</div>
 </div>
 
 <div id="loginScreen">
   <div class="login-box">
     <h2 style="color:#fff;">OLED REPAIR SYSTEM</h2>
-    <div style="font-size:12px; color:#666; font-family: var(--font-tech);">v1.3 (RMA LEADER + COPY)</div>
+    <div style="font-size:12px; color:#666; font-family: var(--font-tech);">OLED REPAIR 2.0</div>
     <div id="syncStatus" class="sync-status">Ładowanie użytkowników...</div>
     
     <label class="input-label" style="text-align:left; margin-left:5px; margin-top:20px;">UŻYTKOWNIK</label>
@@ -320,9 +755,19 @@
 </div>
 
 <header>
-  <div class="brand">TPV <span>OLED</span> REPAIR STATION</div>
+  <div class="brand-wrap">
+    <div class="brand-mark">O</div>
+    <div>
+      <div class="brand">OLED <span>REPAIR</span></div>
+      <div class="brand-sub">PRODUCTION STATION • OLED REPAIR 2.0</div>
+    </div>
+  </div>
+  <div class="header-center">
+    <span class="header-pill">TPV DISPLAY POLSKA</span>
+    <span class="header-pill">OLED / LCDR</span>
+  </div>
   <div class="operator-info">
-    <button class="bar-btn" onclick="toggleFullScreen()" title="Kiosk Mode">⛶</button>
+    <button class="bar-btn" onclick="toggleFullScreen()" title="Tryb pełnoekranowy">⛶</button>
     <div class="operator-badge" id="operatorBadge">---</div>
     <button class="logout-btn" onclick="logout()">WYLOGUJ</button>
     <div id="clockDisplay">00:00</div>
@@ -331,258 +776,268 @@
 
 <div id="motdBar">KOMUNIKAT: ---</div>
 
-<div class="dashboard" id="mainDashboard">
-  <aside class="panel-left">
-    <button id="opConnectBtn" class="op-connect-btn" onclick="connectNetwork()">📡 POŁĄCZ Z SERWEREM</button>
-    
-    <div id="targetBox" class="target-box">
-        <div class="target-header">
-            <span>CEL DZIENNY (OK+NDF+OFFRS)</span>
-            <span id="targetText">0 / 15</span>
-        </div>
-        <div class="progress-track">
-            <div id="targetFill" class="progress-fill"></div>
-        </div>
-    </div>
-
-    <div class="scene-container">
-      <div class="tv-pivot" id="tv3d">
-        <div class="tv-panel tv-front"></div>
-        <div class="tv-panel tv-back">SERWIS</div>
+<div class="dashboard operator-layout" id="mainDashboard">
+  <aside class="operator-column">
+    <section class="ui-card compact">
+      <div class="section-heading">
+        <div><div class="section-kicker">STANOWISKO</div><div class="section-title">Połączenie i wynik zmiany</div></div>
+        <span id="sessionTimer" class="section-meta">00:00</span>
       </div>
-    </div>
-    
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-        <span class="input-label">1. SN MODUŁU (SET)</span>
-        <span id="snCheck" style="display:none; color:#0aff00; font-weight:bold; margin-left:10px;">✅</span>
-        <span id="sessionTimer" style="font-family:var(--font-tech); color:#666; font-size:12px; margin-left:auto;">⏱️ 00:00</span>
-    </div>
-    <input type="text" id="scanInput" placeholder="NAJPIERW POŁĄCZ Z BAZĄ..." disabled oninput="this.value = this.value.toUpperCase()">
-
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-        <span class="input-label" style="color:var(--neon-green)">2. SN OC (SZKŁO)</span>
-        <span id="ocCheck" style="display:none; color:#0aff00; font-weight:bold; margin-left:10px;">✅</span>
-    </div>
-    <input type="text" id="scanInputOC" placeholder="OCZEKIWANIE NA SN MODUŁU..." disabled 
-           style="width: 100%; background: #080808; border: 1px solid #333; color: var(--neon-green); padding: 12px; font-size: 18px; text-align: center; font-family: var(--font-tech); outline: none; border-radius: 6px; margin-bottom: 15px;"
-           oninput="this.value = this.value.toUpperCase()">
-
-    <div id="scanStatusInfo" class="scan-status-info">NUMERY ZESKANOWANE POPRAWNIE</div>
-    <button id="confirmIdentityBtn" class="confirm-identity-btn" onclick="confirmScanData()">✅ ZATWIERDŹ DANE (OK)</button>
-
-    <div id="checklist">
-        <a href="https://docs.google.com/spreadsheets/d/10W03bvKlVFlIUcxsHkzP_v_13gtnYRBmnrrO0ujB1bU/edit?gid=661466938#gid=661466938" target="_blank" class="checklist-btn" style="border-color:var(--neon-purple); color:var(--neon-purple); text-decoration:none; display:flex; align-items:center;">
-            <span>📊 GOOGLE SHEET</span> <span>🔗</span>
-        </a>
-        <div style="height:10px;"></div>
-        <div id="btnFront" class="checklist-btn locked" onclick="capture('PRZOD')"><span>1. PRZÓD EKRANU</span> <span>📷</span></div>
-        <div id="btnBack" class="checklist-btn locked" onclick="capture('TYL')"><span>2. TYŁ (TABLICZKA)</span> <span>📷</span></div>
-        <div id="btnImage" class="checklist-btn locked" onclick="capture('OBRAZ')"><span>3. TEST OBRAZU</span> <span>📷</span></div>
-    </div>
-
-    <div class="decision-panel">
-      <span class="input-label" style="color:var(--neon-purple)">DECYZJA SERWISOWA</span>
-      <select id="statusSelect" class="custom-select" onchange="checkOcRequirement(); saveRecoveryState();">
-        <option value="OK">🟢 OK (SPRAWNY)</option>
-        <option value="NG">🔴 NG (USZKODZONY)</option>
-        <option value="NDF">🔵 NDF (BRAK WAD)</option>
-        <option value="RMA_VF">🟠 RMA_VF (ZWROT)</option>
-        <option value="SCRAP">⚫ SCRAP (ZŁOM)</option>
-        <option value="OFFRS_OK">🟣 OFFRS OK</option>
-      </select>
-      
-      <span class="input-label">KOMENTARZ / SZYBKIE WADY</span>
-      <div class="quick-defects">
-          <div class="defect-tag" data-defect="RYSA NA MATRYCY" onclick="addDefect('RYSA NA MATRYCY', this)">RYSA</div>
-          <div class="defect-tag" data-defect="BAD PIXEL" onclick="addDefect('BAD PIXEL', this)">PIXEL</div>
-          <div class="defect-tag" data-defect="PĘKNIĘCIE" onclick="addDefect('PĘKNIĘCIE', this)">PĘKNIĘCIE</div>
-          <div class="defect-tag" data-defect="LINIA PIONOWA" onclick="addDefect('LINIA PIONOWA', this)">LINIA |</div>
-          <div class="defect-tag" data-defect="LINIA POZIOMA" onclick="addDefect('LINIA POZIOMA', this)">LINIA —</div>
-          <div class="defect-tag" data-defect="BRAK OBRAZU" onclick="addDefect('BRAK OBRAZU', this)">NO IMAGE</div>
-          <div class="defect-tag" data-defect="IMAGE STICKING" onclick="addDefect('IMAGE STICKING', this)">IMAGE STICKING</div>
-          <div class="defect-tag" data-defect="BC DEFORM" onclick="addDefect('BC DEFORM', this)">BC DEFORM</div>
-          <div class="defect-tag" data-defect="BC SCRATCH" onclick="addDefect('BC SCRATCH', this)">BC SCRATCH</div>
-          <div class="defect-tag" data-defect="DP CLUSTER" onclick="addDefect('DP CLUSTER', this)">DP CLUSTER</div>
-          <div class="defect-tag" data-defect="BP CLUSTER" onclick="addDefect('BP CLUSTER', this)">BP CLUSTER</div>
+      <button id="opConnectBtn" class="op-connect-btn" onclick="connectNetwork()">POŁĄCZ FOLDER ZDJĘĆ</button>
+      <div style="height:12px"></div>
+      <div id="targetBox" class="target-box">
+        <div class="target-header"><span>CEL DZIENNY</span><span id="targetText">0 / 15</span></div>
+        <div class="progress-track"><div id="targetFill" class="progress-fill"></div></div>
       </div>
-      
-      <textarea id="commentInput" class="custom-textarea" rows="2" placeholder="Wpisz uwagi..." oninput="syncDefectTags(); saveRecoveryState()"></textarea>
-    </div>
+    </section>
 
-    <div class="recent-list" id="recentList"></div>
+    <section class="ui-card compact">
+      <div class="section-heading">
+        <div><div class="section-kicker">PRZEBIEG</div><div class="section-title">Aktualna sztuka</div></div>
+        <span class="section-meta">5 KROKÓW</span>
+      </div>
+      <div class="workflow-list">
+        <div class="workflow-step active" id="stepIdentity"><span class="step-index">01</span><span class="step-name">Identyfikacja</span><span class="step-state">TERAZ</span></div>
+        <div class="workflow-step" id="stepFront"><span class="step-index">02</span><span class="step-name">Zdjęcie przodu</span><span class="step-state">OCZEKUJE</span></div>
+        <div class="workflow-step" id="stepBack"><span class="step-index">03</span><span class="step-name">Zdjęcie tyłu</span><span class="step-state">OCZEKUJE</span></div>
+        <div class="workflow-step" id="stepImage"><span class="step-index">04</span><span class="step-name">Test obrazu</span><span class="step-state">OCZEKUJE</span></div>
+        <div class="workflow-step" id="stepDecision"><span class="step-index">05</span><span class="step-name">Decyzja i zapis</span><span class="step-state">OCZEKUJE</span></div>
+      </div>
+    </section>
 
-    <button id="actionBtn" onclick="saveData()">OCZEKIWANIE</button>
-    <div id="saveStatus" style="text-align:center; color:#666; margin-top:10px; font-size:11px; height:15px; font-family: var(--font-tech);"></div>
+    <section class="ui-card">
+      <div class="section-heading">
+        <div><div class="section-kicker">IDENTYFIKACJA</div><div class="section-title">Skanowanie numerów</div></div>
+      </div>
+      <div class="scan-block">
+        <div class="scan-label-row"><span class="scan-label">SN MODUŁU (SET)</span><span id="snCheck" class="scan-check" style="display:none;color:var(--neon-green)">GOTOWE</span></div>
+        <input type="text" id="scanInput" placeholder="NAJPIERW POŁĄCZ Z FOLDEREM..." disabled oninput="this.value=this.value.toUpperCase()">
+        <div class="scan-label-row" style="margin-top:4px"><span class="scan-label">SN OC (SZKŁO)</span><span id="ocCheck" class="scan-check" style="display:none;color:var(--neon-green)">GOTOWE</span></div>
+        <input type="text" id="scanInputOC" placeholder="OCZEKIWANIE NA SN MODUŁU..." disabled oninput="this.value=this.value.toUpperCase()">
+        <div id="scanStatusInfo" class="scan-status-info">NUMERY ZESKANOWANE POPRAWNIE</div>
+        <div class="scan-actions">
+          <button id="confirmIdentityBtn" class="confirm-identity-btn" onclick="confirmScanData()">ZATWIERDŹ DANE</button>
+          <button id="skipOcBtn" class="skip-oc-btn" onclick="confirmWithoutOc()">POMIŃ OC DLA TEJ DECYZJI</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="ui-card compact">
+      <div class="section-heading">
+        <div><div class="section-kicker">DOKUMENTACJA</div><div class="section-title">Wymagane zdjęcia</div></div>
+        <span class="section-meta" id="photoCounter">0 / 3</span>
+      </div>
+      <div id="checklist" class="photo-actions">
+        <div id="btnFront" class="checklist-btn locked" onclick="capture('PRZOD')"><span class="photo-action-copy"><strong>PRZÓD EKRANU</strong><small>KADR OGÓLNY PANELU</small></span><span>01</span></div>
+        <div id="btnBack" class="checklist-btn locked" onclick="capture('TYL')"><span class="photo-action-copy"><strong>TYŁ / TABLICZKA</strong><small>SN I STAN MECHANICZNY</small></span><span>02</span></div>
+        <div id="btnImage" class="checklist-btn locked" onclick="capture('OBRAZ')"><span class="photo-action-copy"><strong>TEST OBRAZU</strong><small>WADA LUB WZORZEC TESTOWY</small></span><span>03</span></div>
+        <a href="https://docs.google.com/spreadsheets/d/10W03bvKlVFlIUcxsHkzP_v_13gtnYRBmnrrO0ujB1bU/edit?gid=661466938#gid=661466938" target="_blank" class="checklist-btn sheet-link"><span class="photo-action-copy"><strong>OTWÓRZ GOOGLE SHEET</strong><small>TYLKO PODGLĄD RAPORTÓW</small></span><span>↗</span></a>
+      </div>
+    </section>
   </aside>
 
-  <main class="panel-right" id="camContainer">
-    <div class="cam-overlay">
-      <div class="tag" id="tagSN">SN: ---</div>
-      <div class="tag" id="tagOp">OP: ---</div>
+  <main class="panel-right camera-stage" id="camContainer">
+    <div class="camera-topbar">
+      <div class="camera-tags"><div class="camera-tag" id="tagSN">SN: ---</div><div class="camera-tag" id="tagOp">OP: ---</div></div>
+      <div class="camera-help">ROLKA: ZOOM • PRZECIĄGNIJ: KADR • 2× KLIK: RESET</div>
     </div>
     <div class="draw-toolbar" id="drawToolbar">
-      <span style="color:#fff; font-size:12px; margin-right:10px;">ZAZNACZ WADĘ:</span>
-      <div class="color-btn" style="background:red;" onclick="setDrawColor('red')"></div>
-      <div class="color-btn" style="background:#0aff00;" onclick="setDrawColor('#0aff00')"></div>
+      <span style="color:#fff;font-size:11px;margin-right:8px">ZAZNACZ WADĘ</span>
+      <div class="color-btn" style="background:red" onclick="setDrawColor('red')"></div>
+      <div class="color-btn" style="background:#0aff00" onclick="setDrawColor('#0aff00')"></div>
       <button class="tool-btn" onclick="clearDraw()">WYCZYŚĆ</button>
-      <button class="tool-btn confirm" onclick="confirmPhoto()">ZAPISZ</button>
+      <button class="tool-btn confirm" onclick="confirmPhoto()">ZAPISZ ZDJĘCIE</button>
       <button class="tool-btn" onclick="cancelPhoto()">ANULUJ</button>
     </div>
     <div class="cam-controls" onclick="event.stopPropagation()">
       <div class="zoom-group">
-        <span>ZOOM</span>
         <button type="button" class="cam-btn zoom-step" onclick="adjustZoom(-0.1)" title="Pomniejsz">−</button>
         <input type="range" id="zoomSlider" min="1" max="4" step="0.1" value="1">
         <button type="button" class="cam-btn zoom-step" onclick="adjustZoom(0.1)" title="Powiększ">+</button>
-        <span id="zoomVal">1.0x</span>
-        <span id="cameraRes" class="camera-resolution">---x---</span>
+        <span id="zoomVal">1.0x</span><span id="cameraRes" class="camera-resolution">---x---</span>
       </div>
-      <div style="width:1px; height:24px; background:#444; margin:0 3px;"></div>
-      <button type="button" class="cam-btn reset" onclick="resetCameraView()" title="Zoom 1.0x i pozycja centralna">⟲ ZERO</button>
-      <button type="button" id="mirrorBtn" class="cam-btn" onclick="toggleMirror()" title="Odbicie lustrzane">↔ LUSTRO</button>
+      <button type="button" class="cam-btn" onclick="resetCameraView()" title="Pozycja początkowa">RESET</button>
+      <button type="button" id="mirrorBtn" class="cam-btn" onclick="toggleMirror()" title="Odbicie lustrzane">LUSTRO</button>
+      <button type="button" id="gridBtn" class="cam-btn" onclick="toggleCameraGrid()" title="Siatka kadrowania">SIATKA</button>
+      <button type="button" class="cam-btn" onclick="toggleCameraFullscreen()" title="Pełny ekran kamery">PEŁNY</button>
     </div>
     <div class="video-container">
-        <video id="videoFeed" autoplay playsinline></video>
-        <canvas id="drawCanvas"></canvas>
+      <video id="videoFeed" autoplay playsinline></video>
+      <div class="camera-crop-frame"></div>
+      <div id="cameraGrid" class="camera-grid"></div>
+      <canvas id="drawCanvas"></canvas>
     </div>
   </main>
+
+  <aside class="decision-column">
+    <section class="ui-card">
+      <div class="section-heading">
+        <div><div class="section-kicker">DECYZJA</div><div class="section-title">Klasyfikacja serwisowa</div></div>
+      </div>
+      <div class="decision-panel">
+        <select id="statusSelect" class="custom-select" onchange="checkOcRequirement();saveRecoveryState();updatePhotoProgress();updateWorkflowUI();">
+          <option value="OK">OK — SPRAWNY</option>
+          <option value="NG">NG — USZKODZONY</option>
+          <option value="NDF">NDF — BRAK WAD</option>
+          <option value="RMA_VF">RMA DO VF — ZWROT</option>
+          <option value="SCRAP">SCRAP — ZŁOM</option>
+          <option value="OFFRS_OK">OFFRS OK</option>
+        </select>
+
+        <div class="defect-category">
+          <div class="defect-category-title">OBRAZ / PIXELE</div>
+          <div class="quick-defects">
+            <div class="defect-tag" data-defect="IMAGE STICKING" onclick="addDefect('IMAGE STICKING',this)">IMAGE STICKING</div>
+            <div class="defect-tag" data-defect="DP CLUSTER" onclick="addDefect('DP CLUSTER',this)">DP CLUSTER</div>
+            <div class="defect-tag" data-defect="BP CLUSTER" onclick="addDefect('BP CLUSTER',this)">BP CLUSTER</div>
+            <div class="defect-tag" data-defect="BAD PIXEL" onclick="addDefect('BAD PIXEL',this)">BAD PIXEL</div>
+            <div class="defect-tag" data-defect="LINIA PIONOWA" onclick="addDefect('LINIA PIONOWA',this)">LINIA PIONOWA</div>
+            <div class="defect-tag" data-defect="LINIA POZIOMA" onclick="addDefect('LINIA POZIOMA',this)">LINIA POZIOMA</div>
+            <div class="defect-tag" data-defect="BRAK OBRAZU" onclick="addDefect('BRAK OBRAZU',this)">NO IMAGE</div>
+          </div>
+        </div>
+        <div class="defect-category">
+          <div class="defect-category-title">MECHANICZNE / BC</div>
+          <div class="quick-defects">
+            <div class="defect-tag" data-defect="BC DEFORM" onclick="addDefect('BC DEFORM',this)">BC DEFORM</div>
+            <div class="defect-tag" data-defect="BC SCRATCH" onclick="addDefect('BC SCRATCH',this)">BC SCRATCH</div>
+            <div class="defect-tag" data-defect="RYSA NA MATRYCY" onclick="addDefect('RYSA NA MATRYCY',this)">PANEL SCRATCH</div>
+            <div class="defect-tag" data-defect="PĘKNIĘCIE" onclick="addDefect('PĘKNIĘCIE',this)">CRACK</div>
+          </div>
+        </div>
+        <div style="height:12px"></div>
+        <label class="scan-label" for="commentInput">KOMENTARZ / OPIS WADY</label>
+        <textarea id="commentInput" class="custom-textarea" rows="4" placeholder="Wpisz opis lub wybierz defekty powyżej..." oninput="syncDefectTags();saveRecoveryState();updatePhotoProgress();updateWorkflowUI();"></textarea>
+      </div>
+    </section>
+
+    <section class="ui-card compact">
+      <div class="section-heading"><div><div class="section-kicker">PODGLĄD</div><div class="section-title">Wykonane zdjęcia</div></div></div>
+      <div class="preview-grid">
+        <div class="photo-preview" id="previewPRZOD" onclick="capture('PRZOD')" title="Kliknij, aby wykonać lub powtórzyć zdjęcie"><img id="previewImgPRZOD" alt="Przód"><div class="preview-empty">BRAK ZDJĘCIA</div><span class="preview-label">PRZÓD</span></div>
+        <div class="photo-preview" id="previewTYL" onclick="capture('TYL')" title="Kliknij, aby wykonać lub powtórzyć zdjęcie"><img id="previewImgTYL" alt="Tył"><div class="preview-empty">BRAK ZDJĘCIA</div><span class="preview-label">TYŁ</span></div>
+        <div class="photo-preview" id="previewOBRAZ" onclick="capture('OBRAZ')" title="Kliknij, aby wykonać lub powtórzyć zdjęcie"><img id="previewImgOBRAZ" alt="Obraz"><div class="preview-empty">BRAK ZDJĘCIA</div><span class="preview-label">OBRAZ</span></div>
+      </div>
+      <div class="extra-photo-tools">
+        <button type="button" class="extra-photo-btn" onclick="capture('EXTRA')">＋ DODAJ ZDJĘCIE DODATKOWE</button>
+        <span class="extra-photo-count" id="extraPhotoCount">DODATKOWE: 0</span>
+      </div>
+      <div class="extra-photo-strip" id="extraPhotoStrip"></div>
+    </section>
+
+    <div id="editModeBanner" class="edit-mode-banner">
+      <div class="edit-mode-copy">
+        <div class="edit-mode-title" id="editModeTitle">EDYCJA ZAPISANEJ SZTUKI</div>
+        <div class="edit-mode-detail">Zdjęcia lokalne zostaną nadpisane. Arkusz zachowuje historię — najnowszy wpis dla SN jest korektą.</div>
+      </div>
+      <button type="button" class="edit-cancel-btn" onclick="cancelRecentEdit()">ANULUJ EDYCJĘ</button>
+    </div>
+
+    <section class="ui-card compact save-card" id="saveCard">
+      <div class="save-readiness">
+        <div class="save-ready-icon" id="saveReadyIcon">!</div>
+        <div>
+          <div class="save-ready-title" id="saveReadyTitle">Sztuka nie jest jeszcze gotowa</div>
+          <div class="save-ready-detail" id="saveReadyDetail">Zeskanuj numery i wykonaj komplet dokumentacji.</div>
+        </div>
+      </div>
+      <div class="readiness-chips">
+        <div class="readiness-chip" id="readyIdentity">SN / OC</div>
+        <div class="readiness-chip" id="readyPhotos">ZDJĘCIA</div>
+        <div class="readiness-chip" id="readyComment">KOMENTARZ</div>
+        <div class="readiness-chip" id="readyDecision">DECYZJA</div>
+      </div>
+      <button id="actionBtn" onclick="saveData()" disabled>OCZEKIWANIE NA DANE</button>
+      <div id="saveStatus"></div>
+    </section>
+
+    <section class="ui-card compact">
+      <div class="section-heading"><div><div class="section-kicker">OSTATNIE</div><div class="section-title">Ostatnie zapisane sztuki</div></div></div>
+      <div class="recent-list" id="recentList"><div style="color:var(--muted-2);font-size:11px">Brak zapisów w tej sesji.</div></div>
+    </section>
+  </aside>
 </div>
 
 <div id="adminDash">
-    <div class="admin-container">
-        <div class="admin-status-bar">
-            <div class="status-item"><div class="status-dot ok"></div> SYSTEM: ONLINE</div>
-            <div class="status-item">VER: 1.3 RMA</div>
-            <div class="status-item">CPU: <span id="simCpu">12%</span></div>
-            <div class="status-item">MEM: <span id="simMem">2.4GB</span></div>
-        </div>
-        <div class="admin-grid">
-            <div style="display:flex; flex-direction:column; gap:20px;">
-                <div class="admin-panel-box highlight">
-                    <div class="admin-h">
-                        <span>ZARZĄDZANIE UŻYTKOWNIKAMI</span>
-                        <span style="font-size:12px; color:#666;">EDYCJA / RESET HASEŁ</span>
-                    </div>
-                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 100px; gap:10px; margin-bottom:15px;">
-                      <input type="text" id="newLogin" placeholder="LOGIN" class="cfg-input" style="margin:0;" oninput="this.value = this.value.toUpperCase()">
-                      <input type="text" id="newPass" placeholder="HASŁO" class="cfg-input" style="margin:0;">
-                      <select id="newRole" class="cfg-input" style="margin:0; padding:10px; cursor:pointer;">
-                        <option value="OPERATOR">OPERATOR</option>
-                        <option value="KOORDYNATOR">KOORDYNATOR</option>
-                        <option value="KIEROWNIK">KIEROWNIK</option>
-                        <option value="RMA_LEADER">LIDER RMA</option>
-                        <option value="ADMIN">ADMINISTRATOR</option>
-                      </select>
-                      <button onclick="addUser()" class="cfg-btn">DODAJ</button>
-                    </div>
-                    <div style="overflow-y:auto; max-height:250px; border:1px solid #333;">
-                        <table class="adm-table" id="admUserTable">
-                            <thead><tr><th>LOGIN</th><th>ROLA</th><th>AKCJE</th></tr></thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
-                    <button class="cfg-btn" style="margin-top:10px; width:100%; border-style:dashed;" onclick="backupUsers()">💾 BACKUP UŻYTKOWNIKÓW (JSON)</button>
-                </div>
-                <div class="admin-panel-box">
-                    <div class="admin-h" style="margin-bottom:5px;">TERMINAL SYSTEMOWY</div>
-                    <div class="admin-terminal" id="sysLog">
-                        <div class="log-line"><span class="log-time">System:</span> Inicjalizacja v1.1...</div>
-                        <div class="log-line"><span class="log-time">System:</span> Gotowy do pracy.</div>
-                    </div>
-                </div>
-            </div>
-            <div style="display:flex; flex-direction:column; gap:20px;">
-                <div class="admin-panel-box" style="border-color:var(--neon-cyan);">
-                    <div class="admin-h" style="color:var(--neon-cyan)">BAZA DANYCH</div>
-                    <div style="font-size:12px; color:#aaa; margin-bottom:15px;">Połącz, aby zarządzać plikami.</div>
-                    <div style="display:flex; gap:10px;">
-                        <button class="cfg-btn cyan" style="flex:1;" onclick="connectNetwork()">📡 POŁĄCZ</button>
-                        <button class="cfg-btn cyan" style="flex:1;" onclick="switchToManagerReports()">📊 RAPORTY (TABELA)</button>
-                    </div>
-                </div>
-                <div class="admin-panel-box">
-                    <div class="admin-h">KONFIGURACJA</div>
-                    <div class="input-label">ŚCIEŻKA SIECIOWA</div>
-                    <input type="text" id="cfgPath" class="cfg-input" value="\\plgorfs001...">
-                    <button class="cfg-btn" onclick="saveConfigPath()">ZAPISZ</button>
-                    <div style="margin-top:15px;"></div>
-                    <div class="input-label">WIADOMOŚĆ DNIA</div>
-                    <input type="text" id="cfgMotd" class="cfg-input" placeholder="Komunikat...">
-                    <button class="cfg-btn" onclick="saveMotd()">WYŚLIJ</button>
-                </div>
-                <div class="admin-panel-box">
-                    <div class="admin-h" style="margin-bottom:5px;">PODGLĄD KAMERY</div>
-                    <video id="adminCamPreview" autoplay playsinline muted></video>
-                </div>
-            </div>
-        </div>
+  <div class="admin-container">
+    <div class="admin-status-bar">
+      <div class="status-item"><div class="status-dot ok"></div> SYSTEM GOTOWY</div>
+      <div class="status-item">OLED REPAIR 2.0</div>
+      <div class="status-item">CPU: <span id="simCpu">12%</span></div>
+      <div class="status-item">MEM: <span id="simMem">2.4GB</span></div>
     </div>
+    <div class="admin-shell">
+      <nav class="admin-nav">
+        <button class="admin-tab-btn active" data-admin-tab="users" onclick="showAdminTab('users')">UŻYTKOWNICY</button>
+        <button class="admin-tab-btn" data-admin-tab="database" onclick="showAdminTab('database')">BAZA I RAPORTY</button>
+        <button class="admin-tab-btn" data-admin-tab="config" onclick="showAdminTab('config')">KONFIGURACJA</button>
+        <button class="admin-tab-btn" data-admin-tab="camera" onclick="showAdminTab('camera')">KAMERA</button>
+        <button class="admin-tab-btn" data-admin-tab="logs" onclick="showAdminTab('logs')">LOGI SYSTEMU</button>
+      </nav>
+      <div class="admin-view">
+        <section class="admin-section active" data-admin-section="users">
+          <div class="admin-panel-box">
+            <div class="admin-h"><span>ZARZĄDZANIE UŻYTKOWNIKAMI</span><span style="font-size:11px;color:var(--muted-2)">ROLE I HASŁA</span></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 110px;gap:10px;margin-bottom:14px">
+              <input type="text" id="newLogin" placeholder="LOGIN" class="cfg-input" style="margin:0" oninput="this.value=this.value.toUpperCase()">
+              <input type="text" id="newPass" placeholder="HASŁO" class="cfg-input" style="margin:0">
+              <select id="newRole" class="cfg-input" style="margin:0;cursor:pointer"><option value="OPERATOR">OPERATOR</option><option value="KOORDYNATOR">KOORDYNATOR</option><option value="KIEROWNIK">KIEROWNIK</option><option value="RMA_LEADER">LIDER RMA</option><option value="ADMIN">ADMINISTRATOR</option></select>
+              <button onclick="addUser()" class="cfg-btn">DODAJ</button>
+            </div>
+            <div style="overflow:auto;max-height:calc(100vh - 320px);border:1px solid var(--line);border-radius:10px"><table class="adm-table" id="admUserTable"><thead><tr><th>LOGIN</th><th>ROLA</th><th>AKCJE</th></tr></thead><tbody></tbody></table></div>
+            <button class="cfg-btn" style="margin-top:10px;width:100%;border-style:dashed" onclick="backupUsers()">BACKUP UŻYTKOWNIKÓW JSON</button>
+          </div>
+        </section>
+        <section class="admin-section" data-admin-section="database">
+          <div class="admin-panel-box"><div class="admin-h">BAZA DANYCH I RAPORTY</div><p style="color:var(--muted)">Połączenie z folderem zdjęć i raportami Cloudflare / Google Sheets.</p><div style="display:flex;gap:10px"><button class="cfg-btn cyan" style="flex:1" onclick="connectNetwork()">POŁĄCZ FOLDER</button><button class="cfg-btn cyan" style="flex:1" onclick="switchToManagerReports()">OTWÓRZ RAPORTY</button></div></div>
+        </section>
+        <section class="admin-section" data-admin-section="config">
+          <div class="admin-panel-box"><div class="admin-h">KONFIGURACJA STANOWISKA</div><div class="input-label">ŚCIEŻKA SIECIOWA</div><input type="text" id="cfgPath" class="cfg-input" value="\\plgorfs001..."><button class="cfg-btn" onclick="saveConfigPath()">ZAPISZ ŚCIEŻKĘ</button><div style="height:22px"></div><div class="input-label">WIADOMOŚĆ DNIA</div><input type="text" id="cfgMotd" class="cfg-input" placeholder="Komunikat dla operatorów..."><button class="cfg-btn" onclick="saveMotd()">ZAPISZ KOMUNIKAT</button></div>
+        </section>
+        <section class="admin-section" data-admin-section="camera">
+          <div class="admin-panel-box"><div class="admin-h">PODGLĄD KAMERY</div><video id="adminCamPreview" autoplay playsinline muted style="height:calc(100vh - 245px)"></video></div>
+        </section>
+        <section class="admin-section" data-admin-section="logs">
+          <div class="admin-panel-box"><div class="admin-h">TERMINAL SYSTEMOWY</div><div class="admin-terminal" id="sysLog"><div class="log-line"><span class="log-time">System:</span> Inicjalizacja OLED Repair 2.0...</div><div class="log-line"><span class="log-time">System:</span> Gotowy do pracy.</div></div></div>
+        </section>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div id="managerDash">
-    <div class="mgr-header">
-        <div class="mgr-title">
-            </div>
-        
-        <div style="display:flex; align-items:center; gap:10px; background:#1a1a1a; padding:5px 15px; border-radius:30px; border:1px solid #444; margin-right:20px;">
-            <span style="font-size:16px;">🔍</span>
-            <input type="text" id="mgrSearchSn" placeholder="Szukaj SN..." 
-                   style="background:transparent; border:none; color:#fff; font-family:var(--font-tech); font-size:14px; outline:none; width:150px; text-transform:uppercase;"
-                   onkeyup="if(event.key === 'Enter') runManagerSearch()">
-            <button class="mgr-btn" style="padding:5px 10px; font-size:11px;" onclick="runManagerSearch()">SZUKAJ</button>
-        </div>
-        <div class="mgr-filters">
-            <button class="mgr-btn active" id="fToday" onclick="updateLeaderStats('TODAY')">DZISIAJ</button>
-            <button class="mgr-btn" id="fYesterday" onclick="updateLeaderStats('YESTERDAY')">WCZORAJ</button>
-            <button class="mgr-btn" id="fMonth" onclick="updateLeaderStats('MONTH')">TEN MIESIĄC</button>
-            <button class="mgr-btn" id="fAll" onclick="updateLeaderStats('ALL')">CAŁA HISTORIA</button>
-            <div style="width:1px; background:#444; margin:0 10px;"></div>
-            <button class="mgr-btn" onclick="fetchCloudflareData()">🔄 ODŚWIEŻ (CLOUD)</button>
-            <button class="mgr-btn" onclick="exportCSV()">💾 CSV</button>
-        </div>
+  <div class="mgr-header">
+    <div class="mgr-title"></div>
+    <div class="manager-toolbar">
+      <div class="manager-search"><span>⌕</span><input type="text" id="mgrSearchSn" placeholder="Szukaj SN lub OC..." onkeyup="if(event.key==='Enter')runManagerSearch()"><button class="mgr-btn" onclick="runManagerSearch()">SZUKAJ</button></div>
+      <button class="mgr-btn" onclick="fetchCloudflareData()">ODŚWIEŻ CLOUD</button>
+      <button class="mgr-btn" onclick="exportCSV()">EKSPORT CSV</button>
     </div>
-    <div class="mgr-stats-row">
-        <div class="mgr-card" style="border-color:var(--neon-cyan)">
-            <h3>ILOŚĆ CAŁKOWITA</h3>
-            <div class="val" id="mgrTotal">0</div>
-        </div>
-        <div class="mgr-card" style="border-color:var(--neon-green)">
-            <h3>STATUS OK</h3>
-            <div class="val" id="mgrOK" style="color:var(--neon-green)">0</div>
-        </div>
-        <div class="mgr-card" style="border-color:var(--neon-red)">
-            <h3>ODRZUTY (NG)</h3>
-            <div class="val" id="mgrNG" style="color:var(--neon-red)">0</div>
-        </div>
-        <div class="mgr-card" style="border-color:var(--neon-orange)">
-            <h3>YIELD %</h3>
-            <div class="val" id="mgrYield">0%</div>
-        </div>
+    <div class="mgr-filters">
+      <button class="mgr-btn active" id="fToday" onclick="updateLeaderStats('TODAY')">DZISIAJ</button>
+      <button class="mgr-btn" id="fYesterday" onclick="updateLeaderStats('YESTERDAY')">WCZORAJ</button>
+      <button class="mgr-btn" id="fMonth" onclick="updateLeaderStats('MONTH')">TEN MIESIĄC</button>
+      <button class="mgr-btn" id="fAll" onclick="updateLeaderStats('ALL')">CAŁA HISTORIA</button>
+      <select id="mgrFilterStatus" class="manager-select" onchange="updateManagerView()"><option value="">WSZYSTKIE STATUSY</option><option>OK</option><option>NG</option><option>NDF</option><option value="RMA_VF">RMA DO VF</option><option>SCRAP</option><option>OFFRS_OK</option></select>
+      <select id="mgrFilterOperator" class="manager-select" onchange="updateManagerView()"><option value="">WSZYSCY OPERATORZY</option></select>
+      <select id="mgrFilterDefect" class="manager-select" onchange="updateManagerView()"><option value="">WSZYSTKIE DEFEKTY</option><option>IMAGE STICKING</option><option>BC DEFORM</option><option>BC SCRATCH</option><option>DP CLUSTER</option><option>BP CLUSTER</option><option>BAD PIXEL</option><option>LINIA PIONOWA</option><option>LINIA POZIOMA</option><option>BRAK OBRAZU</option><option>RYSA NA MATRYCY</option><option>PĘKNIĘCIE</option></select>
+      <button class="mgr-btn" onclick="clearManagerFilters()">WYCZYŚĆ FILTRY</button>
     </div>
-    <div class="mgr-content-grid">
-        <div class="mgr-panel mgr-ranking-panel">
-            <h4>RANKING OPERATORÓW</h4>
-            <div style="overflow:auto;">
-                <table class="data-table">
-                    <thead><tr><th>OP</th><th>ILOŚĆ</th><th>CEL</th><th>YIELD</th></tr></thead>
-                    <tbody id="mgrRankBody"><tr><td colspan="4" style="text-align:center">Brak danych</td></tr></tbody>
-                </table>
-            </div>
-        </div>
-        <div class="mgr-panel">
-            <h4>DZIENNIK ZDARZEŃ</h4>
-            <div style="overflow:auto;">
-                <table class="data-table">
-                    <thead><tr><th>DATA</th><th>SN MODUŁU</th><th>SN OC</th><th>OP</th><th>DECYZJA</th><th>UWAGI</th><th>AKCJA</th></tr></thead>
-                    <tbody id="mgrLogBody"><tr><td colspan="7" style="text-align:center">Połącz się z serwerem, aby pobrać dane...</td></tr></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+  </div>
+  <div class="mgr-stats-row">
+    <div class="mgr-card"><h3>ILOŚĆ CAŁKOWITA</h3><div class="val" id="mgrTotal">0</div></div>
+    <div class="mgr-card"><h3>STATUSY DOBRE</h3><div class="val" id="mgrOK" style="color:var(--neon-green)">0</div></div>
+    <div class="mgr-card"><h3>ODRZUTY</h3><div class="val" id="mgrNG" style="color:var(--neon-red)">0</div></div>
+    <div class="mgr-card"><h3>YIELD</h3><div class="val" id="mgrYield">0%</div></div>
+  </div>
+  <div class="mgr-content-grid">
+    <div class="mgr-panel"><h4>RANKING OPERATORÓW</h4><div style="overflow:auto"><table class="data-table"><thead><tr><th>OP</th><th>ILOŚĆ</th><th>CEL</th><th>YIELD</th></tr></thead><tbody id="mgrRankBody"><tr><td colspan="4" style="text-align:center">Brak danych</td></tr></tbody></table></div></div>
+    <div class="mgr-panel"><h4>DZIENNIK ZDARZEŃ</h4><div style="overflow:auto"><table class="data-table"><thead><tr><th>DATA</th><th>SN MODUŁU</th><th>SN OC</th><th>OP</th><th>DECYZJA</th><th>UWAGI</th><th>AKCJA</th></tr></thead><tbody id="mgrLogBody"><tr><td colspan="7" style="text-align:center">Pobierz dane z chmury...</td></tr></tbody></table></div></div>
+  </div>
 </div>
 
 <div class="bar-bottom">
-  <div id="connStatus" style="color:#444; font-size:11px;">🔴 OFFLINE</div>
+  <div id="connStatus">● OFFLINE</div>
   <div class="bar-group">
     <button class="bar-btn admin-only" onclick="alert('Użyj Panelu Administratora')">👥 UŻYTKOWNICY</button>
     <button class="bar-btn" id="dbBtn" onclick="toggleReportPanel()">📊 MOJE WYNIKI</button>
@@ -755,6 +1210,9 @@
   
   let sessionStartTime = null;
   let recentScans = [];
+  let editingRecentId = null;
+  let extraPhotos = [];
+  let breakReminderTimer = null;
 
   /* --- INIT --- */
   window.onload = () => {
@@ -764,6 +1222,7 @@
     checkSavedLogin();
     checkRecovery();
     checkOcRequirement();
+    initRedesignUI();
     
     document.getElementById('mainDashboard').style.display = 'none';
     document.getElementById('adminDash').style.display = 'none';
@@ -837,20 +1296,27 @@
   }
 
   function confirmScanData() {
-      if(!currentSN || !currentOC) {
-          alert("BRAKUJE NUMERÓW SN LUB OC!");
+      const decision = document.getElementById('statusSelect').value;
+      const ocRequired = ['OK', 'RMA_VF'].includes(decision);
+      if(!currentSN || (ocRequired && !currentOC)) {
+          alert(ocRequired ? "BRAKUJE NUMERU SN LUB WYMAGANEGO OC!" : "BRAKUJE NUMERU SN!");
           return;
       }
       isScanConfirmed = true;
       SoundFX.play('success');
-      
       document.getElementById('confirmIdentityBtn').style.display = 'none';
+      document.getElementById('skipOcBtn').style.display = 'none';
       document.getElementById('scanStatusInfo').style.display = 'none';
-      
-      const btns = document.querySelectorAll('.checklist-btn');
-      btns.forEach(btn => btn.classList.remove('locked'));
-      
+      ['btnFront','btnBack','btnImage'].forEach(id => document.getElementById(id).classList.remove('locked'));
+      updatePhotoProgress();
+      updateWorkflowUI();
       logSystem(`Dane SN: ${currentSN} zatwierdzone przez operatora.`);
+  }
+
+  function confirmWithoutOc() {
+      currentOC = "";
+      document.getElementById('scanInputOC').value = "";
+      confirmScanData();
   }
 
   function updateSessionTimer() {
@@ -871,6 +1337,8 @@
       field.value = values.join(', ');
       syncDefectTags();
       saveRecoveryState();
+      updatePhotoProgress();
+      updateWorkflowUI();
   }
 
   function syncDefectTags() {
@@ -1125,6 +1593,7 @@
         b.classList.add('admin');
         document.body.classList.add('mode-admin');
         document.getElementById('adminDash').style.display = 'flex';
+        showAdminTab('users');
     } else {
         document.getElementById('mainDashboard').style.display = 'grid';
         setTimeout(() => document.getElementById('mainDashboard').style.opacity = '1', 100);
@@ -1293,15 +1762,83 @@ async function initCamera() {
     }
 }
 
+  function getSaveReadiness() {
+      const decision = document.getElementById('statusSelect')?.value || 'OK';
+      const ocRequired = ['OK','RMA_VF'].includes(decision);
+      const photoCount = ['PRZOD','TYL','OBRAZ'].filter(type => !!photos[type]).length;
+      const identityReady = !!currentSN && !!isScanConfirmed && (!ocRequired || !!currentOC);
+      const photosReady = photoCount === 3;
+      const commentReady = (document.getElementById('commentInput')?.value.trim().length || 0) > 0;
+      const decisionReady = !!decision;
+      const missing = [];
+      if(!identityReady) missing.push(ocRequired ? 'zatwierdzone SN i OC' : 'zatwierdzone SN');
+      if(!photosReady) {
+          const nextPhoto = !photos.PRZOD ? 'zdjęcie przodu' : !photos.TYL ? 'zdjęcie tyłu' : 'test obrazu';
+          missing.push(nextPhoto);
+      }
+      if(!commentReady) missing.push('komentarz lub defekt');
+      return { decision, ocRequired, photoCount, identityReady, photosReady, commentReady, decisionReady, missing, ready: identityReady && photosReady && commentReady && decisionReady };
+  }
+
+  function setReadinessChip(id, done) {
+      const chip = document.getElementById(id);
+      if(!chip) return;
+      chip.classList.toggle('done', !!done);
+      chip.classList.toggle('missing', !done);
+  }
+
   function updatePhotoProgress() {
-      if(photos.PRZOD) document.getElementById('btnFront').classList.add('done');
-      if(photos.TYL) document.getElementById('btnBack').classList.add('done');
-      if(photos.OBRAZ) document.getElementById('btnImage').classList.add('done');
-      let count = 0;
-      if(photos.PRZOD) count++; if(photos.TYL) count++; if(photos.OBRAZ) count++;
+      const photoMap = { PRZOD:'btnFront', TYL:'btnBack', OBRAZ:'btnImage' };
+      Object.entries(photoMap).forEach(([type,id]) => {
+          const el = document.getElementById(id);
+          if(!el) return;
+          el.classList.toggle('done', !!photos[type]);
+          el.classList.remove('next-action');
+      });
+
+      const state = getSaveReadiness();
+      const counter = document.getElementById('photoCounter');
+      if(counter) counter.innerText = `${state.photoCount} / 3`;
+
+      if(state.identityReady && !state.photosReady) {
+          const nextId = !photos.PRZOD ? 'btnFront' : !photos.TYL ? 'btnBack' : 'btnImage';
+          document.getElementById(nextId)?.classList.add('next-action');
+      }
+
       const btn = document.getElementById('actionBtn');
-      if(count === 3) { btn.innerText = "ZAPISZ DANE"; btn.classList.add('active'); } 
-      else { btn.innerText = `OCZEKIWANIE (${count}/3)`; btn.classList.remove('active'); }
+      const card = document.getElementById('saveCard');
+      const icon = document.getElementById('saveReadyIcon');
+      const title = document.getElementById('saveReadyTitle');
+      const detail = document.getElementById('saveReadyDetail');
+
+      setReadinessChip('readyIdentity', state.identityReady);
+      setReadinessChip('readyPhotos', state.photosReady);
+      setReadinessChip('readyComment', state.commentReady);
+      setReadinessChip('readyDecision', state.decisionReady);
+
+      if(state.ready) {
+          btn.innerText = '✓ ZAPISZ SZTUKĘ';
+          btn.classList.add('active');
+          btn.disabled = false;
+          btn.setAttribute('aria-disabled','false');
+          card?.classList.add('ready');
+          if(icon) icon.innerText = '✓';
+          if(title) title.innerText = 'Wszystko gotowe do zapisu';
+          if(detail) detail.innerText = 'Sprawdź klasyfikację i kliknij zielony przycisk.';
+      } else {
+          btn.classList.remove('active');
+          btn.disabled = true;
+          btn.setAttribute('aria-disabled','true');
+          card?.classList.remove('ready');
+          if(icon) icon.innerText = '!';
+          if(title) title.innerText = 'Sztuka nie jest jeszcze gotowa';
+          if(detail) detail.innerText = `Brakuje: ${state.missing.join(' • ') || 'danych'}`;
+          if(!state.identityReady) btn.innerText = state.ocRequired ? 'ZATWIERDŹ SN I OC' : 'ZATWIERDŹ SN';
+          else if(!state.photosReady) btn.innerText = `WYKONAJ ZDJĘCIA (${state.photoCount}/3)`;
+          else if(!state.commentReady) btn.innerText = 'UZUPEŁNIJ KOMENTARZ / DEFEKT';
+          else btn.innerText = 'OCZEKIWANIE NA DANE';
+      }
+      updateWorkflowUI();
   }
 
   function startSession(sn) {
@@ -1311,22 +1848,25 @@ async function initCamera() {
     
     document.getElementById('scanStatusInfo').style.display = 'none';
     document.getElementById('confirmIdentityBtn').style.display = 'none';
-    const btns = document.querySelectorAll('.checklist-btn');
-    btns.forEach(btn => btn.classList.add('locked'));
+    ['btnFront','btnBack','btnImage'].forEach(id => document.getElementById(id).classList.add('locked'));
 
     document.getElementById('scanInputOC').value = ""; 
     document.getElementById('scanInputOC').disabled = true;
-    document.querySelectorAll('.checklist-btn').forEach(b => b.classList.remove('done'));
+    ['btnFront','btnBack','btnImage'].forEach(id => document.getElementById(id).classList.remove('done'));
     document.getElementById('snCheck').style.display = 'none';
     document.getElementById('ocCheck').style.display = 'none';
-    document.getElementById('actionBtn').innerText = "OCZEKIWANIE (0/3)";
+    document.getElementById('actionBtn').innerText = "ZATWIERDŹ SN I OC";
     document.getElementById('actionBtn').classList.remove('active');
+    document.getElementById('actionBtn').disabled = true;
     document.getElementById('statusSelect').value = "OK";
     document.getElementById('commentInput').value = "";
     syncDefectTags();
+    resetPhotoPreviews();
     resetCameraView();
     clearDraw();
     sessionStartTime = new Date();
+    updateWorkflowUI();
+    checkOcRequirement();
   }
 
   function processPhoto() {
@@ -1414,7 +1954,16 @@ async function initCamera() {
               alert('Nie udało się utworzyć zdjęcia. Spróbuj ponownie.');
               return;
           }
-          photos[tempPhotoType] = blob;
+          if(tempPhotoType === 'EXTRA') {
+              extraPhotos.push({
+                  blob,
+                  name: `${currentSN}_DODATKOWE_${String(extraPhotos.length + 1).padStart(2,'0')}_${Date.now()}.jpg`
+              });
+              renderExtraPhotos();
+          } else {
+              photos[tempPhotoType] = blob;
+              updatePhotoPreview(tempPhotoType, blob);
+          }
           updatePhotoProgress();
           cancelPhoto(true);
       }, 'image/jpeg', 0.98);
@@ -1423,13 +1972,18 @@ async function initCamera() {
   function checkOcRequirement() {
       const decision = document.getElementById('statusSelect').value;
       const ocInput = document.getElementById('scanInputOC');
-      if(['OK','RMA'].includes(decision)) {
-          ocInput.placeholder = "⚠️ SKANUJ OC (WYMAGANE)";
-          ocInput.style.borderColor = currentOC ? "var(--neon-green)" : "var(--neon-red)";
+      const skipBtn = document.getElementById('skipOcBtn');
+      const required = ['OK','RMA_VF'].includes(decision);
+      if(required) {
+          ocInput.placeholder = "SKANUJ OC — WYMAGANE";
+          ocInput.style.borderColor = currentOC ? "var(--neon-green)" : "var(--line)";
+          if(skipBtn) skipBtn.style.display = 'none';
       } else {
-          ocInput.placeholder = "OC OPCJONALNE";
-          ocInput.style.borderColor = "#333";
+          ocInput.placeholder = "OC OPCJONALNE — MOŻESZ POMINĄĆ";
+          ocInput.style.borderColor = "var(--line)";
+          if(skipBtn) skipBtn.style.display = currentSN && !isScanConfirmed ? 'block' : 'none';
       }
+      updateWorkflowUI();
   }
 
   function prepareDrawCanvas() {
@@ -1474,7 +2028,8 @@ async function initCamera() {
           SoundFX.play('beep'); startSession(v); saveRecoveryState();
           document.getElementById('snCheck').style.display = 'inline';
           document.getElementById('scanInputOC').disabled=false; 
-          document.getElementById('scanInputOC').focus(); 
+          document.getElementById('scanInputOC').focus();
+          checkOcRequirement(); updateWorkflowUI();
       } else {
           SoundFX.play('error');
           alert("BŁĘDNY SN! Numer musi zaczynać się od TBV lub TOV.");
@@ -1490,7 +2045,7 @@ async function initCamera() {
             document.getElementById('ocCheck').style.display = 'inline';
             document.getElementById('scanStatusInfo').style.display = 'block';
             document.getElementById('confirmIdentityBtn').style.display = 'block';
-            checkOcRequirement(); saveRecoveryState(); 
+            checkOcRequirement(); saveRecoveryState(); updateWorkflowUI(); 
         } else {
             SoundFX.play('error');
             alert("BŁĘDNY OC! Numer musi mieć więcej niż 3 znaki.");
@@ -1521,10 +2076,11 @@ async function initCamera() {
       }
   }
 
+  /* PROTECTED DATA INTEGRATION — DO NOT CHANGE PAYLOAD OR ENDPOINT */
   async function saveData() {
       if(!photos.PRZOD || !photos.TYL || !photos.OBRAZ) { alert("BRAK ZDJĘĆ!"); return; }
       const dec = document.getElementById('statusSelect').value;
-      if(['OK','RMA'].includes(dec) && !currentOC) return alert("BRAK OC!");
+      if(['OK','RMA_VF'].includes(dec) && !currentOC) return alert("BRAK OC!");
 
       // DODANE: Sprawdzanie czy komentarz jest uzupełniony
       const commentVal = document.getElementById('commentInput').value.trim();
@@ -1552,6 +2108,11 @@ async function initCamera() {
                   const fh = await d.getFileHandle(`${currentSN}_${type}.jpg`, {create: true});
                   const wr = await fh.createWritable(); await wr.write(photos[type]); await wr.close();
               }
+              for (const [idx, item] of extraPhotos.entries()) {
+                  const extraName = item.name || `${currentSN}_DODATKOWE_${String(idx + 1).padStart(2,'0')}.jpg`;
+                  const efh = await d.getFileHandle(extraName, {create: true});
+                  const ewr = await efh.createWritable(); await ewr.write(item.blob || item); await ewr.close();
+              }
           } catch(e) {}
       }
       try {
@@ -1571,7 +2132,9 @@ async function initCamera() {
   }
 
   function finishSave(dec) {
-      recentScans.unshift({sn: currentSN, dec: dec});
+      recentScans.unshift({sn: currentSN, dec: dec, time: new Date()});
+      recentScans = recentScans.slice(0, 6);
+      renderRecentScans();
       const qrb = document.getElementById('qrCodeBox'); qrb.innerHTML = "";
       new QRCode(qrb, `${currentSN}|${dec}`);
       document.getElementById('qrPopup').style.display='block';
@@ -1586,21 +2149,26 @@ async function initCamera() {
           document.getElementById('scanInputOC').disabled = true;
           document.getElementById('commentInput').value = "";
           syncDefectTags();
+          resetPhotoPreviews();
           resetCameraView();
           clearDraw();
           document.getElementById('statusSelect').value = "OK";
           document.getElementById('snCheck').style.display = 'none';
           document.getElementById('ocCheck').style.display = 'none';
           document.getElementById('tagSN').innerText = "SN: ---";
-          document.querySelectorAll('.checklist-btn').forEach(btn => {
+          ['btnFront','btnBack','btnImage'].forEach(id => {
+              const btn = document.getElementById(id);
               btn.classList.add('locked');
               btn.classList.remove('done');
           });
           document.getElementById('actionBtn').classList.remove('active');
-          document.getElementById('actionBtn').innerText = "OCZEKIWANIE (0/3)";
+          document.getElementById('actionBtn').disabled = true;
+          document.getElementById('actionBtn').innerText = "ZATWIERDŹ SN I OC";
           document.getElementById('saveStatus').innerText = "";
           document.getElementById('scanInput').focus();
           scanNetworkForOperator();
+          updateWorkflowUI();
+          checkOcRequirement();
       }, 1000); 
   }
   
@@ -1699,6 +2267,7 @@ async function initCamera() {
               com: item.com,
               rma_sub: item.rma_sub || null
           }));
+          refreshManagerFilterOptions();
 
           // 3. Odświeżamy widoki
           updateManagerView();       // Tabela Managera
@@ -1796,6 +2365,13 @@ async function initCamera() {
           }
       }
 
+      const statusFilter = document.getElementById('mgrFilterStatus')?.value || '';
+      const operatorFilter = document.getElementById('mgrFilterOperator')?.value || '';
+      const defectFilter = document.getElementById('mgrFilterDefect')?.value || '';
+      if(statusFilter) filteredData = filteredData.filter(r => r.dec === statusFilter);
+      if(operatorFilter) filteredData = filteredData.filter(r => r.op === operatorFilter);
+      if(defectFilter) filteredData = filteredData.filter(r => (r.com || '').toUpperCase().includes(defectFilter.toUpperCase()));
+
       // Generowanie tabeli z nową kolumną LINKU i RMA ACTION
       if(filteredData.length === 0) {
            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px;">BRAK WYNIKÓW</td></tr>';
@@ -1812,11 +2388,11 @@ async function initCamera() {
           let decText = r.dec;
 
           if(r.dec === 'OK' || r.dec === 'OFFRS_OK') colorStyle = 'var(--neon-green)';
-          else if(r.dec === 'NG' || r.dec === 'RMA' || r.dec === 'SCRAP') colorStyle = 'var(--neon-red)';
+          else if(r.dec === 'NG' || r.dec === 'RMA_VF' || r.dec === 'SCRAP') colorStyle = 'var(--neon-red)';
           else if(r.dec === 'NDF') colorStyle = 'var(--neon-cyan)';
 
           // Logika wyświetlania sub-statusu RMA
-          if (r.dec === 'RMA' && r.rma_sub) {
+          if (r.dec === 'RMA_VF' && r.rma_sub) {
               decText += ` <span style="color:var(--neon-orange)">(${r.rma_sub})</span>`;
           }
 
@@ -1829,7 +2405,7 @@ async function initCamera() {
           let actionHtml = `<a href="${cleanPath}" target="_blank" onclick="navigator.clipboard.writeText('${jsPath}'); alert('Skopiowano ścieżkę do schowka:\\n' + '${jsPath}');" class="folder-btn" title="Kopiuj ścieżkę do schowka">📂</a>`;
           
           // Dodatkowe przyciski dla Lidera RMA
-          if (isRmaLeader && r.dec === 'RMA') {
+          if (isRmaLeader && r.dec === 'RMA_VF') {
               const activeSid = r.rma_sub === 'SID' ? 'active' : '';
               const activeCid = r.rma_sub === 'CID' ? 'active' : '';
               const activeNdf = r.rma_sub === 'NDF' ? 'active' : '';
@@ -1926,6 +2502,127 @@ async function initCamera() {
           </tr>`;
       });
   }
+
+
+/* --- OLED REPAIR 2.0 UI HELPERS --- */
+function initRedesignUI() {
+    updatePhotoProgress();
+    updateWorkflowUI();
+    resetPhotoPreviews();
+    renderRecentScans();
+    renderExtraPhotos();
+    scheduleDailyBreakReminder();
+    loadRecentScansFromDb();
+    setTimeout(() => document.body.classList.add('ui-ready'), 80);
+    document.addEventListener('keydown', e => {
+        const typing = ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName);
+        if(e.key === 'Escape' && document.getElementById('drawCanvas')?.style.display !== 'none') cancelPhoto();
+        if(!typing && (e.ctrlKey || e.metaKey) && e.key === '0') { e.preventDefault(); resetCameraView(); }
+        if(!typing && (e.key === '+' || e.key === '=')) adjustZoom(.1);
+        if(!typing && e.key === '-') adjustZoom(-.1);
+    });
+}
+
+function setWorkflowStep(id, state) {
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.classList.remove('active','done');
+    const label = el.querySelector('.step-state');
+    if(state === 'done') { el.classList.add('done'); if(label) label.innerText='GOTOWE'; }
+    else if(state === 'active') { el.classList.add('active'); if(label) label.innerText='TERAZ'; }
+    else if(label) label.innerText='OCZEKUJE';
+}
+
+function updateWorkflowUI() {
+    if(!document.getElementById('stepIdentity')) return;
+    const state = typeof getSaveReadiness === 'function' ? getSaveReadiness() : null;
+    const photoCount = ['PRZOD','TYL','OBRAZ'].filter(t => !!photos[t]).length;
+    setWorkflowStep('stepIdentity', isScanConfirmed ? 'done' : 'active');
+    setWorkflowStep('stepFront', photos.PRZOD ? 'done' : (isScanConfirmed ? 'active' : 'wait'));
+    setWorkflowStep('stepBack', photos.TYL ? 'done' : (photos.PRZOD ? 'active' : 'wait'));
+    setWorkflowStep('stepImage', photos.OBRAZ ? 'done' : (photos.TYL ? 'active' : 'wait'));
+    setWorkflowStep('stepDecision', state?.ready ? 'done' : (photoCount === 3 ? 'active' : 'wait'));
+}
+
+function updatePhotoPreview(type, blob) {
+    const box = document.getElementById(`preview${type}`);
+    const img = document.getElementById(`previewImg${type}`);
+    if(!box || !img || !blob) return;
+    if(img.dataset.objectUrl) URL.revokeObjectURL(img.dataset.objectUrl);
+    const url = URL.createObjectURL(blob);
+    img.dataset.objectUrl = url;
+    img.src = url;
+    box.classList.add('has-photo');
+}
+
+function resetPhotoPreviews() {
+    ['PRZOD','TYL','OBRAZ'].forEach(type => {
+        const box = document.getElementById(`preview${type}`);
+        const img = document.getElementById(`previewImg${type}`);
+        if(img?.dataset.objectUrl) URL.revokeObjectURL(img.dataset.objectUrl);
+        if(img) { img.removeAttribute('src'); delete img.dataset.objectUrl; }
+        box?.classList.remove('has-photo');
+    });
+    const counter = document.getElementById('photoCounter');
+    if(counter) counter.innerText = '0 / 3';
+}
+
+function renderRecentScans() {
+    const list = document.getElementById('recentList');
+    if(!list) return;
+    if(!recentScans.length) {
+        list.innerHTML = '<div style="color:var(--muted-2);font-size:11px">Brak zapisów w tej sesji.</div>';
+        return;
+    }
+    list.innerHTML = recentScans.map(item => `<div class="recent-item"><span>${item.sn}</span><span style="color:${['OK','NDF','OFFRS_OK'].includes(item.dec)?'var(--neon-green)':'var(--neon-orange)'}">${item.dec}</span></div>`).join('');
+}
+
+function toggleCameraGrid() {
+    const grid = document.getElementById('cameraGrid');
+    const btn = document.getElementById('gridBtn');
+    const visible = grid?.classList.toggle('visible');
+    btn?.classList.toggle('active', !!visible);
+}
+
+function toggleCameraFullscreen() {
+    const stage = document.getElementById('camContainer');
+    if(!document.fullscreenElement) stage?.requestFullscreen?.();
+    else document.exitFullscreen?.();
+}
+
+function showAdminTab(tab) {
+    document.querySelectorAll('.admin-tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.adminTab === tab));
+    document.querySelectorAll('.admin-section').forEach(section => section.classList.toggle('active', section.dataset.adminSection === tab));
+    if(tab === 'camera') startAdminCamera();
+}
+
+function refreshManagerFilterOptions() {
+    const select = document.getElementById('mgrFilterOperator');
+    if(!select) return;
+    const current = select.value;
+    const operators = [...new Set(reportsCache.map(r => r.op).filter(Boolean))].sort((a,b) => a.localeCompare(b));
+    select.innerHTML = '<option value="">WSZYSCY OPERATORZY</option>' + operators.map(op => `<option value="${op}">${op}</option>`).join('');
+    if(operators.includes(current)) select.value = current;
+}
+
+function clearManagerFilters() {
+    ['mgrFilterStatus','mgrFilterOperator','mgrFilterDefect'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+    const search = document.getElementById('mgrSearchSn'); if(search) search.value='';
+    updateManagerView();
+}
+
+function exportCSV() {
+    if(!reportsCache.length) return alert('Brak danych do eksportu. Najpierw odśwież raporty.');
+    const rows = [['DATA','SN','OC','OPERATOR','DECYZJA','UWAGI'], ...reportsCache.map(r => [r.rawDate ? r.rawDate.toLocaleString() : '', r.sn || '', r.oc || '', r.op || '', r.dec || '', r.com || ''])];
+    const csv = rows.map(row => row.map(v => `"${String(v).replace(/"/g,'""')}"`).join(';')).join('\r\n');
+    saveAs(new Blob(['\ufeff' + csv], {type:'text/csv;charset=utf-8'}), `OLED_REPAIR_${new Date().toISOString().slice(0,10)}.csv`);
+}
+
+function backupUsers() {
+    const safeUsers = users.map(({login, role}) => ({login, role}));
+    saveAs(new Blob([JSON.stringify({exportedAt:new Date().toISOString(), users:safeUsers}, null, 2)], {type:'application/json'}), `OLED_USERS_BACKUP_${new Date().toISOString().slice(0,10)}.json`);
+}
+
 /* --- FFL MODULE LOGIC --- */
 let fflSessionPhotos = []; 
 
@@ -2060,6 +2757,400 @@ async function saveFFLData() {
     statusBtn.innerText = "ZAPISZ DO VF";
 }
   
+
+
+/* --- OLED REPAIR 2.0: RECENT EDITING, EXTRA DOCUMENTATION & 09:25 BREAK --- */
+const OLED_RECENT_DB = 'OLED_REPAIR_2_0_LOCAL';
+const OLED_RECENT_STORE = 'state';
+
+function openRecentDb() {
+    return new Promise((resolve,reject) => {
+        if(!('indexedDB' in window)) return reject(new Error('IndexedDB unavailable'));
+        const request = indexedDB.open(OLED_RECENT_DB,1);
+        request.onupgradeneeded = () => {
+            const db = request.result;
+            if(!db.objectStoreNames.contains(OLED_RECENT_STORE)) db.createObjectStore(OLED_RECENT_STORE,{keyPath:'key'});
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function saveRecentScansToDb() {
+    try {
+        const db = await openRecentDb();
+        await new Promise((resolve,reject) => {
+            const tx = db.transaction(OLED_RECENT_STORE,'readwrite');
+            tx.objectStore(OLED_RECENT_STORE).put({key:'recentScans',rows:recentScans.slice(0,6)});
+            tx.oncomplete = resolve;
+            tx.onerror = () => reject(tx.error);
+        });
+        db.close();
+    } catch(e) {
+        console.warn('Historia lokalna działa tylko w bieżącej sesji.',e);
+    }
+}
+
+async function loadRecentScansFromDb() {
+    try {
+        const db = await openRecentDb();
+        const payload = await new Promise((resolve,reject) => {
+            const tx = db.transaction(OLED_RECENT_STORE,'readonly');
+            const req = tx.objectStore(OLED_RECENT_STORE).get('recentScans');
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+        });
+        db.close();
+        if(Array.isArray(payload?.rows)) {
+            recentScans = payload.rows.map(item => ({
+                ...item,
+                time: item.time instanceof Date ? item.time : new Date(item.time),
+                photos: clonePhotoSet(item.photos),
+                extraPhotos: Array.isArray(item.extraPhotos) ? item.extraPhotos : []
+            })).slice(0,6);
+            renderRecentScans();
+        }
+    } catch(e) {
+        console.warn('Nie udało się odczytać lokalnej historii sztuk.',e);
+    }
+}
+
+function clonePhotoSet(source) {
+    return {
+        PRZOD: source?.PRZOD || null,
+        TYL: source?.TYL || null,
+        OBRAZ: source?.OBRAZ || null
+    };
+}
+
+function snapshotCurrentRepair(decision) {
+    return {
+        id: editingRecentId || `${Date.now()}_${currentSN}`,
+        sn: currentSN,
+        oc: currentOC,
+        dec: decision,
+        com: document.getElementById('commentInput')?.value || '',
+        op: currentUser?.login || '---',
+        time: new Date(),
+        photos: clonePhotoSet(photos),
+        extraPhotos: extraPhotos.map(item => ({ blob:item.blob || item, name:item.name || '' })),
+        corrections: 0
+    };
+}
+
+function renderExtraPhotos() {
+    const strip = document.getElementById('extraPhotoStrip');
+    const counter = document.getElementById('extraPhotoCount');
+    if(counter) counter.innerText = `DODATKOWE: ${extraPhotos.length}`;
+    if(!strip) return;
+
+    strip.querySelectorAll('img[data-object-url]').forEach(img => {
+        try { URL.revokeObjectURL(img.dataset.objectUrl); } catch(e) {}
+    });
+    strip.innerHTML = '';
+
+    extraPhotos.forEach((item, index) => {
+        const blob = item.blob || item;
+        if(!(blob instanceof Blob)) return;
+        const url = URL.createObjectURL(blob);
+        const thumb = document.createElement('div');
+        thumb.className = 'extra-photo-thumb';
+        thumb.title = `Zdjęcie dodatkowe ${index + 1}`;
+        const img = document.createElement('img');
+        img.src = url;
+        img.dataset.objectUrl = url;
+        img.alt = `Dodatkowe ${index + 1}`;
+        const label = document.createElement('span');
+        label.innerText = `+${index + 1}`;
+        thumb.append(img,label);
+        strip.appendChild(thumb);
+    });
+}
+
+function setEditModeUI(active, sn = '') {
+    const banner = document.getElementById('editModeBanner');
+    const title = document.getElementById('editModeTitle');
+    const card = document.getElementById('saveCard');
+    banner?.classList.toggle('active', !!active);
+    card?.classList.toggle('editing', !!active);
+    if(title) title.innerText = active ? `EDYCJA: ${sn}` : 'EDYCJA ZAPISANEJ SZTUKI';
+}
+
+function editRecentScan(id) {
+    const item = recentScans.find(row => row.id === id);
+    if(!item) return alert('Nie znaleziono tej sztuki w pamięci bieżącej sesji.');
+
+    if(currentSN && currentSN !== item.sn) {
+        const proceed = confirm(`Aktualnie rozpoczęta sztuka ${currentSN} zostanie porzucona. Otworzyć ${item.sn} do edycji?`);
+        if(!proceed) return;
+    }
+
+    editingRecentId = item.id;
+    currentSN = item.sn;
+    currentOC = item.oc || '';
+    isScanConfirmed = true;
+    photos = clonePhotoSet(item.photos);
+    extraPhotos = (item.extraPhotos || []).map(extra => ({ blob:extra.blob || extra, name:extra.name || '' }));
+
+    document.getElementById('scanInput').value = currentSN;
+    document.getElementById('scanInputOC').value = currentOC;
+    document.getElementById('scanInputOC').disabled = false;
+    document.getElementById('statusSelect').value = item.dec || 'OK';
+    document.getElementById('commentInput').value = item.com || '';
+    document.getElementById('tagSN').innerText = `SN: ${currentSN}`;
+    document.getElementById('snCheck').style.display = 'inline';
+    document.getElementById('ocCheck').style.display = currentOC ? 'inline' : 'none';
+    document.getElementById('scanStatusInfo').style.display = 'block';
+    document.getElementById('confirmIdentityBtn').style.display = 'none';
+    ['btnFront','btnBack','btnImage'].forEach(id => document.getElementById(id)?.classList.remove('locked'));
+
+    ['PRZOD','TYL','OBRAZ'].forEach(type => {
+        if(photos[type]) updatePhotoPreview(type, photos[type]);
+        else {
+            const box = document.getElementById(`preview${type}`);
+            const img = document.getElementById(`previewImg${type}`);
+            if(img?.dataset.objectUrl) URL.revokeObjectURL(img.dataset.objectUrl);
+            if(img) { img.removeAttribute('src'); delete img.dataset.objectUrl; }
+            box?.classList.remove('has-photo');
+        }
+    });
+
+    syncDefectTags();
+    renderExtraPhotos();
+    setEditModeUI(true, currentSN);
+    sessionStartTime = new Date();
+    checkOcRequirement();
+    updatePhotoProgress();
+    updateWorkflowUI();
+    document.querySelector('.decision-column')?.scrollTo({top:0,behavior:'smooth'});
+}
+
+function cancelRecentEdit() {
+    if(!editingRecentId) return;
+    if(!confirm('Anulować edycję i wyczyścić aktualny formularz?')) return;
+    editingRecentId = null;
+    setEditModeUI(false);
+    try { localStorage.removeItem('oled_recovery'); } catch(e) {}
+    resetRepairFormAfterEdit();
+}
+
+function resetRepairFormAfterEdit() {
+    currentSN = '';
+    currentOC = '';
+    isScanConfirmed = false;
+    photos = { PRZOD:null, TYL:null, OBRAZ:null };
+    extraPhotos = [];
+    document.getElementById('scanInput').value = '';
+    document.getElementById('scanInputOC').value = '';
+    document.getElementById('scanInputOC').disabled = true;
+    document.getElementById('statusSelect').value = 'OK';
+    document.getElementById('commentInput').value = '';
+    document.getElementById('tagSN').innerText = 'SN: ---';
+    document.getElementById('snCheck').style.display = 'none';
+    document.getElementById('ocCheck').style.display = 'none';
+    document.getElementById('scanStatusInfo').style.display = 'none';
+    ['btnFront','btnBack','btnImage'].forEach(id => {
+        const btn = document.getElementById(id);
+        btn?.classList.add('locked');
+        btn?.classList.remove('done','next-action');
+    });
+    resetPhotoPreviews();
+    renderExtraPhotos();
+    syncDefectTags();
+    clearDraw();
+    resetCameraView();
+    checkOcRequirement();
+    updatePhotoProgress();
+    updateWorkflowUI();
+    document.getElementById('scanInput')?.focus();
+}
+
+function renderRecentScans() {
+    const list = document.getElementById('recentList');
+    if(!list) return;
+    if(!recentScans.length) {
+        list.innerHTML = '<div style="color:var(--muted-2);font-size:11px">Brak zapisów w tej sesji.</div>';
+        return;
+    }
+
+    list.innerHTML = '';
+    recentScans.forEach((item,index) => {
+        const row = document.createElement('div');
+        row.className = 'recent-item-v2';
+
+        const main = document.createElement('div');
+        main.className = 'recent-main';
+        const sn = document.createElement('div');
+        sn.className = 'recent-sn';
+        sn.innerText = item.sn;
+        const meta = document.createElement('div');
+        meta.className = 'recent-meta';
+        const time = item.time instanceof Date ? item.time : new Date(item.time);
+        const extraCount = item.extraPhotos?.length || 0;
+        const correction = item.corrections ? ` • KOREKTA ×${item.corrections}` : '';
+        meta.innerText = `${time.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})} • ${item.oc || 'BEZ OC'} • ${3 + extraCount} FOTO`;
+        if(correction) {
+            const correctionSpan = document.createElement('span');
+            correctionSpan.className = 'recent-correction';
+            correctionSpan.innerText = correction;
+            meta.appendChild(correctionSpan);
+        }
+        main.append(sn,meta);
+
+        const actions = document.createElement('div');
+        actions.className = 'recent-actions';
+        const status = document.createElement('span');
+        status.className = 'recent-status';
+        status.innerText = item.dec;
+        status.style.color = ['OK','NDF','OFFRS_OK'].includes(item.dec) ? 'var(--neon-green)' : 'var(--neon-orange)';
+        const edit = document.createElement('button');
+        edit.type = 'button';
+        edit.className = 'recent-edit-btn';
+        edit.innerText = 'EDYTUJ';
+        edit.title = 'Wczytaj dane i zdjęcia tej sztuki';
+        edit.onclick = () => editRecentScan(item.id);
+        actions.append(status,edit);
+        row.append(main,actions);
+        list.appendChild(row);
+    });
+}
+
+// Replace only the post-save UI state. The protected POST endpoint and payload remain untouched.
+finishSave = function(dec) {
+    const snapshot = snapshotCurrentRepair(dec);
+    if(editingRecentId) {
+        const idx = recentScans.findIndex(item => item.id === editingRecentId);
+        const previousCorrections = idx >= 0 ? (recentScans[idx].corrections || 0) : 0;
+        snapshot.corrections = previousCorrections + 1;
+        if(idx >= 0) recentScans.splice(idx,1);
+        recentScans.unshift(snapshot);
+    } else {
+        recentScans.unshift(snapshot);
+    }
+    recentScans = recentScans.slice(0,6);
+    renderRecentScans();
+    saveRecentScansToDb();
+
+    const qrb = document.getElementById('qrCodeBox');
+    qrb.innerHTML = '';
+    new QRCode(qrb, `${currentSN}|${dec}`);
+    document.getElementById('qrPopup').style.display = 'block';
+    localStorage.removeItem('oled_recovery');
+
+    const wasEditing = !!editingRecentId;
+    editingRecentId = null;
+    setEditModeUI(false);
+
+    setTimeout(() => {
+        currentSN = '';
+        currentOC = '';
+        isScanConfirmed = false;
+        photos = { PRZOD:null, TYL:null, OBRAZ:null };
+        extraPhotos = [];
+        document.getElementById('scanInput').value = '';
+        document.getElementById('scanInputOC').value = '';
+        document.getElementById('scanInputOC').disabled = true;
+        document.getElementById('commentInput').value = '';
+        syncDefectTags();
+        resetPhotoPreviews();
+        renderExtraPhotos();
+        resetCameraView();
+        clearDraw();
+        document.getElementById('statusSelect').value = 'OK';
+        document.getElementById('snCheck').style.display = 'none';
+        document.getElementById('ocCheck').style.display = 'none';
+        document.getElementById('tagSN').innerText = 'SN: ---';
+        ['btnFront','btnBack','btnImage'].forEach(id => {
+            const btn = document.getElementById(id);
+            btn?.classList.add('locked');
+            btn?.classList.remove('done','next-action');
+        });
+        const action = document.getElementById('actionBtn');
+        action.classList.remove('active');
+        action.disabled = true;
+        action.innerText = 'ZATWIERDŹ SN I OC';
+        document.getElementById('saveStatus').innerText = wasEditing ? 'KOREKTA ZAPISANA' : '';
+        document.getElementById('scanInput').focus();
+        scanNetworkForOperator();
+        updateWorkflowUI();
+        checkOcRequirement();
+        updatePhotoProgress();
+    },1000);
+};
+
+// Preserve the original readiness logic and make edit mode unmistakable.
+const _oled20BaseUpdatePhotoProgress = updatePhotoProgress;
+updatePhotoProgress = function() {
+    _oled20BaseUpdatePhotoProgress();
+    const state = getSaveReadiness();
+    const btn = document.getElementById('actionBtn');
+    const title = document.getElementById('saveReadyTitle');
+    const detail = document.getElementById('saveReadyDetail');
+    if(editingRecentId && state.ready) {
+        btn.innerText = '✓ ZAPISZ KOREKTĘ';
+        if(title) title.innerText = 'Korekta gotowa do zapisu';
+        if(detail) detail.innerText = 'Lokalne pliki zostaną nadpisane, a najnowszy wpis SN stanie się aktualną wersją.';
+    }
+    renderExtraPhotos();
+};
+
+// Starting a completely new SN always exits edit mode and clears optional photos.
+const _oled20BaseStartSession = startSession;
+startSession = function(sn) {
+    editingRecentId = null;
+    extraPhotos = [];
+    setEditModeUI(false);
+    const result = _oled20BaseStartSession(sn);
+    renderExtraPhotos();
+    return result;
+};
+
+function dateKey(date = new Date()) {
+    return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+}
+
+function showBreakReminder() {
+    const now = new Date();
+    const key = `oled_break_0925_${dateKey(now)}`;
+    if(localStorage.getItem(key)) return;
+    localStorage.setItem(key,'shown');
+    document.getElementById('breakReminder')?.classList.add('visible');
+    try {
+        SoundFX.play('beep');
+        setTimeout(() => SoundFX.play('beep'), 260);
+    } catch(e) {}
+    try {
+        if('Notification' in window && Notification.permission === 'granted') {
+            new Notification('OLED REPAIR 2.0 — PRZERWA', { body:'Jest 09:25. Czas na zaplanowaną przerwę.' });
+        }
+    } catch(e) {}
+}
+
+function dismissBreakReminder() {
+    document.getElementById('breakReminder')?.classList.remove('visible');
+}
+
+function scheduleDailyBreakReminder() {
+    if(breakReminderTimer) clearTimeout(breakReminderTimer);
+    const now = new Date();
+    const today = new Date(now);
+    today.setHours(9,25,0,0);
+    const catchUpEnd = new Date(today.getTime() + 10 * 60 * 1000);
+    const key = `oled_break_0925_${dateKey(now)}`;
+
+    // If the station was opened a few minutes after 09:25, show the reminder once.
+    if(now >= today && now <= catchUpEnd && !localStorage.getItem(key)) {
+        setTimeout(showBreakReminder,800);
+    }
+
+    const next = new Date(today);
+    if(next <= now) next.setDate(next.getDate()+1);
+    breakReminderTimer = setTimeout(() => {
+        showBreakReminder();
+        scheduleDailyBreakReminder();
+    }, Math.max(1000,next.getTime()-now.getTime()));
+}
+
 </script>
 </body>
 </html>
